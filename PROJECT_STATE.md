@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 2, 2026-10-24)
+# Bookside: project state (end of session 3, 2026-10-24)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -20,6 +20,11 @@
   `AddBooksideServices()` (scoped; adds `TimeProvider.System` if missing).
 - `Bookside.Data.Sqlite`: `AddBooksideSqlite(path)` registers `IDbContextFactory<BooksideDbContext>`;
   `InitializeBooksideDatabaseAsync()` creates the directory, runs `MigrateAsync`, sets WAL. Migration `InitialCreate` (unchanged).
+- `Bookside.Integrations` (session 3): `AddDictionaryApiClient()` registers `DictionaryApiClient` (internal) as
+  `IDictionaryLookupService`: typed HttpClient + `Microsoft.Extensions.Http.Resilience` 10.11.0 standard handler
+  (3 s/attempt, 2 retries, 300 ms base delay, 8 s total), 1 MB response cap. Returns the `IHttpClientBuilder`.
+  Not wired into a host yet (no host exists).
+- `Bookside.Integrations.Tests`: 14 tests through the real registration with a stubbed primary handler.
 - `Bookside.Data.Tests`: 54 passing tests. Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
   SQLite + production registrations + `FakeDictionaryLookupService`), `Isbn` and `Result` tests.
 
@@ -51,14 +56,26 @@
     is the manual re-check, and a failed refresh keeps the cached entry.
   - Unique-index races (words, dictionary entries) are handled provider-agnostically: catch `DbUpdateException`, re-query, map to Conflict / reuse.
   - Services are scoped because the dictionary client will be a typed HttpClient (transient).
+- **Dictionary client (session 3):**
+  - Only a 404 whose body is JSON (the API's "No Definitions Found" object) becomes a cacheable NotFound. An HTML/proxy
+    404, any other non-success status, network error, timeout, oversized or malformed response throws
+    `DictionaryLookupException` (never cached). Caller cancellation is rethrown unwrapped.
+  - A 200 with no usable definitions is NotFound.
+  - The API returns one entry per etymology ("bank" has 4). They're merged into one meaning list grouped by part of
+    speech (case-insensitive, first-seen order), duplicate/blank definitions dropped. Phonetic = first non-blank
+    `phonetic` then `phonetics[].text`; audio = first valid absolute http(s) URL (protocol-relative fixed up).
+    Values longer than the entity limits are skipped. `RawResponse` keeps the full payload, so this can be re-parsed.
+  - `DictionaryEntry` now has `SourceMaxLength`/`PhoneticMaxLength`/`AudioUrlMaxLength` constants (same values, no migration).
+  - Provider reliability: on 2026-10-24 the origin was down; edge-cached words returned 200, every other lookup
+    returned Cloudflare 530 (error 1033). Handled as transient, but expect "dictionary unavailable" for new words
+    during such outages. If it recurs, consider a second provider (e.g. Wiktionary REST) behind the same interface.
 
 ## Next
-1. `Bookside.Integrations`: dictionaryapi.dev client implementing `IDictionaryLookupService` (typed HttpClient +
-   `Microsoft.Extensions.Http.Resilience`; keep total timeout short since AddWord calls it inline) + tests with a stubbed handler.
-2. `Bookside.UI` RCL + `Bookside.Web` host (Interactive Server, responsive layout that works equally well on desktop and mobile), cover-image endpoint with ETag
+1. `Bookside.UI` RCL + `Bookside.Web` host (Interactive Server, responsive layout that works equally well on desktop and mobile), cover-image endpoint with ETag
    (`BookSummary/BookDetails.CoverSha256`; consider a hash-only query so a 304 doesn't load the BLOB).
-3. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there.
-4. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+   Host wiring: `AddBooksideSqlite(path)` + `AddBooksideServices()` + `AddDictionaryApiClient()`, then `InitializeBooksideDatabaseAsync()`.
+2. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there.
+3. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.

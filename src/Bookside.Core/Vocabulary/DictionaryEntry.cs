@@ -9,6 +9,10 @@ namespace Bookside.Core.Vocabulary;
 /// </summary>
 public class DictionaryEntry : Entity
 {
+    public const int SourceMaxLength = 50;
+    public const int PhoneticMaxLength = 200;
+    public const int AudioUrlMaxLength = 2000;
+
     public required string NormalizedTerm { get; set; }
 
     public required string Language { get; set; }

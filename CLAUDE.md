@@ -36,9 +36,13 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
 - `src/Bookside.Data`: provider-agnostic EF Core model (`BooksideDbContext`, `Configurations/`) and internal service
   implementations in `Services/`, registered by `AddBooksideServices()`. No provider packages.
 - `src/Bookside.Data.Sqlite`: SQLite wiring, `Migrations/`, design-time factory. References Data.
+- `src/Bookside.Integrations`: external API clients implementing Core interfaces (typed HttpClient + standard
+  resilience handler), registered by `Add<Provider>Client()` extensions that return the `IHttpClientBuilder`.
+- `tests/Bookside.Integrations.Tests`: client tests through the real registration, with `StubHttpMessageHandler` as the
+  primary handler (retry delay zeroed via the `{clientName}-standard` resilience options).
 - `tests/Bookside.Data.Tests`: tests against real temp SQLite files (`SqliteTestDatabase`); service tests derive
   from `Services/ServiceTestBase` (production registrations + `FakeDictionaryLookupService`).
-- Planned: `Bookside.Integrations`, `Bookside.UI` (RCL), `Bookside.Web` (Blazor Interactive Server, Docker),
+- Planned: `Bookside.UI` (RCL), `Bookside.Web` (Blazor Interactive Server, Docker),
   later `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
 
 ## Conventions
