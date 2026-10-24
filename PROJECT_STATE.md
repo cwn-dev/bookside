@@ -145,15 +145,30 @@
     (refresh); Found → "Refresh" link. Unavailable shows a friendly retry-later message.
 
 ## Next
-1. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
+1. **Second dictionary provider + fallback chain (session 7, user's request).** Add freedictionaryapi.com as another
+   dictionary lookup. Adding a word tries one provider, then the next; adding a provider should be easy (one class +
+   one registration). Propose the design before building. Findings so far (2026-10-24):
+   - `GET https://freedictionaryapi.com/api/v1/entries/{lang}/{word}`: no key, CORS, Wiktionary data (CC BY-SA 4.0),
+     behind Cloudflare. Spec: `/api/v1/openapi.json` (not yet read: check rate limits and query parameters).
+   - Not found is **200 with `"entries": []`**, not a 404 (unlike dictionaryapi.dev).
+   - Shape: `entries[]` per part of speech: `partOfSpeech`, `pronunciations[] {type: "ipa", text, tags}` (no audio
+     URL seen), `senses[] {definition, examples[], quotes[] {text, reference}, synonyms, antonyms, subsenses[]}`,
+     plus `forms`, `synonyms`; top-level `source.url` (Wiktionary page) and `license`.
+   - It answered while dictionaryapi.dev returned Cloudflare 530 for uncached words.
+   Decisions to make: provider order (config?); what counts as "try the next one" (only transient failures, or a
+   NotFound too?); whether a NotFound is cached per provider or only when every provider says NotFound;
+   `DictionaryEntry.Source` already records the provider; whether "Refresh" re-runs the whole chain; how to map
+   quotes/subsenses/tags into `DictionaryMeaning`; per-provider resilience options and tests through the real
+   registration (`StubHttpMessageHandler`).
+2. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
    Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
-2. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+3. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table
   (context/page per occurrence) instead of the single `BookId`.
 - dictionaryapi.dev was still returning Cloudflare 530 for uncached words at the end of session 6 (edge-cached
-  words like "petrichor" worked). If outages keep recurring, add a second provider behind `IDictionaryLookupService`.
+  words like "petrichor" worked). Next 1 adds freedictionaryapi.com as a fallback.
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.
 - Auth: none yet. Needs a decision before exposing the container beyond the LAN.
 - Local runtime is ASP.NET Core 10.0.7 while packages are 10.0.13; works, but consider updating the SDK/runtime.
