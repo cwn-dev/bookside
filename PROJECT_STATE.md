@@ -186,25 +186,35 @@
     hanging) is 16 s.
 
 ## Next
-1. **First deploy on the Docker host (user):** `docker compose up -d --build`, check through the proxy (WebSockets),
-   restart and confirm an open page reconnects. Fix anything the untested image build turns up.
-2. **Random word on the library page (user's request).** Show one random vocabulary word on `/books` (the home
-   page), placed where it looks good at both widths (e.g. a small card above or beside the toolbar), linking to
+1. **Next session: a real home page at `/` (user's request).** Today `Home` just redirects to `/books`. Make it a
+   dashboard; the user wants **"Currently reading"** first and invited creativity for the rest. Ideas to propose:
+   currently reading (cover, title, started date, days in, "Finish" / "Add word" shortcuts); recently finished
+   books (with rating); latest vocabulary words added (term + short definition, links); a random/"word of the
+   day" card (this would absorb item 3); small stats (books finished this year, words saved this month);
+   quick-add word box. Empty states for a new library (call to action: add a book / a word).
+   Decisions to make: which sections and their order on both widths (one column on phones, two on desktop?);
+   nav: "Home" link vs the brand linking to `/` (it links to `books` now); how many items per section; whether
+   the dashboard gets one summary service call (e.g. `ILibraryService.GetHomeSummaryAsync` / a new
+   `IHomeService`) or several existing calls. Propose the layout before building.
+2. **First deploy on the Docker host (user, any time):** `docker compose up -d --build`, check through the proxy
+   (WebSockets), restart and confirm an open page reconnects. Fix anything the untested image build turns up.
+3. **Random word on the library page (user's request; may move into the home page, item 1).** Show one random
+   vocabulary word on `/books`, placed where it looks good at both widths (e.g. a small card above or beside the toolbar), linking to
    the word page. Decisions to make: placement/design; new each visit vs once per day; which words qualify (only
    defined ones?); hide when the list is empty; a "show another" action? Needs a service method
    (e.g. `IVocabularyService.GetRandomWordAsync`) instead of loading the whole list.
-3. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
+4. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
    `/words`. Propose the design before building. Decisions to make: algorithm (Leitner boxes vs SM-2 vs FSRS);
    card front/back (term → definition, or also definition → term, sentence from the book as a cue); grading
    (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
    migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
    touch (tap/swipe) on both widths; whether the library-page word should prefer due words.
-4. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
+5. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
    the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
    list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
-5. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+6. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table
