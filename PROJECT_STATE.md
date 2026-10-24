@@ -208,31 +208,30 @@
     hanging) is 16 s.
 
 ## Next
-1. **First deploy on the Docker host (user, any time):** `docker compose up -d --build`, check through the proxy
-   (WebSockets), restart and confirm an open page reconnects. Fix anything the untested image build turns up.
-2. **Random word on the library page (user's earlier request): probably drop.** The home page's word of the day
-   covers it, and `GetRandomWordAsync` exists if it's still wanted on `/books`. Ask the user.
-3. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
-   `/words`. Propose the design before building. Decisions to make: algorithm (Leitner boxes vs SM-2 vs FSRS);
-   card front/back (term → definition, or also definition → term, sentence from the book as a cue); grading
-   (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
-   migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
-   touch (tap/swipe) on both widths; whether the word of the day should prefer due words; a "Review" card on the home page.
-4. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
-   Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
-   date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
-   the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
-   list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
-5. **Book tags (user's request).** User-defined tags (e.g. "Own", "Have e-book"), several per book.
+1. **Next session: book tags (user's request).** User-defined tags (e.g. "Own", "Have e-book"), several per book.
+   Propose the design before building.
    Likely model: `Tag` entity (name, unique case-insensitively, max-length constant) + `BookTag` join table
    (cascade on book and tag delete) + migration. Decisions to make: where tags are managed (a `/tags` page vs
    creating them inline from the book form); how they're set on a book (chips/checkboxes on the edit form, or quick
    toggles on the book page); whether tags have a colour or order; deleting a tag that's in use (confirm + remove from
    books); library filtering by tag (`?tag=` in the query string next to the existing filter chips; one tag or
    several, AND vs OR); showing tags on library cards and the book page; any starter tags.
-6. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+2. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
+   Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
+   date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
+   the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
+   list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
+3. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
+   `/words`. Propose the design before building. Decisions to make: algorithm (Leitner boxes vs SM-2 vs FSRS);
+   card front/back (term → definition, or also definition → term, sentence from the book as a cue); grading
+   (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
+   migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
+   touch (tap/swipe) on both widths; whether the word of the day should prefer due words; a "Review" card on the home page.
+4. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
+- Deployment is the user's: they will test the image on the Docker host and set up a GitHub build that pushes it to
+  Docker Hub. Fix image problems if they report any; don't plan deploy work otherwise.
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table
   (context/page per occurrence) instead of the single `BookId`.
 - dictionaryapi.dev was still returning Cloudflare 530 for uncached words in session 7; freedictionaryapi.com
