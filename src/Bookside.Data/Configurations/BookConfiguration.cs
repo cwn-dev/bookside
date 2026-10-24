@@ -14,14 +14,14 @@ internal sealed class BookConfiguration : IEntityTypeConfiguration<Book>
         });
         builder.ConfigureEntity();
 
-        builder.Property(b => b.Title).HasMaxLength(500);
-        builder.Property(b => b.Subtitle).HasMaxLength(500);
+        builder.Property(b => b.Title).HasMaxLength(Book.TitleMaxLength);
+        builder.Property(b => b.Subtitle).HasMaxLength(Book.SubtitleMaxLength);
         builder.Property(b => b.Isbn13).HasMaxLength(13).IsUnicode(false);
         builder.Property(b => b.Isbn10).HasMaxLength(10).IsUnicode(false);
-        builder.Property(b => b.Publisher).HasMaxLength(300);
-        builder.Property(b => b.Description).HasMaxLength(10_000);
-        builder.Property(b => b.MetadataSource).HasMaxLength(50);
-        builder.Property(b => b.MetadataSourceId).HasMaxLength(100);
+        builder.Property(b => b.Publisher).HasMaxLength(Book.PublisherMaxLength);
+        builder.Property(b => b.Description).HasMaxLength(Book.DescriptionMaxLength);
+        builder.Property(b => b.MetadataSource).HasMaxLength(Book.MetadataSourceMaxLength);
+        builder.Property(b => b.MetadataSourceId).HasMaxLength(Book.MetadataSourceIdMaxLength);
 
         builder.HasIndex(b => b.Title);
         // Not unique: owning two editions/copies with the same ISBN is legitimate.

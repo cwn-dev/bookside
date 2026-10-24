@@ -14,6 +14,6 @@ internal sealed class BookCoverConfiguration : IEntityTypeConfiguration<BookCove
         builder.Property(c => c.Content).HasMaxLength(BookCover.MaxSizeBytes);
         builder.Property(c => c.ContentType).HasMaxLength(100).IsUnicode(false);
         builder.Property(c => c.Sha256).HasMaxLength(64).IsUnicode(false).IsFixedLength();
-        builder.Property(c => c.SourceUrl).HasMaxLength(2000);
+        builder.Property(c => c.SourceUrl).HasMaxLength(BookCover.SourceUrlMaxLength);
     }
 }

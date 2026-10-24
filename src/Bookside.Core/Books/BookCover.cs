@@ -5,6 +5,10 @@ public class BookCover
 {
     /// <summary>Upper bound enforced by the database layer's validation; covers are typically 50–500 KB.</summary>
     public const int MaxSizeBytes = 2 * 1024 * 1024;
+    public const int SourceUrlMaxLength = 2000;
+
+    public static readonly IReadOnlySet<string> AllowedContentTypes =
+        new HashSet<string>(["image/jpeg", "image/png", "image/webp", "image/gif"], StringComparer.OrdinalIgnoreCase);
 
     public Guid BookId { get; set; }
 

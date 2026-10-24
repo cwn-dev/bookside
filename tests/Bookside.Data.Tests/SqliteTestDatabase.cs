@@ -13,6 +13,11 @@ public sealed class SqliteTestDatabase : IAsyncLifetime
 
     public string DatabasePath => Path.Combine(_directory, "nested", "bookside.db");
 
+    /// <summary>Extra registrations (e.g. application services) on top of the SQLite provider.</summary>
+    public Action<IServiceCollection>? ConfigureServices { get; init; }
+
+    public IServiceProvider Services => _services!;
+
     public IDbContextFactory<BooksideDbContext> Factory =>
         _services!.GetRequiredService<IDbContextFactory<BooksideDbContext>>();
 
@@ -20,7 +25,9 @@ public sealed class SqliteTestDatabase : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _services = new ServiceCollection().AddBooksideSqlite(DatabasePath).BuildServiceProvider();
+        var services = new ServiceCollection().AddBooksideSqlite(DatabasePath);
+        ConfigureServices?.Invoke(services);
+        _services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
         await _services.InitializeBooksideDatabaseAsync(TestContext.Current.CancellationToken);
     }
 

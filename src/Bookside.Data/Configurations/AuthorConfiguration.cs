@@ -11,7 +11,7 @@ internal sealed class AuthorConfiguration : IEntityTypeConfiguration<Author>
         builder.ToTable("Authors");
         builder.ConfigureEntity();
 
-        builder.Property(a => a.Name).HasMaxLength(300);
+        builder.Property(a => a.Name).HasMaxLength(Author.NameMaxLength);
         builder.HasIndex(a => a.Name);
     }
 }

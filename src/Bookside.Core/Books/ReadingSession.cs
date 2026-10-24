@@ -7,6 +7,7 @@ public class ReadingSession : Entity
 {
     public const int MinRating = 1;
     public const int MaxRating = 5;
+    public const int NotesMaxLength = 10_000;
 
     public Guid BookId { get; set; }
 

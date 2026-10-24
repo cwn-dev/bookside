@@ -6,6 +6,11 @@ namespace Bookside.Core.Vocabulary;
 /// <summary>A word on my list. Unique per (language, normalized term).</summary>
 public class VocabularyWord : Entity
 {
+    public const int TermMaxLength = 200;
+    public const int LanguageMaxLength = 16;
+    public const int ContextMaxLength = 2000;
+    public const int NotesMaxLength = 4000;
+
     /// <summary>As typed by the user.</summary>
     public required string Term { get; set; }
 

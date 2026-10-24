@@ -19,7 +19,7 @@ internal sealed class ReadingSessionConfiguration : IEntityTypeConfiguration<Rea
         });
         builder.ConfigureEntity();
 
-        builder.Property(s => s.Notes).HasMaxLength(10_000);
+        builder.Property(s => s.Notes).HasMaxLength(ReadingSession.NotesMaxLength);
 
         builder.HasIndex(s => new { s.BookId, s.StartedOn });
         builder.HasIndex(s => s.FinishedOn);

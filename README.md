@@ -6,8 +6,8 @@ A personal reading companion: library / reading log and a vocabulary builder.
 
 | Project | Role |
 |---|---|
-| `src/Bookside.Core` | Entities, domain rules, service contracts. No EF/HTTP dependencies. |
-| `src/Bookside.Data` | Provider-agnostic EF Core model (`BooksideDbContext`, configurations, save rules). |
+| `src/Bookside.Core` | Entities, domain rules, service contracts + DTOs, `Result` types. No EF/HTTP dependencies. |
+| `src/Bookside.Data` | Provider-agnostic EF Core model (`BooksideDbContext`, configurations, save rules) and service implementations (`AddBooksideServices`). |
 | `src/Bookside.Data.Sqlite` | SQLite wiring (`AddBooksideSqlite`, `InitializeBooksideDatabaseAsync`), migrations, design-time factory. |
 | `tests/Bookside.Data.Tests` | xUnit v3 tests against real temp SQLite files. |
 

@@ -31,10 +31,13 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
 
 ## Layout and dependency direction
 
-- `src/Bookside.Core`: entities, domain rules, service interfaces + DTOs. **No EF Core or HTTP dependencies.**
-- `src/Bookside.Data`: provider-agnostic EF Core model (`BooksideDbContext`, `Configurations/`). No provider packages.
+- `src/Bookside.Core`: entities, domain rules, `Common/` (`Result`, `ServiceError`, paging), service interfaces + DTOs
+  in `<Area>/Services/`. **No EF Core or HTTP dependencies.**
+- `src/Bookside.Data`: provider-agnostic EF Core model (`BooksideDbContext`, `Configurations/`) and internal service
+  implementations in `Services/`, registered by `AddBooksideServices()`. No provider packages.
 - `src/Bookside.Data.Sqlite`: SQLite wiring, `Migrations/`, design-time factory. References Data.
-- `tests/Bookside.Data.Tests`: tests against real temp SQLite files (`SqliteTestDatabase`).
+- `tests/Bookside.Data.Tests`: tests against real temp SQLite files (`SqliteTestDatabase`); service tests derive
+  from `Services/ServiceTestBase` (production registrations + `FakeDictionaryLookupService`).
 - Planned: `Bookside.Integrations`, `Bookside.UI` (RCL), `Bookside.Web` (Blazor Interactive Server, Docker),
   later `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
 
@@ -46,5 +49,10 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
 - Every model change needs a migration; a test fails if the model has changes with no migration.
 - Migrations are provider-specific and live only in `Bookside.Data.Sqlite`; they are generated code (analyzers off).
 - Use EF Core directly in services (no repository layer). In Blazor components use `IDbContextFactory<BooksideDbContext>`.
+- Services return DTOs (never entities) and report expected failures as `Result`/`Result<T>` with a `ServiceError`
+  (add codes to `ErrorCodes`); exceptions are for bugs. Validate with `InputValidator` and return all field errors.
+  Each service method creates its own context from the factory.
+- String length limits are constants on the entity (e.g. `Book.TitleMaxLength`), shared by configuration and validation.
 - External APIs sit behind Core interfaces; implementations go in `Bookside.Integrations`.
+- UI must work equally well on desktop and mobile; neither is the priority (not "mobile-first"). Check both widths.
 - Tests: underscore sentence names, pass `TestContext.Current.CancellationToken`.

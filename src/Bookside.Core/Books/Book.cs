@@ -4,6 +4,13 @@ namespace Bookside.Core.Books;
 
 public class Book : Entity
 {
+    public const int TitleMaxLength = 500;
+    public const int SubtitleMaxLength = 500;
+    public const int PublisherMaxLength = 300;
+    public const int DescriptionMaxLength = 10_000;
+    public const int MetadataSourceMaxLength = 50;
+    public const int MetadataSourceIdMaxLength = 100;
+
     public required string Title { get; set; }
 
     public string? Subtitle { get; set; }

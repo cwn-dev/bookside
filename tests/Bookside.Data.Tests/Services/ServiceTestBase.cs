@@ -1,0 +1,102 @@
+using Bookside.Core.Books.Services;
+using Bookside.Core.Common;
+using Bookside.Core.Vocabulary;
+using Bookside.Core.Vocabulary.Lookup;
+using Bookside.Core.Vocabulary.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Bookside.Data.Tests.Services;
+
+/// <summary>Real migrated SQLite database + the production service registrations + a fake dictionary.</summary>
+public abstract class ServiceTestBase : IAsyncLifetime
+{
+    private readonly SqliteTestDatabase _database;
+    private AsyncServiceScope _scope;
+
+    protected ServiceTestBase()
+    {
+        _database = new SqliteTestDatabase
+        {
+            ConfigureServices = services => services
+                .AddBooksideServices()
+                .AddSingleton<IDictionaryLookupService>(Dictionary),
+        };
+    }
+
+    protected static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    protected FakeDictionaryLookupService Dictionary { get; } = new();
+
+    protected SqliteTestDatabase Database => _database;
+
+    protected ILibraryService Library => _scope.ServiceProvider.GetRequiredService<ILibraryService>();
+
+    protected IVocabularyService Vocabulary => _scope.ServiceProvider.GetRequiredService<IVocabularyService>();
+
+    protected IDefinitionService Definitions => _scope.ServiceProvider.GetRequiredService<IDefinitionService>();
+
+    public async ValueTask InitializeAsync()
+    {
+        await _database.InitializeAsync();
+        _scope = _database.Services.CreateAsyncScope();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _scope.DisposeAsync();
+        await _database.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
+
+    protected async Task<BookDetails> AddBookAsync(string title, params string[] authors) =>
+        Success(await Library.AddBookAsync(new BookInput { Title = title, Authors = authors }, Ct));
+
+    protected static T Success<T>(Result<T> result)
+    {
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        return result.Value;
+    }
+
+    protected static ServiceError Failure(Result result, ErrorType type)
+    {
+        Assert.False(result.IsSuccess);
+        Assert.Equal(type, result.Error.Type);
+        return result.Error;
+    }
+}
+
+public sealed class FakeDictionaryLookupService : IDictionaryLookupService
+{
+    public string Source => "fake";
+
+    public Dictionary<string, DictionaryLookupResult> Entries { get; } = new(StringComparer.Ordinal);
+
+    public bool Unavailable { get; set; }
+
+    public List<string> Calls { get; } = [];
+
+    public Task<DictionaryLookupResult> LookupAsync(string term, string language = "en", CancellationToken cancellationToken = default)
+    {
+        Calls.Add(term);
+        if (Unavailable)
+        {
+            throw new DictionaryLookupException("Simulated outage.");
+        }
+
+        return Task.FromResult(Entries.TryGetValue(term, out var result) ? result : DictionaryLookupResult.NotFound());
+    }
+
+    public void Define(string term, string definition) => Entries[term] = new DictionaryLookupResult
+    {
+        Status = DictionaryLookupStatus.Found,
+        Phonetic = "/test/",
+        Meanings =
+        [
+            new DictionaryMeaning
+            {
+                PartOfSpeech = "noun",
+                Definitions = [new DictionaryDefinition { Text = definition }],
+            },
+        ],
+    };
+}

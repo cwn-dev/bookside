@@ -11,11 +11,11 @@ internal sealed class VocabularyWordConfiguration : IEntityTypeConfiguration<Voc
         builder.ToTable("VocabularyWords");
         builder.ConfigureEntity();
 
-        builder.Property(w => w.Term).HasMaxLength(200);
-        builder.Property(w => w.NormalizedTerm).HasMaxLength(200);
-        builder.Property(w => w.Language).HasMaxLength(16).IsUnicode(false);
-        builder.Property(w => w.Context).HasMaxLength(2000);
-        builder.Property(w => w.Notes).HasMaxLength(4000);
+        builder.Property(w => w.Term).HasMaxLength(VocabularyWord.TermMaxLength);
+        builder.Property(w => w.NormalizedTerm).HasMaxLength(VocabularyWord.TermMaxLength);
+        builder.Property(w => w.Language).HasMaxLength(VocabularyWord.LanguageMaxLength).IsUnicode(false);
+        builder.Property(w => w.Context).HasMaxLength(VocabularyWord.ContextMaxLength);
+        builder.Property(w => w.Notes).HasMaxLength(VocabularyWord.NotesMaxLength);
 
         builder.HasIndex(w => new { w.Language, w.NormalizedTerm }).IsUnique();
         builder.HasIndex(w => w.BookId);
