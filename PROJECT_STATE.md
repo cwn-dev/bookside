@@ -223,7 +223,14 @@
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
    the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
    list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
-5. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+5. **Book tags (user's request).** User-defined tags (e.g. "Own", "Have e-book"), several per book.
+   Likely model: `Tag` entity (name, unique case-insensitively, max-length constant) + `BookTag` join table
+   (cascade on book and tag delete) + migration. Decisions to make: where tags are managed (a `/tags` page vs
+   creating them inline from the book form); how they're set on a book (chips/checkboxes on the edit form, or quick
+   toggles on the book page); whether tags have a colour or order; deleting a tag that's in use (confirm + remove from
+   books); library filtering by tag (`?tag=` in the query string next to the existing filter chips; one tag or
+   several, AND vs OR); showing tags on library cards and the book page; any starter tags.
+6. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table
