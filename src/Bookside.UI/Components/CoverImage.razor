@@ -1,0 +1,29 @@
+@* Cover image, or a typographic placeholder when the book has none. Sized by the parent (fills its width, 2:3). *@
+
+<div class="cover @(Large ? "cover-large" : null)" style="--hue: @Hue">
+    @if (CoverSha256 is not null)
+    {
+        <img src="@CoverUrls.For(BookId, CoverSha256)" alt="Cover of @Title" loading="lazy" decoding="async" />
+    }
+    else
+    {
+        <span class="placeholder" aria-hidden="true">@Title</span>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Guid BookId { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "";
+
+    [Parameter]
+    public string? CoverSha256 { get; set; }
+
+    [Parameter]
+    public bool Large { get; set; }
+
+    // Stable per-book colour for placeholders.
+    private int Hue => (int)(BitConverter.ToUInt32(BookId.ToByteArray(), 12) % 360);
+}

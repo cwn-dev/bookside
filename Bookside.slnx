@@ -4,9 +4,12 @@
     <Project Path="src/Bookside.Data.Sqlite/Bookside.Data.Sqlite.csproj" />
     <Project Path="src/Bookside.Data/Bookside.Data.csproj" />
     <Project Path="src/Bookside.Integrations/Bookside.Integrations.csproj" />
+    <Project Path="src/Bookside.UI/Bookside.UI.csproj" />
+    <Project Path="src/Bookside.Web/Bookside.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Bookside.Data.Tests/Bookside.Data.Tests.csproj" />
     <Project Path="tests/Bookside.Integrations.Tests/Bookside.Integrations.Tests.csproj" />
+    <Project Path="tests/Bookside.UI.Tests/Bookside.UI.Tests.csproj" />
   </Folder>
 </Solution>

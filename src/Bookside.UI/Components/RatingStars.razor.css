@@ -1,0 +1,9 @@
+.stars {
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.off {
+    color: var(--border);
+}

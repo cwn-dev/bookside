@@ -1,0 +1,50 @@
+@* Two-step button for destructive actions: the first click asks, the second confirms. *@
+
+@if (_confirming)
+{
+    <span class="confirm" role="group" aria-label="@Prompt">
+        <span class="prompt">@Prompt</span>
+        <button type="button" class="btn btn-danger btn-solid @SizeClass" disabled="@_busy" @onclick="ConfirmAsync">@ConfirmText</button>
+        <button type="button" class="btn @SizeClass" disabled="@_busy" @onclick="() => _confirming = false">Cancel</button>
+    </span>
+}
+else
+{
+    <button type="button" class="btn btn-danger @SizeClass" @onclick="() => _confirming = true">@Text</button>
+}
+
+@code {
+    private bool _confirming;
+    private bool _busy;
+
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = "";
+
+    [Parameter]
+    public string Prompt { get; set; } = "Are you sure?";
+
+    [Parameter]
+    public string ConfirmText { get; set; } = "Delete";
+
+    [Parameter]
+    public bool Small { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnConfirm { get; set; }
+
+    private string? SizeClass => Small ? "btn-sm" : null;
+
+    private async Task ConfirmAsync()
+    {
+        _busy = true;
+        try
+        {
+            await OnConfirm.InvokeAsync();
+        }
+        finally
+        {
+            _busy = false;
+            _confirming = false;
+        }
+    }
+}

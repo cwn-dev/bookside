@@ -1,0 +1,11 @@
+.confirm {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.prompt {
+    font-weight: 600;
+    color: var(--danger);
+}

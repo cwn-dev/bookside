@@ -1,0 +1,61 @@
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.site-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+    min-height: 56px;
+}
+
+.brand {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+}
+
+nav {
+    display: flex;
+    gap: 0.25rem;
+}
+
+nav ::deep .nav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding: 0 0.75rem;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+nav ::deep .nav-link:hover {
+    color: var(--text);
+    background: var(--surface-muted);
+}
+
+nav ::deep .nav-link.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.site-main {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 1.25rem var(--gutter) 3rem;
+}
+
+@media (min-width: 900px) {
+    .site-main { padding-top: 2rem; }
+}

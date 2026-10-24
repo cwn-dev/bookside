@@ -1,0 +1,145 @@
+.back {
+    margin: 0 0 1rem;
+}
+
+.back a {
+    text-decoration: none;
+}
+
+.book {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+}
+
+.book-cover {
+    width: min(220px, 60vw);
+    justify-self: center;
+}
+
+@media (min-width: 700px) {
+    .book {
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 2rem;
+    }
+
+    .book-cover {
+        width: 100%;
+        justify-self: stretch;
+    }
+}
+
+.book-info h1 {
+    margin-bottom: 0.25rem;
+    overflow-wrap: anywhere;
+}
+
+.subtitle {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    color: var(--text-muted);
+}
+
+.authors {
+    margin: 0 0 1rem;
+    font-size: 1.05rem;
+}
+
+.facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    margin: 0 0 1rem;
+}
+
+.facts dt {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.facts dd {
+    margin: 0;
+    font-weight: 500;
+}
+
+.description {
+    white-space: pre-line;
+    max-width: 65ch;
+    margin: 0 0 1.25rem;
+}
+
+.reading {
+    margin-top: 2.5rem;
+}
+
+.section-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.section-header h2 {
+    margin: 0;
+}
+
+.current {
+    margin-bottom: 1rem;
+    border-color: var(--accent);
+}
+
+.current p {
+    margin: 0 0 0.75rem;
+}
+
+.editor {
+    margin-bottom: 1rem;
+}
+
+.sessions {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--border);
+}
+
+.session {
+    display: grid;
+    gap: 0.4rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+@media (min-width: 700px) {
+    .session {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+    }
+
+    .session .notes {
+        grid-column: 1;
+    }
+
+    .session-actions {
+        grid-row: 1;
+        grid-column: 2;
+    }
+}
+
+.session-main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    align-items: center;
+}
+
+.notes {
+    margin: 0;
+    white-space: pre-line;
+    color: var(--text-muted);
+}

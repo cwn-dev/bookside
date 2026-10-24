@@ -1,0 +1,38 @@
+@inherits LayoutComponentBase
+
+<header class="site-header">
+    <div class="site-header-inner">
+        <a class="brand" href="books">Bookside</a>
+        <nav aria-label="Main">
+            <NavLink class="nav-link" href="books" Match="NavLinkMatch.Prefix">Library</NavLink>
+        </nav>
+    </div>
+</header>
+
+<main class="site-main">
+    <ErrorBoundary @ref="_errorBoundary">
+        <ChildContent>
+            @Body
+        </ChildContent>
+        <ErrorContent>
+            <div class="alert alert-error" role="alert">
+                Something went wrong showing this page.
+                <button type="button" class="btn btn-sm" @onclick="Recover">Try again</button>
+            </div>
+        </ErrorContent>
+    </ErrorBoundary>
+</main>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unexpected error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss" role="button" aria-label="Dismiss">✕</span>
+</div>
+
+@code {
+    private ErrorBoundary? _errorBoundary;
+
+    protected override void OnParametersSet() => _errorBoundary?.Recover();
+
+    private void Recover() => _errorBoundary?.Recover();
+}

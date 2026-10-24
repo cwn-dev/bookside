@@ -1,0 +1,221 @@
+@page "/books"
+@implements IDisposable
+@inject ILibraryService Library
+@inject NavigationManager Navigation
+
+<PageTitle>Library · Bookside</PageTitle>
+
+<div class="page-header">
+    <h1>Library</h1>
+    <a class="btn btn-primary" href="books/new">Add book</a>
+</div>
+
+<div class="toolbar">
+    <div class="search">
+        <label for="library-search" class="visually-hidden">Search</label>
+        <input id="library-search" type="search" placeholder="Search title or author"
+               autocomplete="off" enterkeyhint="search"
+               @bind="_searchText" @bind:event="oninput" @bind:after="SearchChangedAsync" />
+    </div>
+
+    <div class="filters" role="tablist" aria-label="Filter">
+        @foreach (var filter in Enum.GetValues<BookFilter>())
+        {
+            <a role="tab" aria-selected="@(Filter == filter ? "true" : "false")"
+               class="chip @(Filter == filter ? "selected" : null)"
+               href="@UrlFor(filter, Sort, Q)">@FilterLabel(filter)</a>
+        }
+    </div>
+
+    <div class="sort">
+        <label for="library-sort" class="muted">Sort</label>
+        <select id="library-sort" value="@Sort" @onchange="SortChanged">
+            <option value="@BookSort.Title">Title</option>
+            <option value="@BookSort.RecentlyAdded">Recently added</option>
+            <option value="@BookSort.RecentlyFinished">Recently finished</option>
+        </select>
+    </div>
+</div>
+
+@if (_books is null)
+{
+    <p class="loading" role="status">Loading…</p>
+}
+else if (_books.Count == 0)
+{
+    <div class="empty card">
+        @if (_totalCount == 0 && string.IsNullOrWhiteSpace(Q) && Filter == BookFilter.All)
+        {
+            <p>Your library is empty.</p>
+            <a class="btn btn-primary" href="books/new">Add your first book</a>
+        }
+        else
+        {
+            <p>No books match.</p>
+            <a class="btn" href="books">Clear filters</a>
+        }
+    </div>
+}
+else
+{
+    <p class="muted count" role="status">@_totalCount @(_totalCount == 1 ? "book" : "books")</p>
+    <ul class="book-grid">
+        @foreach (var book in _books)
+        {
+            <li @key="book.Id">
+                <a class="book-card" href="books/@book.Id">
+                    <CoverImage BookId="book.Id" Title="@book.Title" CoverSha256="@book.CoverSha256" />
+                    <span class="title">@book.Title</span>
+                    @if (book.Authors.Count > 0)
+                    {
+                        <span class="authors">@string.Join(", ", book.Authors)</span>
+                    }
+                    <span class="badges">
+                        @if (book.IsReading)
+                        {
+                            <span class="badge badge-accent">Reading</span>
+                        }
+                        @if (book.TimesRead > 0)
+                        {
+                            <span class="badge badge-success">Read@(book.TimesRead > 1 ? $" ×{book.TimesRead}" : "")</span>
+                        }
+                    </span>
+                </a>
+            </li>
+        }
+    </ul>
+
+    @if (_books.Count < _totalCount)
+    {
+        <div class="more">
+            <button type="button" class="btn" disabled="@_loading" @onclick="LoadMoreAsync">Show more</button>
+        </div>
+    }
+}
+
+@code {
+    internal const int PageSize = 48; // fills rows of 2, 3, 4 and 6
+    internal static readonly TimeSpan SearchDelay = TimeSpan.FromMilliseconds(300);
+
+    private List<BookSummary>? _books;
+    private int _totalCount;
+    private bool _loading;
+    private string? _searchText;
+    private string? _lastQ;
+    private CancellationTokenSource? _loadCts;
+    private CancellationTokenSource? _searchCts;
+
+    /// <summary>Search text. State lives in the query string so Back from a book returns to the same list.</summary>
+    [SupplyParameterFromQuery]
+    public string? Q { get; set; }
+
+    [SupplyParameterFromQuery(Name = "filter")]
+    public string? FilterValue { get; set; }
+
+    [SupplyParameterFromQuery(Name = "sort")]
+    public string? SortValue { get; set; }
+
+    private BookFilter Filter => Enum.TryParse<BookFilter>(FilterValue, ignoreCase: true, out var f) ? f : BookFilter.All;
+
+    private BookSort Sort => Enum.TryParse<BookSort>(SortValue, ignoreCase: true, out var s) ? s : BookSort.Title;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Only overwrite the box when the query changed from outside (Back, a link), not from our own typing.
+        if (Q != _lastQ)
+        {
+            _searchText = Q;
+            _lastQ = Q;
+        }
+
+        await LoadAsync(append: false);
+    }
+
+    private async Task LoadMoreAsync() => await LoadAsync(append: true);
+
+    private async Task LoadAsync(bool append)
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        var cts = _loadCts = new CancellationTokenSource();
+
+        _loading = true;
+        try
+        {
+            var page = await Library.ListBooksAsync(
+                new BookQuery
+                {
+                    Search = Q,
+                    Filter = Filter,
+                    Sort = Sort,
+                    Skip = append ? _books?.Count ?? 0 : 0,
+                    Take = PageSize,
+                },
+                cts.Token);
+
+            _books = append && _books is not null ? [.. _books, .. page.Items] : [.. page.Items];
+            _totalCount = page.TotalCount;
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+            // Superseded by a newer load.
+        }
+        finally
+        {
+            if (ReferenceEquals(cts, _loadCts))
+            {
+                _loading = false;
+            }
+        }
+    }
+
+    private async Task SearchChangedAsync()
+    {
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        var cts = _searchCts = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(SearchDelay, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return; // Still typing.
+        }
+
+        var q = string.IsNullOrWhiteSpace(_searchText) ? null : _searchText.Trim();
+        _lastQ = q;
+        Navigation.NavigateTo(UrlFor(Filter, Sort, q), replace: true);
+    }
+
+    private void SortChanged(ChangeEventArgs e) =>
+        Navigation.NavigateTo(UrlFor(Filter, Enum.Parse<BookSort>((string)e.Value!), Q), replace: true);
+
+    /// <summary>The list URL for these settings; defaults are left out to keep URLs short.</summary>
+    private string UrlFor(BookFilter filter, BookSort sort, string? q) =>
+        Navigation.GetUriWithQueryParameters(
+            Navigation.ToAbsoluteUri("books").ToString(),
+            new Dictionary<string, object?>
+            {
+                ["q"] = string.IsNullOrWhiteSpace(q) ? null : q,
+                ["filter"] = filter == BookFilter.All ? null : filter.ToString().ToLowerInvariant(),
+                ["sort"] = sort == BookSort.Title ? null : sort.ToString().ToLowerInvariant(),
+            });
+
+    private static string FilterLabel(BookFilter filter) => filter switch
+    {
+        BookFilter.All => "All",
+        BookFilter.Reading => "Reading",
+        BookFilter.Finished => "Read",
+        BookFilter.Unread => "Unread",
+        _ => filter.ToString(),
+    };
+
+    public void Dispose()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
+}

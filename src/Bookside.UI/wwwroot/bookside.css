@@ -1,0 +1,232 @@
+/* Bookside design tokens and base styles. Component-specific styles live in scoped .razor.css files.
+   Layout must work equally well on narrow (phone) and wide (desktop) screens. */
+
+:root {
+    color-scheme: light dark;
+
+    --bg: #faf8f4;
+    --surface: #ffffff;
+    --surface-muted: #f2eee7;
+    --border: #e2dcd1;
+    --text: #23201c;
+    --text-muted: #6b645a;
+    --accent: #8a4b2a;
+    --accent-hover: #6f3a1f;
+    --accent-contrast: #ffffff;
+    --accent-soft: #f4e6dc;
+    --danger: #b3261e;
+    --danger-soft: #fbe9e7;
+    --success: #2e6b3a;
+    --success-soft: #e3f1e5;
+    --focus: #c4703f;
+
+    --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+    --radius: 8px;
+    --radius-sm: 5px;
+    --shadow: 0 1px 2px rgb(0 0 0 / 6%), 0 2px 8px rgb(0 0 0 / 5%);
+    --gutter: 16px;
+    --content-max: 1100px;
+    --tap: 44px; /* minimum touch target */
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #181614;
+        --surface: #221f1c;
+        --surface-muted: #2b2824;
+        --border: #3a3631;
+        --text: #ece7df;
+        --text-muted: #a69e93;
+        --accent: #e0956a;
+        --accent-hover: #eeae88;
+        --accent-contrast: #1b1410;
+        --accent-soft: #3a2a20;
+        --danger: #f2a49c;
+        --danger-soft: #3d2220;
+        --success: #8fd19c;
+        --success-soft: #1f3324;
+        --focus: #e0956a;
+        --shadow: 0 1px 2px rgb(0 0 0 / 40%);
+    }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0 0 0.5em;
+}
+
+h1 { font-size: clamp(1.6rem, 1.2rem + 1.5vw, 2.2rem); }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.1rem; }
+
+a { color: var(--accent); }
+a:hover { color: var(--accent-hover); }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+img { max-width: 100%; }
+
+.muted { color: var(--text-muted); }
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    min-height: var(--tap);
+    padding: 0 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn:hover { background: var(--surface-muted); color: var(--text); }
+.btn:disabled { opacity: 0.55; cursor: default; }
+
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--accent-contrast); }
+
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { background: var(--danger-soft); color: var(--danger); }
+.btn-danger.btn-solid { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+
+.btn-ghost { border-color: transparent; background: transparent; }
+
+.btn-sm { min-height: 34px; padding: 0 0.7rem; font-size: 0.9rem; }
+
+@media (pointer: coarse) {
+    .btn-sm { min-height: var(--tap); }
+}
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+
+/* ---------- Forms ---------- */
+
+.form-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+    .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .form-grid .span-all { grid-column: 1 / -1; }
+}
+
+.field { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+
+.field > label, .field-label { font-weight: 600; font-size: 0.92rem; }
+
+.field .hint { font-size: 0.85rem; color: var(--text-muted); }
+
+input:not([type]), input[type="text"], input[type="search"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: max(1rem, 16px); /* 16px+ stops iOS zooming into fields */
+}
+
+textarea { min-height: 7rem; resize: vertical; }
+
+.invalid, input.invalid, select.invalid, textarea.invalid { border-color: var(--danger); }
+
+.validation-message { color: var(--danger); font-size: 0.88rem; }
+
+.validation-errors { margin: 0 0 1rem; padding: 0.75rem 1rem 0.75rem 2rem; border-radius: var(--radius-sm); background: var(--danger-soft); color: var(--danger); }
+
+/* ---------- Surfaces ---------- */
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+}
+
+@media (min-width: 640px) {
+    .card { padding: 1.5rem; }
+}
+
+.alert { padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin: 0 0 1rem; }
+.alert-error { background: var(--danger-soft); color: var(--danger); }
+.alert-success { background: var(--success-soft); color: var(--success); }
+
+.badge {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--surface-muted);
+    color: var(--text-muted);
+}
+
+.badge-accent { background: var(--accent-soft); color: var(--accent); }
+.badge-success { background: var(--success-soft); color: var(--success); }
+
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.page-header h1 { margin: 0; }
+
+.loading { color: var(--text-muted); padding: 2rem 0; }
+
+/* Blazor's unhandled-error bar. */
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 1000;
+    padding: 0.75rem var(--gutter);
+    background: var(--danger-soft);
+    color: var(--danger);
+    box-shadow: 0 -1px 4px rgb(0 0 0 / 20%);
+}
+
+#blazor-error-ui .reload { margin-left: 0.5rem; }
+#blazor-error-ui .dismiss { float: right; cursor: pointer; }

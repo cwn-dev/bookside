@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Blazor Web App host (Interactive Server). Pages and layout come from Bookside.UI. -->
+  <PropertyGroup>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Component code must resume on the renderer's sync context, so ConfigureAwait(false) is wrong here. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Bookside.UI\Bookside.UI.csproj" />
+    <ProjectReference Include="..\Bookside.Data.Sqlite\Bookside.Data.Sqlite.csproj" />
+    <ProjectReference Include="..\Bookside.Integrations\Bookside.Integrations.csproj" />
+  </ItemGroup>
+</Project>

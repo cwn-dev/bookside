@@ -1,0 +1,279 @@
+@page "/books/{Id:guid}"
+@inject ILibraryService Library
+@inject NavigationManager Navigation
+@inject TimeProvider Clock
+
+<PageTitle>@(_book?.Title ?? "Book") · Bookside</PageTitle>
+
+@if (_notFound)
+{
+    <h1>Book not found</h1>
+    <p>It may have been deleted.</p>
+    <a class="btn" href="books">Back to the library</a>
+}
+else if (_book is null)
+{
+    <p class="loading" role="status">Loading…</p>
+}
+else
+{
+    <p class="back"><a href="books">← Library</a></p>
+
+    <article class="book">
+        <div class="book-cover">
+            <CoverImage BookId="_book.Id" Title="@_book.Title" CoverSha256="@_book.CoverSha256" Large />
+            <CoverEditor BookId="_book.Id" HasCover="_book.CoverSha256 is not null" OnChanged="ReloadAsync" />
+        </div>
+
+        <div class="book-info">
+            <h1>@_book.Title</h1>
+            @if (_book.Subtitle is not null)
+            {
+                <p class="subtitle">@_book.Subtitle</p>
+            }
+            @if (_book.Authors.Count > 0)
+            {
+                <p class="authors">by @string.Join(", ", _book.Authors)</p>
+            }
+
+            <dl class="facts">
+                @if (_book.PageCount is int pages)
+                {
+                    <div><dt>Pages</dt><dd>@pages</dd></div>
+                }
+                @if (_book.PublishedYear is int year)
+                {
+                    <div><dt>Published</dt><dd>@year</dd></div>
+                }
+                @if (_book.Publisher is not null)
+                {
+                    <div><dt>Publisher</dt><dd>@_book.Publisher</dd></div>
+                }
+                @if (_book.Isbn13 is not null)
+                {
+                    <div><dt>ISBN-13</dt><dd>@_book.Isbn13</dd></div>
+                }
+                @if (_book.Isbn10 is not null)
+                {
+                    <div><dt>ISBN-10</dt><dd>@_book.Isbn10</dd></div>
+                }
+                <div><dt>Times read</dt><dd>@_book.TimesRead</dd></div>
+                @if (_book.VocabularyWordCount > 0)
+                {
+                    <div><dt>Words saved</dt><dd>@_book.VocabularyWordCount</dd></div>
+                }
+            </dl>
+
+            @if (_book.Description is not null)
+            {
+                <p class="description">@_book.Description</p>
+            }
+
+            <div class="actions">
+                <a class="btn" href="books/@_book.Id/edit">Edit</a>
+                <ConfirmButton Text="Delete book" Prompt="Delete this book and its reading history?" OnConfirm="DeleteAsync" />
+            </div>
+            <ErrorAlert Messages="_errors" />
+        </div>
+    </article>
+
+    <section class="reading" aria-labelledby="reading-heading">
+        <div class="section-header">
+            <h2 id="reading-heading">Reading history</h2>
+            @if (_editing is null)
+            {
+                <div class="actions">
+                    @if (Current is null)
+                    {
+                        <button type="button" class="btn btn-primary" disabled="@_busy" @onclick="StartReadingAsync">Start reading</button>
+                    }
+                    <button type="button" class="btn" @onclick="AddPastRead">Log a past read</button>
+                </div>
+            }
+        </div>
+
+        @if (Current is { } current && _editing is null)
+        {
+            <div class="current card">
+                <p>
+                    <strong>Reading now</strong>
+                    @if (current.StartedOn is DateOnly started)
+                    {
+                        <span class="muted"> · since @Format(started)</span>
+                    }
+                </p>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" @onclick="() => Finish(current, ReadingStatus.Finished)">Finished</button>
+                    <button type="button" class="btn" @onclick="() => Finish(current, ReadingStatus.Abandoned)">Stopped reading</button>
+                </div>
+            </div>
+        }
+
+        @if (_editing is not null)
+        {
+            <div class="card editor">
+                <h3>@_editingTitle</h3>
+                <ReadingSessionForm BookId="_book.Id" SessionId="_editingId" Model="_editing" SubmitText="Save"
+                                    OnSaved="SessionSavedAsync" OnCancel="CancelEdit" />
+            </div>
+        }
+
+        @if (_book.ReadingSessions.Count == 0)
+        {
+            <p class="muted">No reading sessions yet.</p>
+        }
+        else
+        {
+            <ol class="sessions">
+                @foreach (var session in _book.ReadingSessions)
+                {
+                    <li @key="session.Id" class="session">
+                        <div class="session-main">
+                            <span class="badge @StatusBadge(session.Status)">@StatusLabel(session.Status)</span>
+                            <span class="dates">@DateRange(session)</span>
+                            <RatingStars Rating="session.Rating" />
+                        </div>
+                        @if (session.Notes is not null)
+                        {
+                            <p class="notes">@session.Notes</p>
+                        }
+                        <div class="actions session-actions">
+                            <button type="button" class="btn btn-sm" @onclick="() => Edit(session)">Edit</button>
+                            <ConfirmButton Text="Delete" Prompt="Delete this session?" Small OnConfirm="() => DeleteSessionAsync(session.Id)" />
+                        </div>
+                    </li>
+                }
+            </ol>
+        }
+    </section>
+}
+
+@code {
+    private BookDetails? _book;
+    private bool _notFound;
+    private bool _busy;
+    private IReadOnlyList<string> _errors = [];
+
+    private ReadingSessionFormModel? _editing;
+    private Guid? _editingId;
+    private string _editingTitle = "";
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ReadingSessionDto? Current => _book?.ReadingSessions.FirstOrDefault(s => s.Status == ReadingStatus.Reading);
+
+    // "Today" in the server's time zone (set TZ in the container).
+    private DateOnly Today => DateOnly.FromDateTime(Clock.GetLocalNow().DateTime);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        CancelEdit();
+        _errors = [];
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        var result = await Library.GetBookAsync(Id);
+        _notFound = !result.IsSuccess && result.Error.Type == ErrorType.NotFound;
+        _book = result.IsSuccess ? result.Value : null;
+        if (!result.IsSuccess && !_notFound)
+        {
+            _errors = [result.Error.Message];
+        }
+    }
+
+    private async Task StartReadingAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Library.AddReadingSessionAsync(Id, new ReadingSessionInput { Status = ReadingStatus.Reading, StartedOn = Today });
+            _errors = result.IsSuccess ? [] : [result.Error.Message];
+            await ReloadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Finish(ReadingSessionDto session, ReadingStatus status)
+    {
+        var model = ReadingSessionFormModel.From(session);
+        model.Status = status;
+        model.FinishedOn = Today;
+        OpenEditor(session.Id, model, status == ReadingStatus.Finished ? "Finished reading" : "Stopped reading");
+    }
+
+    private void AddPastRead() =>
+        OpenEditor(null, new ReadingSessionFormModel { Status = ReadingStatus.Finished }, "Log a past read");
+
+    private void Edit(ReadingSessionDto session) =>
+        OpenEditor(session.Id, ReadingSessionFormModel.From(session), "Edit reading session");
+
+    private void OpenEditor(Guid? sessionId, ReadingSessionFormModel model, string title)
+    {
+        _editingId = sessionId;
+        _editing = model;
+        _editingTitle = title;
+    }
+
+    private void CancelEdit()
+    {
+        _editing = null;
+        _editingId = null;
+    }
+
+    private async Task SessionSavedAsync()
+    {
+        CancelEdit();
+        await ReloadAsync();
+    }
+
+    private async Task DeleteSessionAsync(Guid sessionId)
+    {
+        var result = await Library.DeleteReadingSessionAsync(sessionId);
+        _errors = result.IsSuccess ? [] : [result.Error.Message];
+        await ReloadAsync();
+    }
+
+    private async Task DeleteAsync()
+    {
+        var result = await Library.DeleteBookAsync(Id);
+        if (result.IsSuccess || result.Error.Type == ErrorType.NotFound)
+        {
+            Navigation.NavigateTo("books");
+        }
+        else
+        {
+            _errors = [result.Error.Message];
+        }
+    }
+
+    private static string Format(DateOnly date) => date.ToString("d MMM yyyy", CultureInfo.CurrentCulture);
+
+    private static string DateRange(ReadingSessionDto s) => (s.StartedOn, s.FinishedOn) switch
+    {
+        ({ } start, { } end) => $"{Format(start)} – {Format(end)}",
+        ({ } start, null) => s.Status == ReadingStatus.Reading ? $"Since {Format(start)}" : $"Started {Format(start)}",
+        (null, { } end) => Format(end),
+        _ => "No dates",
+    };
+
+    private static string StatusLabel(ReadingStatus status) => status switch
+    {
+        ReadingStatus.Reading => "Reading",
+        ReadingStatus.Finished => "Finished",
+        ReadingStatus.Abandoned => "Stopped",
+        _ => status.ToString(),
+    };
+
+    private static string? StatusBadge(ReadingStatus status) => status switch
+    {
+        ReadingStatus.Reading => "badge-accent",
+        ReadingStatus.Finished => "badge-success",
+        _ => null,
+    };
+}

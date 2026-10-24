@@ -1,0 +1,30 @@
+@* 1–5 star picker bound to an int?. Clicking the current rating clears it. *@
+@inherits InputBase<int?>
+
+<span class="rating-input @CssClass" role="radiogroup" aria-label="Rating">
+    @for (var i = ReadingSession.MinRating; i <= ReadingSession.MaxRating; i++)
+    {
+        var value = i;
+        var selected = CurrentValue >= value;
+        <button type="button"
+                class="star @(selected ? "on" : null)"
+                role="radio"
+                aria-checked="@(CurrentValue == value ? "true" : "false")"
+                aria-label="@value star@(value == 1 ? "" : "s")"
+                @onclick="() => CurrentValue = CurrentValue == value ? null : value">★</button>
+    }
+    @if (CurrentValue is not null)
+    {
+        <button type="button" class="btn btn-ghost btn-sm clear" @onclick="() => CurrentValue = null">Clear</button>
+    }
+</span>
+
+@code {
+    protected override bool TryParseValueFromString(string? value, out int? result, out string validationErrorMessage)
+    {
+        // Not used: the value is set directly by the buttons.
+        result = int.TryParse(value, CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
+        validationErrorMessage = "";
+        return true;
+    }
+}

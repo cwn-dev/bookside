@@ -1,0 +1,8 @@
+<Router AppAssembly="typeof(Bookside.UI.CoverUrls).Assembly"
+        AdditionalAssemblies="[typeof(Routes).Assembly]"
+        NotFoundPage="typeof(Bookside.UI.Pages.NotFound)">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Bookside.UI.Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>

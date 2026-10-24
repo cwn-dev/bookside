@@ -1,0 +1,22 @@
+@page "/Error"
+@attribute [ExcludeFromInteractiveRouting]
+@using System.Diagnostics
+
+<PageTitle>Error · Bookside</PageTitle>
+
+<h1>Something went wrong</h1>
+<p>An error occurred while processing your request.</p>
+@if (RequestId is not null)
+{
+    <p class="muted">Request ID: <code>@RequestId</code></p>
+}
+<p><a class="btn" href="books">Back to the library</a></p>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+
+    protected override void OnInitialized() => RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

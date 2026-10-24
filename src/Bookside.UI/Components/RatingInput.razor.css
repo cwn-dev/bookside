@@ -1,0 +1,29 @@
+.rating-input {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.star {
+    min-width: var(--tap);
+    min-height: var(--tap);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--border);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.star.on {
+    color: var(--accent);
+}
+
+.star:hover {
+    color: var(--accent-hover);
+}
+
+.clear {
+    margin-left: 0.25rem;
+}

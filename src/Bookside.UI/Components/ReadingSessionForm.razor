@@ -1,0 +1,106 @@
+@* Add or edit one reading session. Validation comes from ILibraryService. *@
+@inject ILibraryService Library
+
+<EditForm Model="Model" OnValidSubmit="SaveAsync" class="session-form">
+    <ServiceErrorValidator @ref="_validator" />
+    <ErrorAlert Messages="_errors" />
+
+    <div class="form-grid">
+        <div class="field">
+            <label for="@Id("status")">Status</label>
+            <InputSelect id="@Id("status")" @bind-Value="Model.Status">
+                @foreach (var status in Enum.GetValues<ReadingStatus>())
+                {
+                    <option value="@status">@status</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => Model.Status" />
+        </div>
+
+        <div class="field">
+            <span class="field-label">Rating</span>
+            <RatingInput @bind-Value="Model.Rating" />
+            <ValidationMessage For="() => Model.Rating" />
+        </div>
+
+        <div class="field">
+            <label for="@Id("started")">Started</label>
+            <InputDate id="@Id("started")" @bind-Value="Model.StartedOn" />
+            <ValidationMessage For="() => Model.StartedOn" />
+        </div>
+
+        @if (Model.Status != ReadingStatus.Reading)
+        {
+            <div class="field">
+                <label for="@Id("finished")">@(Model.Status == ReadingStatus.Abandoned ? "Stopped" : "Finished")</label>
+                <InputDate id="@Id("finished")" @bind-Value="Model.FinishedOn" />
+                <ValidationMessage For="() => Model.FinishedOn" />
+            </div>
+        }
+
+        <div class="field span-all">
+            <label for="@Id("notes")">Notes</label>
+            <InputTextArea id="@Id("notes")" @bind-Value="Model.Notes" rows="3" maxlength="@ReadingSession.NotesMaxLength" />
+            <ValidationMessage For="() => Model.Notes" />
+        </div>
+    </div>
+
+    <div class="actions form-actions">
+        <button type="submit" class="btn btn-primary" disabled="@_saving">@SubmitText</button>
+        <button type="button" class="btn" disabled="@_saving" @onclick="OnCancel">Cancel</button>
+    </div>
+</EditForm>
+
+@code {
+    private readonly string _idPrefix = $"rs-{Guid.NewGuid():N}"[..11];
+    private ServiceErrorValidator? _validator;
+    private IReadOnlyList<string> _errors = [];
+    private bool _saving;
+
+    [Parameter, EditorRequired]
+    public Guid BookId { get; set; }
+
+    /// <summary>The session being edited; null to add a new one.</summary>
+    [Parameter]
+    public Guid? SessionId { get; set; }
+
+    [Parameter, EditorRequired]
+    public ReadingSessionFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public string SubmitText { get; set; } = "Save";
+
+    [Parameter]
+    public EventCallback<ReadingSessionDto> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private string Id(string name) => $"{_idPrefix}-{name}";
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _errors = [];
+        try
+        {
+            var input = Model.ToInput();
+            var result = SessionId is Guid id
+                ? await Library.UpdateReadingSessionAsync(id, input)
+                : await Library.AddReadingSessionAsync(BookId, input);
+
+            if (result.IsSuccess)
+            {
+                await OnSaved.InvokeAsync(result.Value);
+            }
+            else
+            {
+                _errors = _validator!.Show(result.Error);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

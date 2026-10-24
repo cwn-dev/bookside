@@ -1,0 +1,93 @@
+@* Upload, replace or remove a book's cover. Raises OnChanged after a successful change. *@
+@inject ILibraryService Library
+
+<div class="cover-editor">
+    <label class="btn btn-sm upload @(_busy ? "disabled" : null)">
+        @(HasCover ? "Replace cover" : "Add cover")
+        <InputFile OnChange="UploadAsync" accept="@Accept" disabled="@_busy" class="visually-hidden" />
+    </label>
+    @if (HasCover)
+    {
+        <ConfirmButton Text="Remove" Prompt="Remove cover?" ConfirmText="Remove" Small OnConfirm="RemoveAsync" />
+    }
+    @if (_busy)
+    {
+        <span class="muted" role="status">Saving…</span>
+    }
+</div>
+<ErrorAlert Messages="_errors" />
+
+@code {
+    private static readonly string Accept = string.Join(',', BookCover.AllowedContentTypes);
+    private IReadOnlyList<string> _errors = [];
+    private bool _busy;
+
+    [Parameter, EditorRequired]
+    public Guid BookId { get; set; }
+
+    [Parameter]
+    public bool HasCover { get; set; }
+
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
+
+    private async Task UploadAsync(InputFileChangeEventArgs e)
+    {
+        _errors = [];
+        var file = e.File;
+        if (file.Size > BookCover.MaxSizeBytes)
+        {
+            _errors = [$"That image is {file.Size / 1024.0 / 1024.0:0.#} MB; the limit is {BookCover.MaxSizeBytes / 1024 / 1024} MB."];
+            return;
+        }
+
+        if (!BookCover.AllowedContentTypes.Contains(file.ContentType))
+        {
+            _errors = ["Choose a JPEG, PNG, WebP or GIF image."];
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            using var buffer = new MemoryStream((int)file.Size);
+            await using (var stream = file.OpenReadStream(BookCover.MaxSizeBytes))
+            {
+                await stream.CopyToAsync(buffer);
+            }
+
+            var result = await Library.SetCoverAsync(BookId, new CoverInput
+            {
+                Content = buffer.GetBuffer().AsMemory(0, (int)buffer.Length),
+                ContentType = file.ContentType,
+            });
+
+            await HandleResultAsync(result);
+        }
+        catch (IOException ex)
+        {
+            // The browser stream failed (e.g. connection dropped mid-upload).
+            _errors = [$"Upload failed: {ex.Message}"];
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RemoveAsync() => await HandleResultAsync(await Library.RemoveCoverAsync(BookId));
+
+    private async Task HandleResultAsync(Result result)
+    {
+        if (result.IsSuccess)
+        {
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            _errors = result.Error.FieldErrors.Count > 0
+                ? result.Error.FieldErrors.Select(f => f.Message).ToList()
+                : [result.Error.Message];
+        }
+    }
+}

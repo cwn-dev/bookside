@@ -1,8 +1,9 @@
-# Bookside: project state (end of session 3, 2026-10-24)
+# Bookside: project state (end of session 4, 2026-10-24)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
   `latest-recommended` analyzers. EF Core 10.0.13, xUnit v3 4.0.2 on Microsoft.Testing.Platform. Local tool: dotnet-ef 10.0.13.
+  ASP.NET Core packages 10.0.13 (`Microsoft.AspNetCore.Components.Web`, `Mvc.Testing`), bUnit 2.12.5.
 - `Bookside.Core`: `Book`, `Author`, `BookAuthor` (ordered join), `BookCover` (BLOB, 1:1, own table, 2 MB cap, allowed
   content types), `ReadingSession` (DateOnly start/finish, Status Reading/Finished/Abandoned, Rating 1–5, Notes),
   `VocabularyWord` (optional BookId, Context, PageNumber, DictionaryEntryId), `DictionaryEntry` (definition cache,
@@ -23,7 +24,25 @@
 - `Bookside.Integrations` (session 3): `AddDictionaryApiClient()` registers `DictionaryApiClient` (internal) as
   `IDictionaryLookupService`: typed HttpClient + `Microsoft.Extensions.Http.Resilience` 10.11.0 standard handler
   (3 s/attempt, 2 retries, 300 ms base delay, 8 s total), 1 MB response cap. Returns the `IHttpClientBuilder`.
-  Not wired into a host yet (no host exists).
+  Wired into `Bookside.Web`.
+- `Bookside.UI` (session 4, RCL; references only Core + `Microsoft.AspNetCore.Components.Web`, so MAUI can reuse it):
+  `Layout/MainLayout` (sticky header nav, `ErrorBoundary`), pages `LibraryPage` (`/books`: search, filter chips,
+  sort, cover grid, "Show more" paging of 48), `BookDetailsPage` (`/books/{id}`: details, cover editor, reading
+  history with start / finish / stop / log past read / edit / delete), `BookEditPage` (`/books/new`,
+  `/books/{id}/edit`), `Home` (`/` → `/books`), `NotFound`. Components: `CoverImage` (image or coloured placeholder),
+  `CoverEditor` (InputFile upload, client-side size/type check), `ReadingSessionForm`, `RatingInput`/`RatingStars`,
+  `ConfirmButton` (two-step delete), `ErrorAlert`, `ServiceErrorValidator`. `Forms/` holds mutable form models whose
+  property names match the service inputs. `CoverUrls` holds the cover route (used by components and host).
+  Styling: `wwwroot/bookside.css` (tokens, light/dark via `prefers-color-scheme`, buttons/forms/cards) + scoped `.razor.css`.
+- `Bookside.Web` (session 4): host. `Program.cs` reads `Bookside:DatabasePath` (relative paths resolve against the
+  content root; `appsettings.json` = `/data/bookside.db`, Development = `App_Data/bookside.db`, git-ignored), wires
+  SQLite + services + dictionary client, runs `InitializeBooksideDatabaseAsync()` before serving. `App.razor` sets
+  Interactive Server without prerendering globally (static only for `[ExcludeFromInteractiveRouting]` pages, i.e. `Error`).
+  `Routes.razor` routes the UI assembly (+ host). `CoverEndpoint`: `GET /covers/{bookId}?v={sha256}`.
+  `ReconnectModal` from the template, restyled. `.claude/launch.json` has a `web` config (port 5233) for the preview pane.
+- `Bookside.UI.Tests` (session 4): 28 tests. bUnit component tests (`ComponentTestBase`: `BunitContext` + production
+  registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
+  sets the DB path with `UseSetting`).
 - `Bookside.Integrations.Tests`: 14 tests through the real registration with a stubbed primary handler.
 - `Bookside.Data.Tests`: 54 passing tests. Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
   SQLite + production registrations + `FakeDictionaryLookupService`), `Isbn` and `Result` tests.
@@ -37,7 +56,8 @@
   filesystem, not NFS/SMB). One instance only.
 - EF Core used directly (no repository layer); the provider can be swapped at the EF level. Migrations are provider-specific
   and live in `Bookside.Data.Sqlite`; another provider would get a sibling project. Applied at startup.
-- Blazor Server components should use `IDbContextFactory`, not a context injected for the whole circuit.
+- Blazor components inject the service interfaces (`ILibraryService` etc.), never a DbContext; each service method
+  makes its own context from `IDbContextFactory`, so circuit-scoped services are safe.
 - Cover images are stored in SQLite. Vocabulary words are unique per (language, normalized term), each linked to at most one book.
 - Book metadata API (Open Library preferred; Google Books needs a key, returned 429 without one) is on the roadmap but not implemented.
 - Dictionary: dictionaryapi.dev (free, no key, Wiktionary-derived, no SLA). Cache NotFound; never cache transient failures.
@@ -70,14 +90,32 @@
     returned Cloudflare 530 (error 1033). Handled as transient, but expect "dictionary unavailable" for new words
     during such outages. If it recurs, consider a second provider (e.g. Wiktionary REST) behind the same interface.
 
+- **UI (session 4):**
+  - Plain CSS design system, no component library (user's choice): no dependency, full control of both widths, MAUI-ready.
+  - Prerendering off (user's choice): data loads once, nothing clickable before it works, same behaviour as MAUI Hybrid.
+    Cost: blank page until the circuit connects (fast on a LAN).
+  - Library list state (search, filter, sort) lives in the query string (`?q=&filter=&sort=`), so Back from a book
+    restores the list. Search is debounced 300 ms and uses `replace: true` navigation.
+  - Forms validate only through the services: `ServiceErrorValidator` maps `FieldErrors` onto the `EditForm` by
+    property name (no DataAnnotations duplication). Unmatched field errors and non-validation errors show in `ErrorAlert`.
+  - Cover URLs carry the hash (`?v=`): matching `v` → `private, max-age=1y, immutable`; missing/stale `v` →
+    `private, no-cache`. ETag = hash, so `Results.File` answers `If-None-Match` with 304. No hash-only query: with
+    immutable URLs, revalidation is rare, so loading the ≤2 MB BLOB for a 304 isn't worth an interface change.
+  - "Today" (start/finish dates) uses `TimeProvider.GetLocalNow()`, i.e. the server's time zone: set `TZ` in the container.
+  - UI covers the library only this session (user's choice); vocabulary pages next.
+
 ## Next
-1. `Bookside.UI` RCL + `Bookside.Web` host (Interactive Server, responsive layout that works equally well on desktop and mobile), cover-image endpoint with ETag
-   (`BookSummary/BookDetails.CoverSha256`; consider a hash-only query so a 304 doesn't load the BLOB).
-   Host wiring: `AddBooksideSqlite(path)` + `AddBooksideServices()` + `AddDictionaryApiClient()`, then `InitializeBooksideDatabaseAsync()`.
-2. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there.
+1. Vocabulary UI: word list (search, per-book filter), add word (from a book page too, with context/page),
+   word details with definition (meanings, phonetic, audio), "retry definition" / refresh, edit/delete. Add a
+   Vocabulary nav link; link "Words saved" on the book page to the filtered list.
+2. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
+   Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
 3. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.
 - Auth: none yet. Needs a decision before exposing the container beyond the LAN.
+- Local runtime is ASP.NET Core 10.0.7 while packages are 10.0.13; works, but consider updating the SDK/runtime.
+- Typed `HttpClient` captured by circuit-scoped services lives as long as the circuit (no handler rotation). Fine for
+  one user; revisit if long-lived circuits ever see DNS issues.
 - No optimistic concurrency (last write wins); fine for a single user, revisit if the API/app allow concurrent edits.

@@ -1,0 +1,23 @@
+@if (Messages.Count > 0)
+{
+    <div class="alert alert-error" role="alert">
+        @if (Messages.Count == 1)
+        {
+            @Messages[0]
+        }
+        else
+        {
+            <ul>
+                @foreach (var message in Messages)
+                {
+                    <li>@message</li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyList<string> Messages { get; set; } = [];
+}

@@ -1,0 +1,9 @@
+@if (Rating is int rating)
+{
+    <span class="stars" title="@rating out of @ReadingSession.MaxRating" aria-label="Rated @rating out of @ReadingSession.MaxRating">@(new string('★', rating))<span class="off">@(new string('★', ReadingSession.MaxRating - rating))</span></span>
+}
+
+@code {
+    [Parameter]
+    public int? Rating { get; set; }
+}

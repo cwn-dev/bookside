@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 *.db
 *.db-wal
 *.db-shm
+
+# Local development database (Bookside.Web)
+src/Bookside.Web/App_Data/

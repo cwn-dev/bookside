@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <!-- Shared Blazor components (pages, layout). Depends only on Core service interfaces, so the same components can
+       run in Bookside.Web (Interactive Server) and later in a MAUI Blazor Hybrid app backed by Bookside.Api. -->
+  <PropertyGroup>
+    <!-- Component code must resume on the renderer's sync context, so ConfigureAwait(false) is wrong here. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Bookside.Core\Bookside.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bookside.UI.Tests" />
+  </ItemGroup>
+</Project>

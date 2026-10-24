@@ -1,0 +1,173 @@
+@page "/books/new"
+@page "/books/{Id:guid}/edit"
+@inject ILibraryService Library
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsNew ? "Add book" : "Edit book") · Bookside</PageTitle>
+
+<p class="back"><a href="@CancelUrl">← @(IsNew ? "Library" : "Back to book")</a></p>
+<h1>@(IsNew ? "Add a book" : "Edit book")</h1>
+
+@if (_notFound)
+{
+    <p>This book no longer exists.</p>
+    <a class="btn" href="books">Back to the library</a>
+}
+else if (_model is null)
+{
+    <p class="loading" role="status">Loading…</p>
+}
+else
+{
+    <div class="book-form">
+        <EditForm Model="_model" OnValidSubmit="SaveAsync" class="card">
+            <ServiceErrorValidator @ref="_validator" />
+            <ErrorAlert Messages="_errors" />
+
+            <div class="form-grid">
+                <div class="field span-all">
+                    <label for="title">Title</label>
+                    <InputText id="title" @bind-Value="_model.Title" maxlength="@Book.TitleMaxLength" autocomplete="off" />
+                    <ValidationMessage For="() => _model.Title" />
+                </div>
+
+                <div class="field span-all">
+                    <label for="subtitle">Subtitle</label>
+                    <InputText id="subtitle" @bind-Value="_model.Subtitle" maxlength="@Book.SubtitleMaxLength" autocomplete="off" />
+                    <ValidationMessage For="() => _model.Subtitle" />
+                </div>
+
+                <fieldset class="field span-all authors">
+                    <legend class="field-label">Authors</legend>
+                    @for (var i = 0; i < _model.Authors.Count; i++)
+                    {
+                        var author = _model.Authors[i];
+                        var index = i;
+                        <div class="author-row" @key="author">
+                            <label for="author-@index" class="visually-hidden">Author @(index + 1)</label>
+                            <InputText id="@($"author-{index}")" @bind-Value="author.Name" maxlength="@Author.NameMaxLength" autocomplete="off" />
+                            @if (_model.Authors.Count > 1)
+                            {
+                                <button type="button" class="btn btn-ghost" aria-label="Remove author @(index + 1)" @onclick="() => _model.Authors.Remove(author)">✕</button>
+                            }
+                        </div>
+                    }
+                    <div>
+                        <button type="button" class="btn btn-sm" @onclick="() => _model.Authors.Add(new AuthorEntry())">Add another author</button>
+                    </div>
+                    <ValidationMessage For="() => _model.Authors" />
+                </fieldset>
+
+                <div class="field">
+                    <label for="pages">Pages</label>
+                    <InputNumber id="pages" @bind-Value="_model.PageCount" min="1" inputmode="numeric" />
+                    <ValidationMessage For="() => _model.PageCount" />
+                </div>
+
+                <div class="field">
+                    <label for="year">Year published</label>
+                    <InputNumber id="year" @bind-Value="_model.PublishedYear" inputmode="numeric" />
+                    <ValidationMessage For="() => _model.PublishedYear" />
+                </div>
+
+                <div class="field span-all">
+                    <label for="publisher">Publisher</label>
+                    <InputText id="publisher" @bind-Value="_model.Publisher" maxlength="@Book.PublisherMaxLength" />
+                    <ValidationMessage For="() => _model.Publisher" />
+                </div>
+
+                <div class="field">
+                    <label for="isbn13">ISBN-13</label>
+                    <InputText id="isbn13" @bind-Value="_model.Isbn13" inputmode="numeric" autocomplete="off" />
+                    <ValidationMessage For="() => _model.Isbn13" />
+                </div>
+
+                <div class="field">
+                    <label for="isbn10">ISBN-10</label>
+                    <InputText id="isbn10" @bind-Value="_model.Isbn10" autocomplete="off" />
+                    <span class="hint">If only this is given, the ISBN-13 is worked out from it.</span>
+                    <ValidationMessage For="() => _model.Isbn10" />
+                </div>
+
+                <div class="field span-all">
+                    <label for="description">Description</label>
+                    <InputTextArea id="description" @bind-Value="_model.Description" rows="6" maxlength="@Book.DescriptionMaxLength" />
+                    <ValidationMessage For="() => _model.Description" />
+                </div>
+            </div>
+
+            <div class="actions form-actions">
+                <button type="submit" class="btn btn-primary" disabled="@_saving">@(IsNew ? "Add book" : "Save changes")</button>
+                <a class="btn" href="@CancelUrl">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private BookFormModel? _model;
+    private ServiceErrorValidator? _validator;
+    private IReadOnlyList<string> _errors = [];
+    private bool _notFound;
+    private bool _saving;
+
+    /// <summary>Null when adding a book.</summary>
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private string CancelUrl => IsNew ? "books" : $"books/{Id}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _errors = [];
+        _notFound = false;
+        if (Id is not Guid id)
+        {
+            _model = new BookFormModel();
+            return;
+        }
+
+        _model = null;
+        var result = await Library.GetBookAsync(id);
+        if (result.IsSuccess)
+        {
+            _model = BookFormModel.From(result.Value);
+        }
+        else
+        {
+            _notFound = true;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _errors = [];
+        try
+        {
+            var input = _model!.ToInput();
+            var result = Id is Guid id
+                ? await Library.UpdateBookAsync(id, input)
+                : await Library.AddBookAsync(input);
+
+            if (result.IsSuccess)
+            {
+                Navigation.NavigateTo($"books/{result.Value.Id}", replace: IsNew);
+            }
+            else if (result.Error.Type == ErrorType.NotFound)
+            {
+                _notFound = true;
+            }
+            else
+            {
+                _errors = _validator!.Show(result.Error);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

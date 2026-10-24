@@ -25,6 +25,8 @@ Built in phases; current state, decisions and next steps are in PROJECT_STATE.md
 dotnet tool restore                                                  # dotnet-ef (local tool)
 dotnet build                                                         # warnings are errors
 dotnet test                                                          # xUnit v3 on Microsoft.Testing.Platform
+dotnet run --project src/Bookside.Web                                # http://localhost:5233, DB in src/Bookside.Web/App_Data
+                                                                     # (.claude/launch.json "web" = same, for the Claude preview pane)
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
 ```
@@ -42,8 +44,14 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
   primary handler (retry delay zeroed via the `{clientName}-standard` resilience options).
 - `tests/Bookside.Data.Tests`: tests against real temp SQLite files (`SqliteTestDatabase`); service tests derive
   from `Services/ServiceTestBase` (production registrations + `FakeDictionaryLookupService`).
-- Planned: `Bookside.UI` (RCL), `Bookside.Web` (Blazor Interactive Server, Docker),
-  later `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
+- `src/Bookside.UI`: Razor class library with pages (`Pages/`), layout, shared `Components/`, form models (`Forms/`) and
+  `wwwroot/bookside.css`. References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
+  MAUI can reuse it. Components inject Core service interfaces.
+- `src/Bookside.Web`: Blazor Web App host (Interactive Server, no prerendering): `Program.cs`, `App.razor`, `Routes.razor`,
+  error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`.
+- `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations on temp SQLite) and
+  `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`).
+- Planned: `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
 
 ## Conventions
 
@@ -52,11 +60,16 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
 - Enums are stored as strings. Constraints belong in entity configurations (check constraints, indexes, delete behaviour).
 - Every model change needs a migration; a test fails if the model has changes with no migration.
 - Migrations are provider-specific and live only in `Bookside.Data.Sqlite`; they are generated code (analyzers off).
-- Use EF Core directly in services (no repository layer). In Blazor components use `IDbContextFactory<BooksideDbContext>`.
+- Use EF Core directly in services (no repository layer). Blazor components inject the service interfaces, never a DbContext.
 - Services return DTOs (never entities) and report expected failures as `Result`/`Result<T>` with a `ServiceError`
   (add codes to `ErrorCodes`); exceptions are for bugs. Validate with `InputValidator` and return all field errors.
   Each service method creates its own context from the factory.
 - String length limits are constants on the entity (e.g. `Book.TitleMaxLength`), shared by configuration and validation.
 - External APIs sit behind Core interfaces; implementations go in `Bookside.Integrations`.
-- UI must work equally well on desktop and mobile; neither is the priority (not "mobile-first"). Check both widths.
+- UI must work equally well on desktop and mobile; neither is the priority (not "mobile-first"). Check both widths
+  (and dark mode). Plain CSS: tokens in `bookside.css`, component styles in scoped `.razor.css`; no component library.
+- Component/page code: no `ConfigureAwait(false)` (CA2007 is off in UI/Web/UI.Tests). Pages are `*Page.razor` to avoid
+  clashing with service/entity names. Forms validate via the services and `ServiceErrorValidator`, not DataAnnotations.
+- bUnit 2: set `[SupplyParameterFromQuery]` values by navigating `BunitNavigationManager` before `Render`; qualify
+  `Xunit.TestContext` (bUnit also has a `TestContext`).
 - Tests: underscore sentence names, pass `TestContext.Current.CancellationToken`.
