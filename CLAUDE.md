@@ -26,7 +26,8 @@ dotnet tool restore                                                  # dotnet-ef
 dotnet build                                                         # warnings are errors
 dotnet test                                                          # xUnit v3 on Microsoft.Testing.Platform
 dotnet run --project src/Bookside.Web                                # http://localhost:5233, DB in src/Bookside.Web/App_Data
-                                                                     # (.claude/launch.json "web" = same, for the Claude preview pane)
+                                                                     # (.claude/launch.json "web" = same, for the Claude preview pane;
+                                                                     #  "web-scratch" uses App_Data/scratch.db, use it for UI checks)
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
 ```
@@ -50,7 +51,8 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
   MAUI can reuse it. Components inject Core service interfaces.
 - `src/Bookside.Web`: Blazor Web App host (Interactive Server, no prerendering): `Program.cs`, `App.razor`, `Routes.razor`,
   error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`.
-- `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations on temp SQLite) and
+- `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations on temp SQLite,
+  controllable `FakeDictionaryLookup` via `Dictionary`) and
   `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`).
 - Planned: `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
 
@@ -69,6 +71,7 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
 - External APIs sit behind Core interfaces; implementations go in `Bookside.Integrations`.
 - UI must work equally well on desktop and mobile; neither is the priority (not "mobile-first"). Check both widths
   (and dark mode). Plain CSS: tokens in `bookside.css`, component styles in scoped `.razor.css`; no component library.
+- Shared page/list styles (toolbar, chips, empty, more, back, section-header) live in `bookside.css`; page-specific ones stay scoped.
 - Component/page code: no `ConfigureAwait(false)` (CA2007 is off in UI/Web/UI.Tests). Pages are `*Page.razor` to avoid
   clashing with service/entity names. Forms validate via the services and `ServiceErrorValidator`, not DataAnnotations.
 - bUnit 2: set `[SupplyParameterFromQuery]` values by navigating `BunitNavigationManager` before `Render`; qualify

@@ -1,0 +1,209 @@
+@page "/words/{Id:guid}"
+@inject IVocabularyService Vocabulary
+@inject NavigationManager Navigation
+@inject TimeProvider Clock
+
+<PageTitle>@(_word?.Term ?? "Word") · Bookside</PageTitle>
+
+@if (_notFound)
+{
+    <h1>Word not found</h1>
+    <p>It may have been deleted.</p>
+    <a class="btn" href="words">Back to vocabulary</a>
+}
+else if (_word is null)
+{
+    <p class="loading" role="status">Loading…</p>
+    <ErrorAlert Messages="_errors" />
+}
+else
+{
+    <p class="back"><a href="words">← Vocabulary</a></p>
+
+    <article class="word">
+        <header class="word-header">
+            <h1>@_word.Term</h1>
+            @if (_word.Definition?.Phonetic is { } phonetic)
+            {
+                <span class="phonetic">@phonetic</span>
+            }
+        </header>
+        @if (_word.Definition?.AudioUrl is { } audioUrl)
+        {
+            <audio class="pronunciation" controls preload="none" src="@audioUrl" aria-label="Pronunciation"></audio>
+        }
+
+        <ErrorAlert Messages="_errors" />
+
+        @if (_editing is not null)
+        {
+            <div class="card editor">
+                <h2>Edit word</h2>
+                <WordForm WordId="_word.Id" Model="_editing" OnSaved="WordSaved" OnCancel="CancelEdit" />
+            </div>
+        }
+        else
+        {
+            <section class="definition" aria-labelledby="definition-heading">
+                <h2 id="definition-heading" class="visually-hidden">Definition</h2>
+                @switch (_word.Definition)
+                {
+                    case null:
+                        <div class="definition-status card">
+                            <p>No definition yet: the dictionary was unavailable when this word was added.</p>
+                            <button type="button" class="btn btn-primary" disabled="@_defining" @onclick="() => DefineAsync(refresh: false)">
+                                @(_defining ? "Looking up…" : "Retry definition")
+                            </button>
+                        </div>
+                        break;
+
+                    case { Status: DictionaryLookupStatus.NotFound } notFound:
+                        <div class="definition-status card">
+                            <p>The dictionary has no entry for this word.</p>
+                            <p class="muted source">Checked @FormatDate(notFound.FetchedAtUtc) · @notFound.Source</p>
+                            <button type="button" class="btn" disabled="@_defining" @onclick="() => DefineAsync(refresh: true)">
+                                @(_defining ? "Checking…" : "Check again")
+                            </button>
+                        </div>
+                        break;
+
+                    case { } found:
+                        @foreach (var meaning in found.Meanings)
+                        {
+                            <div class="meaning">
+                                <h3 class="part-of-speech">@meaning.PartOfSpeech</h3>
+                                <ol>
+                                    @foreach (var definition in meaning.Definitions)
+                                    {
+                                        <li>
+                                            @definition.Text
+                                            @if (definition.Example is { } example)
+                                            {
+                                                <span class="example">“@example”</span>
+                                            }
+                                        </li>
+                                    }
+                                </ol>
+                            </div>
+                        }
+                        <p class="muted source">
+                            Looked up @FormatDate(found.FetchedAtUtc) · @found.Source ·
+                            <button type="button" class="link-button" disabled="@_defining" @onclick="() => DefineAsync(refresh: true)">
+                                @(_defining ? "Refreshing…" : "Refresh")
+                            </button>
+                        </p>
+                        break;
+                }
+            </section>
+
+            @if (_word.BookId is not null || _word.Context is not null || _word.PageNumber is not null || _word.Notes is not null)
+            {
+                <section class="mine" aria-labelledby="mine-heading">
+                    <h2 id="mine-heading">Where I found it</h2>
+                    @if (_word.BookId is Guid bookId)
+                    {
+                        <p class="found-in">
+                            <a href="books/@bookId">@_word.BookTitle</a>@(_word.PageNumber is int pageNumber ? $", page {pageNumber}" : "")
+                        </p>
+                    }
+                    else if (_word.PageNumber is int pageNumber)
+                    {
+                        <p class="found-in">Page @pageNumber</p>
+                    }
+                    @if (_word.Context is not null)
+                    {
+                        <blockquote class="context">@_word.Context</blockquote>
+                    }
+                    @if (_word.Notes is not null)
+                    {
+                        <h3>Notes</h3>
+                        <p class="notes">@_word.Notes</p>
+                    }
+                </section>
+            }
+
+            <div class="actions word-actions">
+                <button type="button" class="btn" @onclick="Edit">Edit</button>
+                <ConfirmButton Text="Delete word" Prompt="Delete this word?" OnConfirm="DeleteAsync" />
+            </div>
+        }
+    </article>
+}
+
+@code {
+    private WordDetails? _word;
+    private bool _notFound;
+    private bool _defining;
+    private WordFormModel? _editing;
+    private IReadOnlyList<string> _errors = [];
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _editing = null;
+        _errors = [];
+        var result = await Vocabulary.GetWordAsync(Id);
+        _notFound = !result.IsSuccess && result.Error.Type == ErrorType.NotFound;
+        _word = result.IsSuccess ? result.Value : null;
+        if (!result.IsSuccess && !_notFound)
+        {
+            _errors = [result.Error.Message];
+        }
+    }
+
+    private async Task DefineAsync(bool refresh)
+    {
+        _defining = true;
+        _errors = [];
+        try
+        {
+            var result = await Vocabulary.DefineWordAsync(Id, refresh);
+            if (result.IsSuccess)
+            {
+                _word = result.Value;
+            }
+            else
+            {
+                _errors = [result.Error.Type == ErrorType.Unavailable
+                    ? "The dictionary is unavailable right now. Try again later."
+                    : result.Error.Message];
+            }
+        }
+        finally
+        {
+            _defining = false;
+        }
+    }
+
+    private void Edit()
+    {
+        _errors = [];
+        _editing = WordFormModel.From(_word!);
+    }
+
+    private void CancelEdit() => _editing = null;
+
+    private void WordSaved(WordDetails word)
+    {
+        _word = word;
+        _editing = null;
+    }
+
+    private async Task DeleteAsync()
+    {
+        var result = await Vocabulary.DeleteWordAsync(Id);
+        if (result.IsSuccess || result.Error.Type == ErrorType.NotFound)
+        {
+            Navigation.NavigateTo("words");
+        }
+        else
+        {
+            _errors = [result.Error.Message];
+        }
+    }
+
+    private string FormatDate(DateTime utc) =>
+        BookTimeline.ToLocal(utc, Clock.LocalTimeZone).ToString("d MMM yyyy", CultureInfo.CurrentCulture);
+}

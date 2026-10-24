@@ -1,0 +1,257 @@
+@page "/words"
+@implements IDisposable
+@inject IVocabularyService Vocabulary
+@inject ILibraryService Library
+@inject NavigationManager Navigation
+
+<PageTitle>Vocabulary · Bookside</PageTitle>
+
+<div class="page-header">
+    <h1>Vocabulary</h1>
+</div>
+
+<div class="quick-add card">
+    <WordForm @key="_addKey" Model="_newWord" Compact AutoFocus="_added is not null" SubmitText="Add" OnSaved="WordAddedAsync" />
+    @if (_added is not null)
+    {
+        <WordAddedNotice Word="_added" />
+    }
+</div>
+
+<div class="toolbar">
+    <div class="search">
+        <label for="word-search" class="visually-hidden">Search</label>
+        <input id="word-search" type="search" placeholder="Search words"
+               autocomplete="off" autocapitalize="none" enterkeyhint="search"
+               @bind="_searchText" @bind:event="oninput" @bind:after="SearchChangedAsync" />
+    </div>
+
+    @if (BookFilter is Guid)
+    {
+        <div class="filters">
+            <a class="chip selected book-filter" href="@UrlFor(null, Sort, Q)" aria-label="Remove filter: @(_bookTitle ?? "book")">
+                @(_bookTitle ?? "Unknown book") <span aria-hidden="true">✕</span>
+            </a>
+        </div>
+    }
+
+    <div class="sort">
+        <label for="word-sort" class="muted">Sort</label>
+        <select id="word-sort" value="@Sort" @onchange="SortChanged">
+            <option value="@WordSort.RecentlyAdded">Recently added</option>
+            <option value="@WordSort.Alphabetical">A–Z</option>
+        </select>
+    </div>
+</div>
+
+@if (_words is null)
+{
+    <p class="loading" role="status">Loading…</p>
+}
+else if (_words.Count == 0)
+{
+    <div class="empty card">
+        @if (_totalCount == 0 && string.IsNullOrWhiteSpace(Q) && BookFilter is null)
+        {
+            <p>No words yet. Add one above when you meet a word you want to remember.</p>
+        }
+        else
+        {
+            <p>No words match.</p>
+            <a class="btn" href="words">Clear filters</a>
+        }
+    </div>
+}
+else
+{
+    <p class="muted count" role="status">@_totalCount @(_totalCount == 1 ? "word" : "words")</p>
+    <ul class="word-list">
+        @foreach (var word in _words)
+        {
+            <li @key="word.Id" class="word-row">
+                <a class="term" href="words/@word.Id">@word.Term</a>
+                @switch (word.DefinitionStatus)
+                {
+                    case null:
+                        <span class="badge">No definition yet</span>
+                        break;
+                    case DictionaryLookupStatus.NotFound:
+                        <span class="badge">Not in dictionary</span>
+                        break;
+                }
+                @if (word.ShortDefinition is not null)
+                {
+                    <p class="short-definition">@word.ShortDefinition</p>
+                }
+                @if (word.BookId is Guid bookId && BookFilter is null)
+                {
+                    <a class="book" href="@UrlFor(bookId, Sort, null)">@word.BookTitle</a>
+                }
+            </li>
+        }
+    </ul>
+
+    @if (_words.Count < _totalCount)
+    {
+        <div class="more">
+            <button type="button" class="btn" disabled="@_loading" @onclick="LoadMoreAsync">Show more</button>
+        </div>
+    }
+}
+
+@code {
+    internal const int PageSize = 50;
+    internal static readonly TimeSpan SearchDelay = TimeSpan.FromMilliseconds(300);
+
+    private List<WordSummary>? _words;
+    private int _totalCount;
+    private bool _loading;
+    private string? _searchText;
+    private string? _lastQ;
+    private Guid? _lastBook;
+    private bool _firstLoad = true;
+    private string? _bookTitle;
+    private WordFormModel _newWord = new();
+    private int _addKey;
+    private WordDetails? _added;
+    private CancellationTokenSource? _loadCts;
+    private CancellationTokenSource? _searchCts;
+
+    [SupplyParameterFromQuery]
+    public string? Q { get; set; }
+
+    /// <summary>Only words from this book; quick-add then adds to it too.</summary>
+    [SupplyParameterFromQuery(Name = "book")]
+    public string? BookValue { get; set; }
+
+    [SupplyParameterFromQuery(Name = "sort")]
+    public string? SortValue { get; set; }
+
+    private Guid? BookFilter => Guid.TryParse(BookValue, out var id) ? id : null;
+
+    private WordSort Sort => Enum.TryParse<WordSort>(SortValue, ignoreCase: true, out var s) ? s : WordSort.RecentlyAdded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Q != _lastQ)
+        {
+            _searchText = Q;
+            _lastQ = Q;
+        }
+
+        if (_firstLoad || BookFilter != _lastBook)
+        {
+            _firstLoad = false;
+            _lastBook = BookFilter;
+            await BookFilterChangedAsync();
+        }
+
+        await LoadAsync(append: false);
+    }
+
+    private async Task BookFilterChangedAsync()
+    {
+        _bookTitle = null;
+        _added = null;
+        if (BookFilter is Guid bookId)
+        {
+            var book = await Library.GetBookAsync(bookId);
+            _bookTitle = book.IsSuccess ? book.Value.Title : null;
+        }
+
+        ResetQuickAdd();
+    }
+
+    private void ResetQuickAdd()
+    {
+        // A fresh model and form instance clears the fields and any validation state.
+        _newWord = new WordFormModel { BookId = _bookTitle is null ? null : BookFilter, BookTitle = _bookTitle };
+        _addKey++;
+    }
+
+    private async Task WordAddedAsync(WordDetails word)
+    {
+        _added = word;
+        ResetQuickAdd();
+        await LoadAsync(append: false);
+    }
+
+    private async Task LoadMoreAsync() => await LoadAsync(append: true);
+
+    private async Task LoadAsync(bool append)
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        var cts = _loadCts = new CancellationTokenSource();
+
+        _loading = true;
+        try
+        {
+            var page = await Vocabulary.ListWordsAsync(
+                new WordQuery
+                {
+                    Search = Q,
+                    BookId = BookFilter,
+                    Sort = Sort,
+                    Skip = append ? _words?.Count ?? 0 : 0,
+                    Take = PageSize,
+                },
+                cts.Token);
+
+            _words = append && _words is not null ? [.. _words, .. page.Items] : [.. page.Items];
+            _totalCount = page.TotalCount;
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+            // Superseded by a newer load.
+        }
+        finally
+        {
+            if (ReferenceEquals(cts, _loadCts))
+            {
+                _loading = false;
+            }
+        }
+    }
+
+    private async Task SearchChangedAsync()
+    {
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        var cts = _searchCts = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(SearchDelay, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return; // Still typing.
+        }
+
+        var q = string.IsNullOrWhiteSpace(_searchText) ? null : _searchText.Trim();
+        _lastQ = q;
+        Navigation.NavigateTo(UrlFor(BookFilter, Sort, q), replace: true);
+    }
+
+    private void SortChanged(ChangeEventArgs e) =>
+        Navigation.NavigateTo(UrlFor(BookFilter, Enum.Parse<WordSort>((string)e.Value!), Q), replace: true);
+
+    /// <summary>The list URL for these settings; defaults are left out to keep URLs short.</summary>
+    private string UrlFor(Guid? book, WordSort sort, string? q) =>
+        Navigation.GetUriWithQueryParameters(
+            Navigation.ToAbsoluteUri("words").ToString(),
+            new Dictionary<string, object?>
+            {
+                ["q"] = string.IsNullOrWhiteSpace(q) ? null : q,
+                ["book"] = book?.ToString(),
+                ["sort"] = sort == WordSort.RecentlyAdded ? null : sort.ToString().ToLowerInvariant(),
+            });
+
+    public void Dispose()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
+}

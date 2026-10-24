@@ -41,19 +41,25 @@ internal sealed class VocabularyService(
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var items = rows.Select(w => new WordSummary
-        {
-            Id = w.Id,
-            Term = w.Term,
-            Language = w.Language,
-            BookId = w.BookId,
-            BookTitle = w.Book?.Title,
-            DefinitionStatus = w.DictionaryEntry?.Status,
-            ShortDefinition = w.DictionaryEntry?.Meanings.SelectMany(m => m.Definitions).FirstOrDefault()?.Text,
-            CreatedAtUtc = w.CreatedAtUtc,
-        }).ToList();
+        return new PagedResult<WordSummary>(rows.Select(ToSummary).ToList(), total);
+    }
 
-        return new PagedResult<WordSummary>(items, total);
+    public async Task<WordSummary?> FindWordAsync(string term, string language = "en", CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(term) || string.IsNullOrWhiteSpace(language))
+        {
+            return null;
+        }
+
+        var normalized = TermNormalizer.Normalize(term);
+        language = language.Trim();
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var word = await db.VocabularyWords.AsNoTracking()
+            .Include(w => w.Book)
+            .Include(w => w.DictionaryEntry)
+            .SingleOrDefaultAsync(w => w.Language == language && w.NormalizedTerm == normalized, cancellationToken)
+            .ConfigureAwait(false);
+        return word is null ? null : ToSummary(word);
     }
 
     public async Task<Result<WordDetails>> GetWordAsync(Guid wordId, CancellationToken cancellationToken = default)
@@ -145,6 +151,18 @@ internal sealed class VocabularyService(
 
         return (await LoadDetailsAsync(db, word.Id, cancellationToken).ConfigureAwait(false))!;
     }
+
+    private static WordSummary ToSummary(VocabularyWord w) => new()
+    {
+        Id = w.Id,
+        Term = w.Term,
+        Language = w.Language,
+        BookId = w.BookId,
+        BookTitle = w.Book?.Title,
+        DefinitionStatus = w.DictionaryEntry?.Status,
+        ShortDefinition = w.DictionaryEntry?.Meanings.SelectMany(m => m.Definitions).FirstOrDefault()?.Text,
+        CreatedAtUtc = w.CreatedAtUtc,
+    };
 
     private static ServiceError WordNotFound(Guid wordId) =>
         ServiceError.NotFound(ErrorCodes.WordNotFound, $"Word {wordId} was not found.");

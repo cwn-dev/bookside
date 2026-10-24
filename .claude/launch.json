@@ -4,7 +4,27 @@
     {
       "name": "web",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/Bookside.Web", "--launch-profile", "http"],
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/Bookside.Web",
+        "--launch-profile",
+        "http"
+      ],
+      "port": 5233
+    },
+    {
+      "name": "web-scratch",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/Bookside.Web",
+        "--launch-profile",
+        "http",
+        "--",
+        "--Bookside:DatabasePath=App_Data/scratch.db"
+      ],
       "port": 5233
     }
   ]

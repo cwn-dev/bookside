@@ -1,6 +1,8 @@
 using Bookside.Core.Books.Services;
 using Bookside.Core.Common;
+using Bookside.Core.Vocabulary;
 using Bookside.Core.Vocabulary.Lookup;
+using Bookside.Core.Vocabulary.Services;
 using Bookside.Data;
 using Bookside.Data.Sqlite;
 using Bunit.TestDoubles;
@@ -22,12 +24,17 @@ public abstract class ComponentTestBase : BunitContext, IAsyncLifetime
         Services
             .AddBooksideSqlite(Path.Combine(_directory, "bookside.db"))
             .AddBooksideServices()
-            .AddSingleton<IDictionaryLookupService, UnavailableDictionary>();
+            .AddSingleton<IDictionaryLookupService>(Dictionary);
     }
 
     protected static CancellationToken Ct => Xunit.TestContext.Current.CancellationToken;
 
+    /// <summary>Unknown terms are NotFound; set <see cref="FakeDictionaryLookup.Unavailable"/> to simulate an outage.</summary>
+    protected FakeDictionaryLookup Dictionary { get; } = new();
+
     protected ILibraryService Library => Services.GetRequiredService<ILibraryService>();
+
+    protected IVocabularyService Vocabulary => Services.GetRequiredService<IVocabularyService>();
 
     protected BunitNavigationManager Navigation => Services.GetRequiredService<BunitNavigationManager>();
 
@@ -46,18 +53,42 @@ public abstract class ComponentTestBase : BunitContext, IAsyncLifetime
 
     protected async Task<BookDetails> GetBookAsync(Guid id) => Success(await Library.GetBookAsync(id, Ct));
 
+    protected async Task<WordDetails> AddWordAsync(string term, Guid? bookId = null, string? context = null, int? page = null) =>
+        Success(await Vocabulary.AddWordAsync(new WordInput { Term = term, BookId = bookId, Context = context, PageNumber = page }, Ct));
+
     protected static T Success<T>(Result<T> result)
     {
         Assert.True(result.IsSuccess, result.Error?.ToString());
         return result.Value;
     }
+}
 
-    /// <summary>Library pages never look words up; registered only because the services need one.</summary>
-    private sealed class UnavailableDictionary : IDictionaryLookupService
+public sealed class FakeDictionaryLookup : IDictionaryLookupService
+{
+    private readonly Dictionary<string, DictionaryLookupResult> _entries = new(StringComparer.Ordinal);
+
+    public string Source => "test";
+
+    public bool Unavailable { get; set; }
+
+    public Task<DictionaryLookupResult> LookupAsync(string term, string language = "en", CancellationToken cancellationToken = default) =>
+        Unavailable
+            ? throw new DictionaryLookupException("Simulated outage.")
+            : Task.FromResult(_entries.TryGetValue(term, out var result) ? result : DictionaryLookupResult.NotFound());
+
+    /// <param name="term">Normalized (lower-case), as the definition service looks it up.</param>
+    public void Define(string term, string definition, string? example = null) => _entries[term] = new DictionaryLookupResult
     {
-        public string Source => "test";
-
-        public Task<DictionaryLookupResult> LookupAsync(string term, string language = "en", CancellationToken cancellationToken = default) =>
-            throw new DictionaryLookupException("Not available in UI tests.");
-    }
+        Status = DictionaryLookupStatus.Found,
+        Phonetic = "/test/",
+        AudioUrl = "https://audio.example/" + term + ".mp3",
+        Meanings =
+        [
+            new DictionaryMeaning
+            {
+                PartOfSpeech = "noun",
+                Definitions = [new DictionaryDefinition { Text = definition, Example = example }],
+            },
+        ],
+    };
 }

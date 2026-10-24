@@ -86,6 +86,29 @@ public sealed class BookDetailsPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Add_word_saves_it_to_the_book_and_links_the_count()
+    {
+        var book = await AddBookAsync("Dune");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        page.FindAll("button").Single(b => b.TextContent == "Add word").Click();
+        page.Find(".add-word input[id$='-term']").Change("kanly");
+        page.Find(".add-word input[id$='-page']").Change("88");
+        page.Find(".add-word form").Submit();
+
+        page.WaitForAssertion(() => Assert.Contains("kanly", page.Find(".word-added").TextContent));
+        var count = page.FindAll(".facts div").Single(d => d.TextContent.StartsWith("Words saved", StringComparison.Ordinal));
+        Assert.Equal($"words?book={book.Id}", count.QuerySelector("a")!.GetAttribute("href"));
+        Assert.Equal("1", count.QuerySelector("a")!.TextContent);
+        Assert.Equal("", page.Find(".add-word input[id$='-term']").GetAttribute("value") ?? "");
+        Assert.Equal("88", page.Find(".add-word input[id$='-page']").GetAttribute("value")); // kept for the next word
+
+        var word = await Vocabulary.FindWordAsync("kanly", cancellationToken: Ct);
+        Assert.Equal(book.Id, word?.BookId);
+    }
+
+    [Fact]
     public async Task Posting_a_comment_adds_it_to_the_log_and_clears_the_box()
     {
         var book = await AddBookAsync("Dune");

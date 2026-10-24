@@ -9,6 +9,9 @@ public interface IVocabularyService
 
     Task<Result<WordDetails>> GetWordAsync(Guid wordId, CancellationToken cancellationToken = default);
 
+    /// <summary>The word with this term after normalization, or null. Used to point at an existing word on a duplicate.</summary>
+    Task<WordSummary?> FindWordAsync(string term, string language = "en", CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Saves the word, then tries to attach a definition (cache, then dictionary API). If the dictionary is
     /// unavailable the word is still saved with no definition; use <see cref="DefineWordAsync"/> to retry.

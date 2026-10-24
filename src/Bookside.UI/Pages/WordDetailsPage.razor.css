@@ -1,0 +1,120 @@
+.word {
+    max-width: 70ch;
+}
+
+.word-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+}
+
+.word-header h1 {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.phonetic {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+}
+
+.pronunciation {
+    display: block;
+    width: min(100%, 300px);
+    height: 40px;
+    margin: 0.25rem 0 1rem;
+}
+
+.definition {
+    margin: 1rem 0 2rem;
+}
+
+.definition-status p {
+    margin: 0 0 0.75rem;
+}
+
+.meaning + .meaning {
+    margin-top: 1.25rem;
+}
+
+.part-of-speech {
+    margin-bottom: 0.4rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-style: italic;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.meaning ol {
+    margin: 0;
+    padding-left: 1.4rem;
+}
+
+.meaning li + li {
+    margin-top: 0.45rem;
+}
+
+.example {
+    display: block;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.source {
+    margin: 1rem 0 0;
+    font-size: 0.85rem;
+}
+
+.definition-status .source {
+    margin-top: -0.25rem;
+}
+
+.link-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.link-button:disabled {
+    color: var(--text-muted);
+    cursor: default;
+}
+
+.mine {
+    margin-bottom: 1.5rem;
+}
+
+.found-in {
+    margin: 0 0 0.75rem;
+}
+
+.context {
+    margin: 0 0 1rem;
+    padding: 0.25rem 0 0.25rem 1rem;
+    border-left: 3px solid var(--accent-soft);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.notes {
+    margin: 0;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.editor {
+    margin: 1rem 0 2rem;
+}
+
+.word-actions {
+    margin-top: 1.5rem;
+}

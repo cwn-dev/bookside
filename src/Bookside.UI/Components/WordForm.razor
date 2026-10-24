@@ -1,0 +1,174 @@
+@* Add or edit a vocabulary word. Compact = quick-add: just the term, plus context and page when the word comes
+   from a book (Model.BookId set). Validation comes from IVocabularyService. *@
+@inject IVocabularyService Vocabulary
+
+<div class="word-form @(Compact ? "compact" : null)">
+<EditForm Model="Model" OnValidSubmit="SaveAsync">
+    <ServiceErrorValidator @ref="_validator" />
+    <ErrorAlert Messages="_errors" />
+    @if (_existing is not null)
+    {
+        <div class="alert alert-error" role="alert">
+            “@_existing.Term” is already on your list@(_existing.BookTitle is { } title ? $" (from {title})" : "").
+            <a href="words/@_existing.Id">Open it</a>
+        </div>
+    }
+
+    @if (Compact)
+    {
+        <div class="term-row">
+            <div class="field">
+                <label for="@_id-term" class="visually-hidden">Word</label>
+                <InputText @ref="_termInput" id="@($"{_id}-term")" @bind-Value="Model.Term" maxlength="@VocabularyWord.TermMaxLength"
+                           placeholder="Add a word…" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" />
+                <ValidationMessage For="() => Model.Term" />
+                <ValidationMessage For="() => Model.BookId" />
+            </div>
+            @if (!FromBook)
+            {
+                <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Adding…" : SubmitText)</button>
+            }
+        </div>
+
+        @if (FromBook)
+        {
+            <div class="source-fields">
+                <div class="field page">
+                    <label for="@_id-page">Page</label>
+                    <InputNumber id="@($"{_id}-page")" @bind-Value="Model.PageNumber" min="1" inputmode="numeric" />
+                    <ValidationMessage For="() => Model.PageNumber" />
+                </div>
+                <div class="field">
+                    <label for="@_id-context">Sentence <span class="muted">(optional)</span></label>
+                    <InputTextArea id="@($"{_id}-context")" @bind-Value="Model.Context" rows="2" maxlength="@VocabularyWord.ContextMaxLength"
+                                   placeholder="Where it appeared" />
+                    <ValidationMessage For="() => Model.Context" />
+                </div>
+            </div>
+            <div class="actions form-actions">
+                <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Adding…" : SubmitText)</button>
+                @if (OnCancel.HasDelegate)
+                {
+                    <button type="button" class="btn" disabled="@_saving" @onclick="OnCancel">Cancel</button>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="form-grid">
+            <div class="field">
+                <label for="@_id-term">Word</label>
+                <InputText id="@($"{_id}-term")" @bind-Value="Model.Term" maxlength="@VocabularyWord.TermMaxLength"
+                           autocomplete="off" autocapitalize="none" spellcheck="false" />
+                <ValidationMessage For="() => Model.Term" />
+                <span class="hint">Changing the word looks its definition up again.</span>
+            </div>
+            <div class="field">
+                <label for="@_id-page">Page</label>
+                <InputNumber id="@($"{_id}-page")" @bind-Value="Model.PageNumber" min="1" inputmode="numeric" />
+                <ValidationMessage For="() => Model.PageNumber" />
+            </div>
+            <div class="field span-all">
+                <label for="@_id-book">Book</label>
+                <BookPicker Id="@($"{_id}-book")" @bind-Value="Model.BookId" @bind-SelectedTitle="Model.BookTitle" />
+                <ValidationMessage For="() => Model.BookId" />
+            </div>
+            <div class="field span-all">
+                <label for="@_id-context">Sentence</label>
+                <InputTextArea id="@($"{_id}-context")" @bind-Value="Model.Context" rows="2" maxlength="@VocabularyWord.ContextMaxLength"
+                               placeholder="Where it appeared" />
+                <ValidationMessage For="() => Model.Context" />
+            </div>
+            <div class="field span-all">
+                <label for="@_id-notes">Notes</label>
+                <InputTextArea id="@($"{_id}-notes")" @bind-Value="Model.Notes" rows="3" maxlength="@VocabularyWord.NotesMaxLength" />
+                <ValidationMessage For="() => Model.Notes" />
+            </div>
+        </div>
+        <div class="actions form-actions">
+            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Saving…" : SubmitText)</button>
+            @if (OnCancel.HasDelegate)
+            {
+                <button type="button" class="btn" disabled="@_saving" @onclick="OnCancel">Cancel</button>
+            }
+        </div>
+    }
+</EditForm>
+</div>
+
+@code {
+    private readonly string _id = $"wf-{Guid.NewGuid():N}"[..11];
+    private ServiceErrorValidator? _validator;
+    private IReadOnlyList<string> _errors = [];
+    private WordSummary? _existing;
+    private bool _saving;
+    private InputText? _termInput;
+
+    /// <summary>Focus the word box when this form first renders (e.g. right after the previous word was added).</summary>
+    [Parameter]
+    public bool AutoFocus { get; set; }
+
+    /// <summary>The word being edited; null to add a new one.</summary>
+    [Parameter]
+    public Guid? WordId { get; set; }
+
+    [Parameter, EditorRequired]
+    public WordFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public bool Compact { get; set; }
+
+    [Parameter]
+    public string SubmitText { get; set; } = "Save";
+
+    [Parameter]
+    public EventCallback<WordDetails> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private bool FromBook => Model.BookId is not null;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AutoFocus && _termInput?.Element is { } element)
+        {
+            await element.FocusAsync();
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _errors = [];
+        _existing = null;
+        try
+        {
+            var input = Model.ToInput();
+            var result = WordId is Guid id
+                ? await Vocabulary.UpdateWordAsync(id, input)
+                : await Vocabulary.AddWordAsync(input);
+
+            if (result.IsSuccess)
+            {
+                await OnSaved.InvokeAsync(result.Value);
+            }
+            else if (result.Error.Code == ErrorCodes.DuplicateWord
+                     && await Vocabulary.FindWordAsync(input.Term, input.Language) is { } existing
+                     && existing.Id != WordId)
+            {
+                _validator!.Clear();
+                _existing = existing;
+            }
+            else
+            {
+                _errors = _validator!.Show(result.Error);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

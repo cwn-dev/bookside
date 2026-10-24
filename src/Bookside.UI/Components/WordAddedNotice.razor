@@ -1,0 +1,22 @@
+@* Confirms a quick-added word, with what the dictionary said. *@
+
+<div class="alert alert-success word-added" role="status">
+    Added <a href="words/@Word.Id">@Word.Term</a>.
+    @switch (Word.Definition)
+    {
+        case null:
+            <span>The dictionary is unavailable right now; retry the definition from the word’s page.</span>
+            break;
+        case { Status: DictionaryLookupStatus.NotFound }:
+            <span>The dictionary has no definition for it.</span>
+            break;
+        case { } definition when definition.Meanings.SelectMany(m => m.Definitions).FirstOrDefault() is { } first:
+            <span class="definition">@first.Text</span>
+            break;
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public WordDetails Word { get; set; } = null!;
+}

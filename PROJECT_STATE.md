@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 5, 2026-10-24)
+# Bookside: project state (end of session 6, 2026-10-24)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -14,7 +14,8 @@
     per-field `FieldErrors`), `PagedResult<T>`, `Paging.Clamp` (default 50, max 200).
   - Service contracts + DTO records: `ILibraryService` (books, authors, covers, reading sessions, comments:
     `Add/Update/DeleteCommentAsync`, `BookDetails.Comments` newest first, `BookCommentDto.IsEdited`),
-    `IVocabularyService` (words), `IDefinitionService` (cache-aware definitions).
+    `IVocabularyService` (words; session 6 added `FindWordAsync(term, language)` → `WordSummary?` by normalized term),
+    `IDefinitionService` (cache-aware definitions).
   - External: `IBookLookupService` + `BookMetadata`, `IDictionaryLookupService` + `DictionaryLookupResult` +
     `DictionaryLookupException` (no implementations yet).
 - `Bookside.Data`: `BooksideDbContext` (UTC DateTimes, enums as strings, SaveChanges stamps timestamps, normalizes
@@ -35,7 +36,14 @@
   `/books/{id}/edit`), `Home` (`/` → `/books`), `NotFound`. Components: `CoverImage` (image or coloured placeholder),
   `CoverEditor` (InputFile upload, client-side size/type check), `ReadingSessionForm`, `RatingInput`/`RatingStars`,
   `ConfirmButton` (two-step delete), `ErrorAlert`, `ServiceErrorValidator`, `CommentForm` (add/edit, session 5).
-  `BookTimeline` (session 5) merges sessions + comments into the book page's "Reading log" (see decisions). `Forms/` holds mutable form models whose
+  `BookTimeline` (session 5) merges sessions + comments into the book page's "Reading log" (see decisions).
+  Vocabulary (session 6): `VocabularyPage` (`/words`: quick-add, search, `?book=` filter chip, sort recent/A–Z,
+  "Show more" paging of 50), `WordDetailsPage` (`/words/{id}`: phonetic, `<audio preload="none">`, meanings by part
+  of speech with examples, retry / check again / refresh definition, where found (book link, page, sentence), notes,
+  edit, delete). Components: `WordForm` (compact quick-add or full edit; `AutoFocus`), `BookPicker` (type-ahead,
+  `InputBase<Guid?>`), `WordAddedNotice`. "Vocabulary" nav link; book page has "Add word" and links "Words saved"
+  to `/words?book={id}`. Shared list styles (toolbar, chips, empty, more, back, section-header) moved to `bookside.css`.
+  `Forms/` holds mutable form models whose
   property names match the service inputs. `CoverUrls` holds the cover route (used by components and host).
   Styling: `wwwroot/bookside.css` (tokens, light/dark via `prefers-color-scheme`, buttons/forms/cards) + scoped `.razor.css`.
 - `Bookside.Web` (session 4): host. `Program.cs` reads `Bookside:DatabasePath` (relative paths resolve against the
@@ -43,12 +51,14 @@
   SQLite + services + dictionary client, runs `InitializeBooksideDatabaseAsync()` before serving. `App.razor` sets
   Interactive Server without prerendering globally (static only for `[ExcludeFromInteractiveRouting]` pages, i.e. `Error`).
   `Routes.razor` routes the UI assembly (+ host). `CoverEndpoint`: `GET /covers/{bookId}?v={sha256}`.
-  `ReconnectModal` from the template, restyled. `.claude/launch.json` has a `web` config (port 5233) for the preview pane.
-- `Bookside.UI.Tests`: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
+  `ReconnectModal` from the template, restyled. `.claude/launch.json` has a `web` config (port 5233) for the preview pane, and `web-scratch` (same port,
+  `App_Data/scratch.db`) for UI checks without touching the dev database.
+- `Bookside.UI.Tests`: 52 tests (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+  `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
 - `Bookside.Integrations.Tests`: 14 tests through the real registration with a stubbed primary handler.
-- `Bookside.Data.Tests`: 58 passing tests. Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
+- `Bookside.Data.Tests`: 59 passing tests. Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
   SQLite + production registrations + `FakeDictionaryLookupService`), `Isbn` and `Result` tests.
 
 ## Key decisions
@@ -121,15 +131,29 @@
     timestamp is used, otherwise end of day. Merge is UI-side (`BookTimeline.Build`, server time zone via
     `TimeProvider.LocalTimeZone`); ties go to the later UUIDv7.
 
+- **Vocabulary UI (session 6, all user's choices):**
+  - Inline quick-add, not a separate form page: term only on `/words`; term + page + sentence when it comes from a book
+    (book page "Add word", or `/words?book=` where new words go to the filtered book). The form stays open and
+    refocuses after each add (not on first load, so phones don't pop the keyboard); the book page keeps the page number.
+    Notes and changing the book are on the word page's full edit form.
+  - Book picker is a type-ahead over `ListBooksAsync(Search)` (8 results); Enter picks the first. Its input uses
+    `form=` pointing at no form so Enter doesn't submit the surrounding `EditForm` (no JS).
+  - Duplicates: on `DuplicateWord` the form calls `FindWordAsync` and links to the existing word ("already on your
+    list (from Book). Open it"). Words still belong to one book; meeting a word again in another book doesn't relink it.
+  - Book page shows only the linked count + "Add word" (no words section), to keep it about the reading log.
+  - Definition states on the word page: none (dictionary was down) → "Retry definition"; NotFound → "Check again"
+    (refresh); Found → "Refresh" link. Unavailable shows a friendly retry-later message.
+
 ## Next
-1. Vocabulary UI: word list (search, per-book filter), add word (from a book page too, with context/page),
-   word details with definition (meanings, phonetic, audio), "retry definition" / refresh, edit/delete. Add a
-   Vocabulary nav link; link "Words saved" on the book page to the filtered list.
-2. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
+1. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
    Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
-3. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+2. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
+- A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table
+  (context/page per occurrence) instead of the single `BookId`.
+- dictionaryapi.dev was still returning Cloudflare 530 for uncached words at the end of session 6 (edge-cached
+  words like "petrichor" worked). If outages keep recurring, add a second provider behind `IDictionaryLookupService`.
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.
 - Auth: none yet. Needs a decision before exposing the container beyond the LAN.
 - Local runtime is ASP.NET Core 10.0.7 while packages are 10.0.13; works, but consider updating the SDK/runtime.

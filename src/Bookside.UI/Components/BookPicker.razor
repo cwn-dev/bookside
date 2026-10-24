@@ -1,0 +1,126 @@
+@* Picks one book by searching the library (type-ahead). Bind with @bind-Value and @bind-SelectedTitle. *@
+@inherits InputBase<Guid?>
+@inject ILibraryService Library
+
+<div class="book-picker">
+    @if (CurrentValue is not null)
+    {
+        <div class="selected">
+            <span class="selected-title">@(SelectedTitle ?? "Selected book")</span>
+            <button type="button" class="btn btn-sm" aria-label="Remove book" @onclick="ClearAsync">Remove</button>
+        </div>
+    }
+    else
+    {
+        @* form= points at no form, so Enter here picks a result instead of submitting the surrounding EditForm. *@
+        <input id="@Id" type="search" form="@_detachedFormId" class="@CssClass" role="combobox" aria-autocomplete="list"
+               aria-expanded="@(_results.Count > 0 ? "true" : "false")" aria-controls="@_listId"
+               autocomplete="off" placeholder="Search your books"
+               @bind="_search" @bind:event="oninput" @bind:after="SearchChangedAsync" @onkeydown="KeyDownAsync" />
+        @if (_results.Count > 0)
+        {
+            <ul id="@_listId" class="results" role="listbox" aria-label="Books">
+                @foreach (var book in _results)
+                {
+                    <li @key="book.Id" role="option" aria-selected="false">
+                        <button type="button" @onclick="() => SelectAsync(book)">
+                            <span class="result-title">@book.Title</span>
+                            @if (book.Authors.Count > 0)
+                            {
+                                <span class="muted"> · @string.Join(", ", book.Authors)</span>
+                            }
+                        </button>
+                    </li>
+                }
+            </ul>
+        }
+        else if (_noMatches)
+        {
+            <p class="muted no-matches">No books match.</p>
+        }
+    }
+</div>
+
+@code {
+    internal const int MaxResults = 8;
+    internal static readonly TimeSpan SearchDelay = TimeSpan.FromMilliseconds(250);
+
+    private readonly string _listId = $"bp-{Guid.NewGuid():N}"[..11];
+    private readonly string _detachedFormId = $"bp-none-{Guid.NewGuid():N}"[..16];
+    private string? _search;
+    private IReadOnlyList<BookSummary> _results = [];
+    private bool _noMatches;
+    private CancellationTokenSource? _searchCts;
+
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public string? SelectedTitle { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> SelectedTitleChanged { get; set; }
+
+    private async Task SearchChangedAsync()
+    {
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        var cts = _searchCts = new CancellationTokenSource();
+
+        if (string.IsNullOrWhiteSpace(_search))
+        {
+            _results = [];
+            _noMatches = false;
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(SearchDelay, cts.Token);
+            var page = await Library.ListBooksAsync(new BookQuery { Search = _search.Trim(), Take = MaxResults }, cts.Token);
+            _results = page.Items;
+            _noMatches = page.Items.Count == 0;
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+            // Still typing.
+        }
+    }
+
+    private async Task KeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && _results.Count > 0)
+        {
+            await SelectAsync(_results[0]);
+        }
+    }
+
+    private async Task SelectAsync(BookSummary book)
+    {
+        _search = null;
+        _results = [];
+        _noMatches = false;
+        await SelectedTitleChanged.InvokeAsync(book.Title);
+        CurrentValue = book.Id;
+    }
+
+    private async Task ClearAsync()
+    {
+        await SelectedTitleChanged.InvokeAsync(null);
+        CurrentValue = null;
+    }
+
+    protected override bool TryParseValueFromString(string? value, out Guid? result, out string validationErrorMessage) =>
+        throw new NotSupportedException("The value is set by picking a book, never parsed from text.");
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _searchCts?.Cancel();
+            _searchCts?.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+}

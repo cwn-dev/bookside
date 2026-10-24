@@ -60,7 +60,7 @@ else
                 <div><dt>Times read</dt><dd>@_book.TimesRead</dd></div>
                 @if (_book.VocabularyWordCount > 0)
                 {
-                    <div><dt>Words saved</dt><dd>@_book.VocabularyWordCount</dd></div>
+                    <div><dt>Words saved</dt><dd><a href="words?book=@_book.Id">@_book.VocabularyWordCount</a></dd></div>
                 }
             </dl>
 
@@ -71,9 +71,25 @@ else
 
             <div class="actions">
                 <a class="btn" href="books/@_book.Id/edit">Edit</a>
+                @if (_newWord is null)
+                {
+                    <button type="button" class="btn" @onclick="OpenAddWord">Add word</button>
+                }
                 <ConfirmButton Text="Delete book" Prompt="Delete this book, its reading log and comments?" OnConfirm="DeleteAsync" />
             </div>
             <ErrorAlert Messages="_errors" />
+
+            @if (_newWord is not null)
+            {
+                <div class="card add-word">
+                    <h2>Add a word</h2>
+                    <WordForm @key="_newWordKey" Model="_newWord" Compact AutoFocus SubmitText="Add" OnSaved="WordAddedAsync" OnCancel="CloseAddWord" />
+                    @if (_addedWord is not null)
+                    {
+                        <WordAddedNotice Word="_addedWord" />
+                    }
+                </div>
+            }
         </div>
     </article>
 
@@ -208,6 +224,10 @@ else
     private CommentFormModel? _editingComment;
     private Guid? _editingCommentId;
 
+    private WordFormModel? _newWord;
+    private int _newWordKey;
+    private WordDetails? _addedWord;
+
     [Parameter]
     public Guid Id { get; set; }
 
@@ -220,6 +240,7 @@ else
     {
         CancelEdit();
         CancelCommentEdit();
+        CloseAddWord();
         _newComment = new();
         _errors = [];
         await ReloadAsync();
@@ -327,6 +348,27 @@ else
             CancelCommentEdit();
         }
 
+        await ReloadAsync();
+    }
+
+    private void OpenAddWord()
+    {
+        _newWord = new WordFormModel { BookId = _book!.Id, BookTitle = _book.Title };
+        _newWordKey++;
+    }
+
+    private void CloseAddWord()
+    {
+        _newWord = null;
+        _addedWord = null;
+    }
+
+    private async Task WordAddedAsync(WordDetails word)
+    {
+        // Stay open for the next word; keep the page number, which usually doesn't change between words.
+        _addedWord = word;
+        _newWord = new WordFormModel { BookId = word.BookId, BookTitle = word.BookTitle, PageNumber = word.PageNumber };
+        _newWordKey++;
         await ReloadAsync();
     }
 

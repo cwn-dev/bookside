@@ -37,6 +37,24 @@ public sealed class VocabularyServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task Find_matches_the_normalized_term_in_the_language()
+    {
+        Dictionary.Define("ennui", "Listlessness.");
+        var book = await AddBookAsync("Mort");
+        var word = Success(await Vocabulary.AddWordAsync(new WordInput { Term = "Ennui", BookId = book.Id }, Ct));
+
+        var found = await Vocabulary.FindWordAsync("  ENNUI ", cancellationToken: Ct);
+
+        Assert.NotNull(found);
+        Assert.Equal(word.Id, found.Id);
+        Assert.Equal("Mort", found.BookTitle);
+        Assert.Equal("Listlessness.", found.ShortDefinition);
+        Assert.Null(await Vocabulary.FindWordAsync("ennui", "fr", Ct));
+        Assert.Null(await Vocabulary.FindWordAsync("enn", cancellationToken: Ct));
+        Assert.Null(await Vocabulary.FindWordAsync(" ", cancellationToken: Ct));
+    }
+
+    [Fact]
     public async Task Invalid_word_input_returns_field_errors()
     {
         var error = Failure(

@@ -1,0 +1,91 @@
+.quick-add {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.quick-add ::deep .alert {
+    margin: 0;
+}
+
+.book-filter {
+    gap: 0.5rem;
+    max-width: 100%;
+}
+
+.word-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--border);
+}
+
+.word-row {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.6rem;
+    align-items: baseline;
+    padding: 0.8rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.word-row:hover {
+    background: var(--surface-muted);
+}
+
+.term {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+/* The whole row opens the word; the book link sits above the stretched area. */
+.term::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
+.word-row:hover .term {
+    color: var(--accent);
+}
+
+.short-definition {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--text-muted);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.book {
+    position: relative;
+    z-index: 1;
+    flex-basis: 100%;
+    font-size: 0.88rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (min-width: 760px) {
+    .word-row {
+        padding: 0.9rem 0.75rem;
+    }
+
+    .book {
+        flex-basis: auto;
+        margin-left: auto;
+        max-width: 40%;
+    }
+
+    .short-definition {
+        order: 1;
+    }
+}
