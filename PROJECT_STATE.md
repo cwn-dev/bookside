@@ -166,6 +166,12 @@
     hanging) is 16 s.
 
 ## Next
+0. **Quick fix first thing next session (user's request):** after a full page load/refresh, the `h1` page titles
+   ("Library", "Vocabulary") show the orange focus outline. Cause: `Routes.razor` has
+   `<FocusOnNavigate Selector="h1">`, which focuses the heading programmatically, and `:focus-visible` in
+   `bookside.css` matches that focus when there's been no pointer input yet. Fix: keep `FocusOnNavigate` (screen
+   readers announce the new page) and hide the outline on programmatically focused headings, e.g.
+   `h1:focus { outline: none; }` (what the Blazor template does). Check both widths and dark mode.
 1. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
    Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
 2. **Random word on the library page (user's request).** Show one random vocabulary word on `/books` (the home
