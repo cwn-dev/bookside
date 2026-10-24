@@ -13,6 +13,12 @@ public interface IVocabularyService
     Task<WordSummary?> FindWordAsync(string term, string language = "en", CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// A random word that has a definition, other than <paramref name="excludeWordId"/> when another one exists.
+    /// Null when no word has a definition.
+    /// </summary>
+    Task<WordSummary?> GetRandomWordAsync(Guid? excludeWordId = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Saves the word, then tries to attach a definition (cache, then dictionary API). If the dictionary is
     /// unavailable the word is still saved with no definition; use <see cref="DefineWordAsync"/> to retry.
     /// </summary>

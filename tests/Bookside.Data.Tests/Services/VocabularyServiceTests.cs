@@ -55,6 +55,39 @@ public sealed class VocabularyServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task Random_word_has_a_definition_and_avoids_the_excluded_one()
+    {
+        Dictionary.Define("ennui", "Listlessness.");
+        Dictionary.Define("sonder", "Awareness of others' lives.");
+        var ennui = Success(await Vocabulary.AddWordAsync(new WordInput { Term = "ennui" }, Ct));
+        var sonder = Success(await Vocabulary.AddWordAsync(new WordInput { Term = "sonder" }, Ct));
+        Success(await Vocabulary.AddWordAsync(new WordInput { Term = "undefined" }, Ct));
+
+        for (var i = 0; i < 10; i++)
+        {
+            Assert.Equal(sonder.Id, (await Vocabulary.GetRandomWordAsync(ennui.Id, Ct))?.Id);
+            Assert.Contains((await Vocabulary.GetRandomWordAsync(cancellationToken: Ct))?.Id, new Guid?[] { ennui.Id, sonder.Id });
+        }
+    }
+
+    [Fact]
+    public async Task Random_word_returns_the_excluded_word_when_it_is_the_only_one()
+    {
+        Dictionary.Define("ennui", "Listlessness.");
+        var ennui = Success(await Vocabulary.AddWordAsync(new WordInput { Term = "ennui" }, Ct));
+
+        Assert.Equal(ennui.Id, (await Vocabulary.GetRandomWordAsync(ennui.Id, Ct))?.Id);
+    }
+
+    [Fact]
+    public async Task Random_word_is_null_without_defined_words()
+    {
+        Success(await Vocabulary.AddWordAsync(new WordInput { Term = "undefined" }, Ct));
+
+        Assert.Null(await Vocabulary.GetRandomWordAsync(cancellationToken: Ct));
+    }
+
+    [Fact]
     public async Task Invalid_word_input_returns_field_errors()
     {
         var error = Failure(

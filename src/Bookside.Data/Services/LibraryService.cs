@@ -573,7 +573,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             : null;
     }
 
-    private static ReadingSessionDto ToDto(ReadingSession s) => new()
+    internal static ReadingSessionDto ToDto(ReadingSession s) => new()
     {
         Id = s.Id,
         BookId = s.BookId,

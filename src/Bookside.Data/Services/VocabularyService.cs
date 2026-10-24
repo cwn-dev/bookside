@@ -62,6 +62,48 @@ internal sealed class VocabularyService(
         return word is null ? null : ToSummary(word);
     }
 
+    public async Task<WordSummary?> GetRandomWordAsync(Guid? excludeWordId = null, CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await PickDefinedWordAsync(db, Random.Shared.Next, excludeWordId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The word at index <paramref name="choose"/>(count) among words with a definition, in id order; words other
+    /// than <paramref name="excludeWordId"/> are preferred. Null when no word has a definition.
+    /// </summary>
+    internal static async Task<WordSummary?> PickDefinedWordAsync(
+        BooksideDbContext db,
+        Func<int, int> choose,
+        Guid? excludeWordId,
+        CancellationToken cancellationToken)
+    {
+        var defined = db.VocabularyWords.AsNoTracking()
+            .Where(w => w.DictionaryEntry != null && w.DictionaryEntry.Status == DictionaryLookupStatus.Found);
+
+        var candidates = excludeWordId is { } excluded ? defined.Where(w => w.Id != excluded) : defined;
+        var count = await candidates.CountAsync(cancellationToken).ConfigureAwait(false);
+        if (count == 0 && excludeWordId is not null)
+        {
+            candidates = defined;
+            count = await candidates.CountAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        if (count == 0)
+        {
+            return null;
+        }
+
+        var word = await candidates
+            .OrderBy(w => w.Id)
+            .Skip(choose(count))
+            .Include(w => w.Book)
+            .Include(w => w.DictionaryEntry)
+            .FirstAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return ToSummary(word);
+    }
+
     public async Task<Result<WordDetails>> GetWordAsync(Guid wordId, CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
@@ -152,7 +194,7 @@ internal sealed class VocabularyService(
         return (await LoadDetailsAsync(db, word.Id, cancellationToken).ConfigureAwait(false))!;
     }
 
-    private static WordSummary ToSummary(VocabularyWord w) => new()
+    internal static WordSummary ToSummary(VocabularyWord w) => new()
     {
         Id = w.Id,
         Term = w.Term,

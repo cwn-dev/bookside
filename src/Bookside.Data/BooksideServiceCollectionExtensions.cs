@@ -1,4 +1,5 @@
 using Bookside.Core.Books.Services;
+using Bookside.Core.Home.Services;
 using Bookside.Core.Vocabulary.Services;
 using Bookside.Data.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,7 @@ public static class BooksideServiceCollectionExtensions
         services.AddScoped<ILibraryService, LibraryService>();
         services.AddScoped<IVocabularyService, VocabularyService>();
         services.AddScoped<IDefinitionService, DefinitionService>();
+        services.AddScoped<IHomeService, HomeService>();
         return services;
     }
 }

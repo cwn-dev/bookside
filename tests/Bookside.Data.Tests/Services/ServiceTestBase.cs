@@ -1,5 +1,6 @@
 using Bookside.Core.Books.Services;
 using Bookside.Core.Common;
+using Bookside.Core.Home.Services;
 using Bookside.Core.Vocabulary;
 using Bookside.Core.Vocabulary.Lookup;
 using Bookside.Core.Vocabulary.Services;
@@ -24,6 +25,7 @@ public abstract class ServiceTestBase : IAsyncLifetime
         {
             ConfigureServices = services =>
             {
+                ConfigureServices(services);
                 services.AddBooksideServices().AddSingleton<IDictionaryLookupService>(Dictionary);
                 foreach (var fallback in Fallbacks)
                 {
@@ -31,6 +33,11 @@ public abstract class ServiceTestBase : IAsyncLifetime
                 }
             },
         };
+    }
+
+    /// <summary>Runs before the production registrations, e.g. to register a <see cref="TestClock"/> as the TimeProvider.</summary>
+    protected virtual void ConfigureServices(IServiceCollection services)
+    {
     }
 
     protected static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -44,6 +51,8 @@ public abstract class ServiceTestBase : IAsyncLifetime
     protected ILibraryService Library => _scope.ServiceProvider.GetRequiredService<ILibraryService>();
 
     protected IVocabularyService Vocabulary => _scope.ServiceProvider.GetRequiredService<IVocabularyService>();
+
+    protected IHomeService Home => _scope.ServiceProvider.GetRequiredService<IHomeService>();
 
     protected IDefinitionService Definitions => _scope.ServiceProvider.GetRequiredService<IDefinitionService>();
 

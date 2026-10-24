@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 8, 2026-10-24)
+# Bookside: project state (end of session 9, 2026-10-24)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -15,12 +15,14 @@
   - Service contracts + DTO records: `ILibraryService` (books, authors, covers, reading sessions, comments:
     `Add/Update/DeleteCommentAsync`, `BookDetails.Comments` newest first, `BookCommentDto.IsEdited`),
     `IVocabularyService` (words; session 6 added `FindWordAsync(term, language)` → `WordSummary?` by normalized term),
-    `IDefinitionService` (cache-aware definitions).
+    `IDefinitionService` (cache-aware definitions). Session 9: `IVocabularyService.GetRandomWordAsync(excludeWordId)`
+    (random word with a Found definition) and `Home/Services/IHomeService.GetHomeAsync()` → `HomeSummary` (reading and
+    recently finished as `BookRead` = book + session DTO, recent words, word of the day, `HomeStats` incl. `Today`).
   - External: `IBookLookupService` + `BookMetadata`, `IDictionaryLookupService` + `DictionaryLookupResult` +
     `DictionaryLookupException` (no implementations yet).
 - `Bookside.Data`: `BooksideDbContext` (UTC DateTimes, enums as strings, SaveChanges stamps timestamps, normalizes
   terms, enforces cover size; `DictionaryEntry.Meanings` via EF 10 `ComplexCollection(...).ToJson()`).
-  `Services/`: `LibraryService`, `VocabularyService`, `DefinitionService` (internal), registered by
+  `Services/`: `LibraryService`, `VocabularyService`, `DefinitionService`, `HomeService` (session 9) (internal), registered by
   `AddBooksideServices()` (scoped; adds `TimeProvider.System` if missing).
 - `Bookside.Data.Sqlite`: `AddBooksideSqlite(path)` registers `IDbContextFactory<BooksideDbContext>`;
   `InitializeBooksideDatabaseAsync()` creates the directory, runs `MigrateAsync`, sets WAL. Migrations `InitialCreate`,
@@ -33,6 +35,12 @@
   HttpClient (base address, `{name}-standard` resilience options); shared `DictionaryHttp` (GET + transport-failure
   mapping) and `MeaningListBuilder` (merge by part of speech, de-dup, phonetic length). `Program.cs` registers
   freedictionaryapi.com, then dictionaryapi.dev.
+- Home page (session 9): `HomePage` (`/`, replaces the redirect to `/books`; the brand links to it, no nav link).
+  Currently reading cards (cover, authors, "Started … · day N", inline "Finished" form = `ReadingSessionForm`, inline
+  "Add word" = `WordForm` that stays open), word of the day + "Another", quick-add word, recent words (5), recently
+  finished (4, rating + date), stats (finished this year, words this month, book and word counts). Empty library →
+  welcome card (add a book, or add a word). Phones: one column in that order (column wrappers are `display: contents`
+  and sections use `order`); ≥900px: 2fr main column (reading, finished) + 1fr side column, stats full width.
 - `Bookside.UI` (session 4, RCL; references only Core + `Microsoft.AspNetCore.Components.Web`, so MAUI can reuse it):
   `Layout/MainLayout` (sticky header nav, `ErrorBoundary`), pages `LibraryPage` (`/books`: search, filter chips,
   sort, cover grid, "Show more" paging of 48), `BookDetailsPage` (`/books/{id}`: details, cover editor, reading
@@ -62,13 +70,15 @@
   cache mount; runtime `aspnet:10.0-noble-chiseled-extra`, UID 1654, port 8080), `.dockerignore`, `compose.yaml`
   (`./data:/data`, `TZ`, forwarded headers on, port bound to `127.0.0.1` by default). README "Deploy" covers setup,
   backup, proxy WebSockets.
-- `Bookside.UI.Tests`: 54 tests (session 8: `DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- `Bookside.UI.Tests`: 61 tests (session 9: `HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
 - `Bookside.Integrations.Tests`: 26 tests through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 67 passing tests (session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
+- `Bookside.Data.Tests`: 79 passing tests (session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
+  virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
+  `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
   registers extra `FakeDictionaryLookupService(source)` providers after `Dictionary`). Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
   SQLite + production registrations + `FakeDictionaryLookupService`), `Isbn` and `Result` tests.
 
@@ -170,6 +180,18 @@
   - `./data` bind mount owned by UID 1654. Data Protection keys there unencrypted at rest (startup warning
     "No XML encryptor configured" is expected); they only protect antiforgery tokens and circuit state.
 
+- **Home page (session 9, user's choices from a proposed layout):**
+  - One `IHomeService.GetHomeAsync()` call (one context, ~8 queries) instead of several existing calls:
+    `BookSummary` has no start date or rating, and stats needed counts; one round trip suits the future API client.
+  - Word of the day: a Found word picked by the local date (SplitMix64 of `DayNumber` mod count, id order), so it
+    stays put all day unless words are added/defined; "Another" calls `GetRandomWordAsync` and survives reloads
+    after adding a word. Hidden when no word has a definition.
+  - Brand links to `/`; nav stays Library + Vocabulary (no "Home" link).
+  - Recently finished = each book's latest finish (over-fetch 20 sessions, de-duplicate in memory). "Finished this
+    year" counts distinct books. "Words this month" starts at local midnight (server zone; DST-skipped midnight →
+    first valid time).
+  - "Finished" on a reading card opens the same `ReadingSessionForm` inline (status Finished, today), not a link to the book page.
+
 - **Dictionary fallback chain (session 7, all user's choices):**
   - Each provider is an `IDictionaryLookupService`; `DefinitionService` takes `IEnumerable<IDictionaryLookupService>`
     and tries them in registration order (no config). Chosen over a composite provider: fallback sits next to the
@@ -186,35 +208,22 @@
     hanging) is 16 s.
 
 ## Next
-1. **Next session: a real home page at `/` (user's request).** Today `Home` just redirects to `/books`. Make it a
-   dashboard; the user wants **"Currently reading"** first and invited creativity for the rest. Ideas to propose:
-   currently reading (cover, title, started date, days in, "Finish" / "Add word" shortcuts); recently finished
-   books (with rating); latest vocabulary words added (term + short definition, links); a random/"word of the
-   day" card (this would absorb item 3); small stats (books finished this year, words saved this month);
-   quick-add word box. Empty states for a new library (call to action: add a book / a word).
-   Decisions to make: which sections and their order on both widths (one column on phones, two on desktop?);
-   nav: "Home" link vs the brand linking to `/` (it links to `books` now); how many items per section; whether
-   the dashboard gets one summary service call (e.g. `ILibraryService.GetHomeSummaryAsync` / a new
-   `IHomeService`) or several existing calls. Propose the layout before building.
-2. **First deploy on the Docker host (user, any time):** `docker compose up -d --build`, check through the proxy
+1. **First deploy on the Docker host (user, any time):** `docker compose up -d --build`, check through the proxy
    (WebSockets), restart and confirm an open page reconnects. Fix anything the untested image build turns up.
-3. **Random word on the library page (user's request; may move into the home page, item 1).** Show one random
-   vocabulary word on `/books`, placed where it looks good at both widths (e.g. a small card above or beside the toolbar), linking to
-   the word page. Decisions to make: placement/design; new each visit vs once per day; which words qualify (only
-   defined ones?); hide when the list is empty; a "show another" action? Needs a service method
-   (e.g. `IVocabularyService.GetRandomWordAsync`) instead of loading the whole list.
-4. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
+2. **Random word on the library page (user's earlier request): probably drop.** The home page's word of the day
+   covers it, and `GetRandomWordAsync` exists if it's still wanted on `/books`. Ask the user.
+3. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
    `/words`. Propose the design before building. Decisions to make: algorithm (Leitner boxes vs SM-2 vs FSRS);
    card front/back (term → definition, or also definition → term, sentence from the book as a cue); grading
    (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
    migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
-   touch (tap/swipe) on both widths; whether the library-page word should prefer due words.
-5. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
+   touch (tap/swipe) on both widths; whether the word of the day should prefer due words; a "Review" card on the home page.
+4. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
    the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
    list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
-6. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+5. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table

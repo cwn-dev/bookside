@@ -1,0 +1,331 @@
+/* Phones: one column in priority order (the column wrappers dissolve so `order` can interleave their sections).
+   Wide screens: main column (reading, finished) beside a narrower side column (word, quick-add, recent words). */
+
+.home {
+    display: grid;
+    gap: 1.75rem;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.home-main,
+.home-side {
+    display: contents;
+}
+
+.reading { order: 1; }
+.word-of-the-day { order: 2; }
+.quick-add { order: 3; }
+.recent-words { order: 4; }
+.finished { order: 5; }
+.stats { order: 6; }
+
+@media (min-width: 900px) {
+    .home {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        gap: 2rem;
+        align-items: start;
+    }
+
+    .home-main,
+    .home-side {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        min-width: 0;
+    }
+
+    .stats {
+        grid-column: 1 / -1;
+    }
+}
+
+section h2 {
+    font-size: 1.25rem;
+}
+
+.section-header {
+    margin-bottom: 0.75rem;
+}
+
+.section-header a {
+    text-decoration: none;
+    font-size: 0.92rem;
+}
+
+.eyebrow {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* ---------- Welcome (empty library) ---------- */
+
+.welcome {
+    max-width: 36rem;
+    margin: 1rem auto;
+}
+
+.welcome h1 {
+    margin-top: 0;
+}
+
+.welcome h2 {
+    margin: 1.75rem 0 0.75rem;
+    font-size: 1.05rem;
+}
+
+/* ---------- Currently reading ---------- */
+
+.nothing p {
+    margin-top: 0;
+}
+
+.reading-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+}
+
+.reading-book {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.reading-cover {
+    flex: 0 0 76px;
+}
+
+/* Small cover: tighter placeholder text so short titles don't break mid-word. */
+.reading-cover ::deep .placeholder {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+}
+
+@media (min-width: 640px) {
+    .reading-cover {
+        flex-basis: 96px;
+    }
+}
+
+.reading-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.book-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.book-title:hover {
+    color: var(--accent);
+}
+
+.authors {
+    overflow-wrap: anywhere;
+}
+
+.since {
+    font-size: 0.9rem;
+}
+
+.reading-info .actions {
+    margin-top: 0.6rem;
+}
+
+.panel {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.panel h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1.05rem;
+}
+
+.panel ::deep .alert {
+    margin: 0.75rem 0 0;
+}
+
+/* ---------- Recently finished ---------- */
+
+.finished-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 560px) {
+    .finished-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.finished-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.finished-card .title {
+    margin-top: 0.4rem;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.finished-card:hover .title {
+    color: var(--accent);
+}
+
+.finished-card .date {
+    font-size: 0.85rem;
+}
+
+/* ---------- Word of the day ---------- */
+
+.word-of-the-day {
+    background: var(--accent-soft);
+    border-color: transparent;
+}
+
+.wotd-term {
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    font-weight: 600;
+    line-height: 1.15;
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.wotd-term:hover {
+    color: var(--accent);
+}
+
+.wotd-definition {
+    margin: 0.5rem 0 0;
+}
+
+.wotd-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.wotd-footer .btn {
+    margin-left: auto;
+    color: var(--accent);
+}
+
+/* ---------- Quick add ---------- */
+
+.quick-add ::deep .alert {
+    margin: 0.75rem 0 0;
+}
+
+/* ---------- Recent words ---------- */
+
+.recent-word-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--border);
+}
+
+.recent-word-list li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.recent-term {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.recent-term:hover {
+    color: var(--accent);
+}
+
+.recent-definition {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---------- Stats ---------- */
+
+.stats dl {
+    margin: 0;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+    .stats dl {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.stats dl > div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.stats dt {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.stats dt a {
+    color: inherit;
+}
+
+.stats dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+}

@@ -1,0 +1,283 @@
+@page "/"
+@inject IHomeService HomeService
+@inject IVocabularyService Vocabulary
+
+<PageTitle>Bookside</PageTitle>
+
+@if (_home is null)
+{
+    <h1 class="visually-hidden">Home</h1>
+    <p class="loading" role="status">Loading…</p>
+}
+else if (_home.Stats is { BookCount: 0, WordCount: 0 })
+{
+    <div class="welcome card">
+        <h1>Welcome to Bookside</h1>
+        <p class="muted">Keep track of what you read and the words you meet along the way.</p>
+        <div class="actions">
+            <a class="btn btn-primary" href="books/new">Add your first book</a>
+        </div>
+        <h2>Or start with a word</h2>
+        <WordForm @key="_quickAddKey" Model="_quickAdd" Compact SubmitText="Add" OnSaved="QuickAddedAsync" />
+    </div>
+}
+else
+{
+    <h1 class="visually-hidden">Home</h1>
+    <div class="home">
+        <div class="home-main">
+            <section class="reading" aria-labelledby="reading-heading">
+                <div class="section-header">
+                    <h2 id="reading-heading">Currently reading</h2>
+                </div>
+                @if (_home.Reading.Count == 0)
+                {
+                    <div class="card nothing">
+                        <p>You’re not reading anything right now.</p>
+                        <a class="btn" href="books?filter=unread">Pick an unread book</a>
+                    </div>
+                }
+                else
+                {
+                    <ul class="reading-list">
+                        @foreach (var read in _home.Reading)
+                        {
+                            <li @key="read.Session.Id" class="card reading-card">
+                                <div class="reading-book">
+                                    <a class="reading-cover" href="books/@read.BookId" tabindex="-1" aria-hidden="true">
+                                        <CoverImage BookId="read.BookId" Title="@read.Title" CoverSha256="@read.CoverSha256" />
+                                    </a>
+                                    <div class="reading-info">
+                                        <a class="book-title" href="books/@read.BookId">@read.Title</a>
+                                        @if (read.Authors.Count > 0)
+                                        {
+                                            <span class="muted authors">@string.Join(", ", read.Authors)</span>
+                                        }
+                                        <span class="muted since">@Since(read.Session)</span>
+                                        @if (_panelSessionId != read.Session.Id)
+                                        {
+                                            <div class="actions">
+                                                <button type="button" class="btn btn-primary btn-sm" @onclick="() => OpenFinish(read)">Finished</button>
+                                                <button type="button" class="btn btn-sm" @onclick="() => OpenAddWord(read)">Add word</button>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (_panelSessionId == read.Session.Id && _finishing is not null)
+                                {
+                                    <div class="panel">
+                                        <h3>Finished reading</h3>
+                                        <ReadingSessionForm BookId="read.BookId" SessionId="read.Session.Id" Model="_finishing" SubmitText="Save"
+                                                            OnSaved="FinishedAsync" OnCancel="ClosePanel" />
+                                    </div>
+                                }
+                                else if (_panelSessionId == read.Session.Id && _bookWord is not null)
+                                {
+                                    <div class="panel">
+                                        <h3>Add a word</h3>
+                                        <WordForm @key="_bookWordKey" Model="_bookWord" Compact AutoFocus SubmitText="Add"
+                                                  OnSaved="BookWordAddedAsync" OnCancel="ClosePanel" />
+                                        @if (_bookWordAdded is not null)
+                                        {
+                                            <WordAddedNotice Word="_bookWordAdded" />
+                                        }
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            @if (_home.RecentlyFinished.Count > 0)
+            {
+                <section class="finished" aria-labelledby="finished-heading">
+                    <div class="section-header">
+                        <h2 id="finished-heading">Recently finished</h2>
+                        <a href="books?filter=finished&sort=recentlyfinished">All read →</a>
+                    </div>
+                    <ul class="finished-grid">
+                        @foreach (var read in _home.RecentlyFinished)
+                        {
+                            <li @key="read.Session.Id">
+                                <a class="finished-card" href="books/@read.BookId">
+                                    <CoverImage BookId="read.BookId" Title="@read.Title" CoverSha256="@read.CoverSha256" />
+                                    <span class="title">@read.Title</span>
+                                    <RatingStars Rating="read.Session.Rating" />
+                                    @if (read.Session.FinishedOn is DateOnly finished)
+                                    {
+                                        <span class="muted date">@Format(finished)</span>
+                                    }
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+        </div>
+
+        <div class="home-side">
+            @if (_word is not null)
+            {
+                <section class="card word-of-the-day" aria-labelledby="wotd-heading">
+                    <h2 id="wotd-heading" class="eyebrow">@(_word.Id == _home.WordOfTheDay?.Id ? "Word of the day" : "Another word")</h2>
+                    <a class="wotd-term" href="words/@_word.Id">@_word.Term</a>
+                    @if (_word.ShortDefinition is not null)
+                    {
+                        <p class="wotd-definition">@_word.ShortDefinition</p>
+                    }
+                    <div class="wotd-footer">
+                        @if (_word.BookId is Guid bookId)
+                        {
+                            <span class="muted">from <a href="books/@bookId">@_word.BookTitle</a></span>
+                        }
+                        <button type="button" class="btn btn-sm btn-ghost" disabled="@_pickingWord" @onclick="AnotherWordAsync">Another</button>
+                    </div>
+                </section>
+            }
+
+            <section class="card quick-add" aria-labelledby="quick-add-heading">
+                <h2 id="quick-add-heading" class="eyebrow">Add a word</h2>
+                <WordForm @key="_quickAddKey" Model="_quickAdd" Compact AutoFocus="_quickAdded is not null" SubmitText="Add" OnSaved="QuickAddedAsync" />
+                @if (_quickAdded is not null)
+                {
+                    <WordAddedNotice Word="_quickAdded" />
+                }
+            </section>
+
+            @if (_home.RecentWords.Count > 0)
+            {
+                <section class="recent-words" aria-labelledby="words-heading">
+                    <div class="section-header">
+                        <h2 id="words-heading">Recent words</h2>
+                        <a href="words">All words →</a>
+                    </div>
+                    <ul class="recent-word-list">
+                        @foreach (var word in _home.RecentWords)
+                        {
+                            <li @key="word.Id">
+                                <a class="recent-term" href="words/@word.Id">@word.Term</a>
+                                @if (word.ShortDefinition is not null)
+                                {
+                                    <span class="muted recent-definition">@word.ShortDefinition</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+        </div>
+
+        <section class="stats" aria-label="Stats">
+            <dl>
+                <div><dt>Finished in @_home.Stats.Today.Year</dt><dd>@_home.Stats.BooksFinishedThisYear</dd></div>
+                <div><dt>Words in @_home.Stats.Today.ToString("MMMM", CultureInfo.CurrentCulture)</dt><dd>@_home.Stats.WordsAddedThisMonth</dd></div>
+                <div><dt><a href="books">Books</a></dt><dd>@_home.Stats.BookCount</dd></div>
+                <div><dt><a href="words">Words</a></dt><dd>@_home.Stats.WordCount</dd></div>
+            </dl>
+        </section>
+    </div>
+}
+
+@code {
+    private HomeSummary? _home;
+    private WordSummary? _word;
+    private bool _pickingWord;
+
+    private WordFormModel _quickAdd = new();
+    private int _quickAddKey;
+    private WordDetails? _quickAdded;
+
+    // One open panel at a time, on one reading card: either the finish form or the add-word form.
+    private Guid? _panelSessionId;
+    private ReadingSessionFormModel? _finishing;
+    private WordFormModel? _bookWord;
+    private int _bookWordKey;
+    private WordDetails? _bookWordAdded;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _home = await HomeService.GetHomeAsync();
+
+        // Keep a word picked with "Another" across reloads (e.g. after adding a word).
+        _word ??= _home.WordOfTheDay;
+    }
+
+    private async Task AnotherWordAsync()
+    {
+        _pickingWord = true;
+        try
+        {
+            _word = await Vocabulary.GetRandomWordAsync(_word?.Id) ?? _word;
+        }
+        finally
+        {
+            _pickingWord = false;
+        }
+    }
+
+    private async Task QuickAddedAsync(WordDetails word)
+    {
+        // A fresh model and form instance clears the term and any validation state.
+        _quickAdded = word;
+        _quickAdd = new();
+        _quickAddKey++;
+        await ReloadAsync();
+    }
+
+    private void OpenFinish(BookRead read)
+    {
+        ClosePanel();
+        _panelSessionId = read.Session.Id;
+        _finishing = ReadingSessionFormModel.From(read.Session);
+        _finishing.Status = ReadingStatus.Finished;
+        _finishing.FinishedOn = _home!.Stats.Today;
+    }
+
+    private void OpenAddWord(BookRead read)
+    {
+        ClosePanel();
+        _panelSessionId = read.Session.Id;
+        _bookWord = new WordFormModel { BookId = read.BookId, BookTitle = read.Title };
+        _bookWordKey++;
+    }
+
+    private void ClosePanel()
+    {
+        _panelSessionId = null;
+        _finishing = null;
+        _bookWord = null;
+        _bookWordAdded = null;
+    }
+
+    private async Task FinishedAsync()
+    {
+        ClosePanel();
+        await ReloadAsync();
+    }
+
+    private async Task BookWordAddedAsync(WordDetails word)
+    {
+        // Stay open for the next word; keep the page number, which usually doesn't change between words.
+        _bookWordAdded = word;
+        _bookWord = new WordFormModel { BookId = word.BookId, BookTitle = word.BookTitle, PageNumber = word.PageNumber };
+        _bookWordKey++;
+        await ReloadAsync();
+    }
+
+    private string Since(ReadingSessionDto session)
+    {
+        if (session.StartedOn is not DateOnly started)
+        {
+            return "Reading now";
+        }
+
+        var day = _home!.Stats.Today.DayNumber - started.DayNumber + 1;
+        return day >= 1 ? $"Started {Format(started)} · day {day}" : $"Starts {Format(started)}";
+    }
+
+    private static string Format(DateOnly date) => date.ToString("d MMM yyyy", CultureInfo.CurrentCulture);
+}

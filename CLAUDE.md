@@ -49,7 +49,8 @@ docker compose up -d --build                                         # on the Do
   primary handler (retry delay zeroed via the `{clientName}-standard` resilience options).
 - `tests/Bookside.Data.Tests`: tests against real temp SQLite files (`SqliteTestDatabase`); service tests derive
   from `Services/ServiceTestBase` (production registrations + `FakeDictionaryLookupService`; pass fallback
-  sources to the base constructor for multi-provider tests).
+  sources to the base constructor for multi-provider tests; override `ConfigureServices` to register e.g. a
+  `TestClock` as the `TimeProvider`).
 - `src/Bookside.UI`: Razor class library with pages (`Pages/`), layout, shared `Components/`, form models (`Forms/`) and
   `wwwroot/bookside.css`; display logic with no markup as plain classes (e.g. `BookTimeline`, unit-tested without
   bUnit). References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
