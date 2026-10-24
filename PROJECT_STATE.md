@@ -1,4 +1,4 @@
-# Bookside: project state (session 8, 2026-10-24)
+# Bookside: project state (end of session 8, 2026-10-24)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
