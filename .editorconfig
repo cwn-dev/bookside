@@ -1,0 +1,19 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{csproj,props,targets,json,slnx,yml,yaml}]
+indent_size = 2
+
+# EF Core migrations are tool-generated; keep analyzers off them.
+[**/Migrations/*.cs]
+generated_code = true
+
+# Underscored test names read as sentences.
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none

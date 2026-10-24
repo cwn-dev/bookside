@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Domain entities and service contracts. Must stay free of EF Core / HTTP dependencies. -->
+</Project>

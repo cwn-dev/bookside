@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Bookside.Core/Bookside.Core.csproj" />
+    <Project Path="src/Bookside.Data.Sqlite/Bookside.Data.Sqlite.csproj" />
+    <Project Path="src/Bookside.Data/Bookside.Data.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Bookside.Data.Tests/Bookside.Data.Tests.csproj" />
+  </Folder>
+</Solution>
