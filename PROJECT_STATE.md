@@ -168,7 +168,18 @@
 ## Next
 1. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
    Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
-2. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+2. **Random word on the library page (user's request).** Show one random vocabulary word on `/books` (the home
+   page), placed where it looks good at both widths (e.g. a small card above or beside the toolbar), linking to
+   the word page. Decisions to make: placement/design; new each visit vs once per day; which words qualify (only
+   defined ones?); hide when the list is empty; a "show another" action? Needs a service method
+   (e.g. `IVocabularyService.GetRandomWordAsync`) instead of loading the whole list.
+3. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
+   `/words`. Propose the design before building. Decisions to make: algorithm (Leitner boxes vs SM-2 vs FSRS);
+   card front/back (term → definition, or also definition → term, sentence from the book as a cue); grading
+   (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
+   migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
+   touch (tap/swipe) on both widths; whether the library-page word should prefer due words.
+4. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table
