@@ -45,7 +45,8 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
 - `tests/Bookside.Data.Tests`: tests against real temp SQLite files (`SqliteTestDatabase`); service tests derive
   from `Services/ServiceTestBase` (production registrations + `FakeDictionaryLookupService`).
 - `src/Bookside.UI`: Razor class library with pages (`Pages/`), layout, shared `Components/`, form models (`Forms/`) and
-  `wwwroot/bookside.css`. References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
+  `wwwroot/bookside.css`; display logic with no markup as plain classes (e.g. `BookTimeline`, unit-tested without
+  bUnit). References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
   MAUI can reuse it. Components inject Core service interfaces.
 - `src/Bookside.Web`: Blazor Web App host (Interactive Server, no prerendering): `Program.cs`, `App.razor`, `Routes.razor`,
   error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`.

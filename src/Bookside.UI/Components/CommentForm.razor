@@ -1,0 +1,85 @@
+@* Add or edit one book comment. Validation comes from ILibraryService. *@
+@inject ILibraryService Library
+
+<div class="comment-form">
+<EditForm Model="Model" OnValidSubmit="SaveAsync">
+    <ServiceErrorValidator @ref="_validator" />
+    <ErrorAlert Messages="_errors" />
+
+    <div class="field">
+        <label for="@_textId" class="@(LabelHidden ? "visually-hidden" : null)">@Label</label>
+        <InputTextArea id="@_textId" @bind-Value="Model.Text" rows="3" maxlength="@BookComment.TextMaxLength"
+                       placeholder="@Placeholder" />
+        <ValidationMessage For="() => Model.Text" />
+    </div>
+
+    <div class="actions form-actions">
+        <button type="submit" class="btn btn-primary btn-sm" disabled="@_saving">@SubmitText</button>
+        @if (OnCancel.HasDelegate)
+        {
+            <button type="button" class="btn btn-sm" disabled="@_saving" @onclick="OnCancel">Cancel</button>
+        }
+    </div>
+</EditForm>
+</div>
+
+@code {
+    private readonly string _textId = $"cm-{Guid.NewGuid():N}"[..11];
+    private ServiceErrorValidator? _validator;
+    private IReadOnlyList<string> _errors = [];
+    private bool _saving;
+
+    [Parameter, EditorRequired]
+    public Guid BookId { get; set; }
+
+    /// <summary>The comment being edited; null to add a new one.</summary>
+    [Parameter]
+    public Guid? CommentId { get; set; }
+
+    [Parameter, EditorRequired]
+    public CommentFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public string Label { get; set; } = "Comment";
+
+    [Parameter]
+    public bool LabelHidden { get; set; }
+
+    [Parameter]
+    public string? Placeholder { get; set; }
+
+    [Parameter]
+    public string SubmitText { get; set; } = "Save";
+
+    [Parameter]
+    public EventCallback<BookCommentDto> OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _errors = [];
+        try
+        {
+            var input = Model.ToInput();
+            var result = CommentId is Guid id
+                ? await Library.UpdateCommentAsync(id, input)
+                : await Library.AddCommentAsync(BookId, input);
+
+            if (result.IsSuccess)
+            {
+                await OnSaved.InvokeAsync(result.Value);
+            }
+            else
+            {
+                _errors = _validator!.Show(result.Error);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

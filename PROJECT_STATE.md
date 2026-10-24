@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 4, 2026-10-24)
+# Bookside: project state (end of session 5, 2026-10-24)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -6,12 +6,14 @@
   ASP.NET Core packages 10.0.13 (`Microsoft.AspNetCore.Components.Web`, `Mvc.Testing`), bUnit 2.12.5.
 - `Bookside.Core`: `Book`, `Author`, `BookAuthor` (ordered join), `BookCover` (BLOB, 1:1, own table, 2 MB cap, allowed
   content types), `ReadingSession` (DateOnly start/finish, Status Reading/Finished/Abandoned, Rating 1–5, Notes),
+  `BookComment` (session 5: BookId FK cascade, plain `Text` ≤ 10 000, index (BookId, CreatedAtUtc)),
   `VocabularyWord` (optional BookId, Context, PageNumber, DictionaryEntryId), `DictionaryEntry` (definition cache,
   Found/NotFound, Meanings as JSON, RawResponse), `TermNormalizer`, `Isbn` (clean, checksum, 10→13).
   Max-length constants live on the entities and are used by both configurations and validation.
   - `Common/`: `Result` / `Result<T>` + `ServiceError` (Validation/NotFound/Conflict/Unavailable, stable `ErrorCodes`,
     per-field `FieldErrors`), `PagedResult<T>`, `Paging.Clamp` (default 50, max 200).
-  - Service contracts + DTO records: `ILibraryService` (books, authors, covers, reading sessions),
+  - Service contracts + DTO records: `ILibraryService` (books, authors, covers, reading sessions, comments:
+    `Add/Update/DeleteCommentAsync`, `BookDetails.Comments` newest first, `BookCommentDto.IsEdited`),
     `IVocabularyService` (words), `IDefinitionService` (cache-aware definitions).
   - External: `IBookLookupService` + `BookMetadata`, `IDictionaryLookupService` + `DictionaryLookupResult` +
     `DictionaryLookupException` (no implementations yet).
@@ -20,7 +22,8 @@
   `Services/`: `LibraryService`, `VocabularyService`, `DefinitionService` (internal), registered by
   `AddBooksideServices()` (scoped; adds `TimeProvider.System` if missing).
 - `Bookside.Data.Sqlite`: `AddBooksideSqlite(path)` registers `IDbContextFactory<BooksideDbContext>`;
-  `InitializeBooksideDatabaseAsync()` creates the directory, runs `MigrateAsync`, sets WAL. Migration `InitialCreate` (unchanged).
+  `InitializeBooksideDatabaseAsync()` creates the directory, runs `MigrateAsync`, sets WAL. Migrations `InitialCreate`,
+  `AddBookComments` (session 5: new table only).
 - `Bookside.Integrations` (session 3): `AddDictionaryApiClient()` registers `DictionaryApiClient` (internal) as
   `IDictionaryLookupService`: typed HttpClient + `Microsoft.Extensions.Http.Resilience` 10.11.0 standard handler
   (3 s/attempt, 2 retries, 300 ms base delay, 8 s total), 1 MB response cap. Returns the `IHttpClientBuilder`.
@@ -31,7 +34,8 @@
   history with start / finish / stop / log past read / edit / delete), `BookEditPage` (`/books/new`,
   `/books/{id}/edit`), `Home` (`/` → `/books`), `NotFound`. Components: `CoverImage` (image or coloured placeholder),
   `CoverEditor` (InputFile upload, client-side size/type check), `ReadingSessionForm`, `RatingInput`/`RatingStars`,
-  `ConfirmButton` (two-step delete), `ErrorAlert`, `ServiceErrorValidator`. `Forms/` holds mutable form models whose
+  `ConfirmButton` (two-step delete), `ErrorAlert`, `ServiceErrorValidator`, `CommentForm` (add/edit, session 5).
+  `BookTimeline` (session 5) merges sessions + comments into the book page's "Reading log" (see decisions). `Forms/` holds mutable form models whose
   property names match the service inputs. `CoverUrls` holds the cover route (used by components and host).
   Styling: `wwwroot/bookside.css` (tokens, light/dark via `prefers-color-scheme`, buttons/forms/cards) + scoped `.razor.css`.
 - `Bookside.Web` (session 4): host. `Program.cs` reads `Bookside:DatabasePath` (relative paths resolve against the
@@ -40,11 +44,11 @@
   Interactive Server without prerendering globally (static only for `[ExcludeFromInteractiveRouting]` pages, i.e. `Error`).
   `Routes.razor` routes the UI assembly (+ host). `CoverEndpoint`: `GET /covers/{bookId}?v={sha256}`.
   `ReconnectModal` from the template, restyled. `.claude/launch.json` has a `web` config (port 5233) for the preview pane.
-- `Bookside.UI.Tests` (session 4): 28 tests. bUnit component tests (`ComponentTestBase`: `BunitContext` + production
+- `Bookside.UI.Tests`: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
 - `Bookside.Integrations.Tests`: 14 tests through the real registration with a stubbed primary handler.
-- `Bookside.Data.Tests`: 54 passing tests. Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
+- `Bookside.Data.Tests`: 58 passing tests. Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
   SQLite + production registrations + `FakeDictionaryLookupService`), `Isbn` and `Result` tests.
 
 ## Key decisions
@@ -104,24 +108,26 @@
   - "Today" (start/finish dates) uses `TimeProvider.GetLocalNow()`, i.e. the server's time zone: set `TZ` in the container.
   - UI covers the library only this session (user's choice); vocabulary pages next.
 
+- **Book comments (session 5, all user's choices):**
+  - Book-level only (no link to a reading session; `ReadingSession.Notes` covers one read-through). Plain text with
+    line breaks (`white-space: pre-wrap`), no Markdown. Editable inline; shows "· edited" (edit time on hover) when
+    `UpdatedAtUtc > CreatedAtUtc`. Saving unchanged text isn't an edit (EF leaves the entity unmodified).
+  - No separate list call: comments come with `GetBookAsync` (like sessions). Fine for a personal library; add a paged
+    method if a book ever gets hundreds.
+  - Comments and sessions form one newest-first "Reading log" (replaces "Reading history"); add box at its top.
+    A session's card sits at its finish date, with a "Started reading" marker at its start date when that differs,
+    so comments written during a read fall between the two. No finish → card at start date; no dates → creation time.
+  - Session dates have no time: if the session was created (start) / updated (finish) on that same local date, that
+    timestamp is used, otherwise end of day. Merge is UI-side (`BookTimeline.Build`, server time zone via
+    `TimeProvider.LocalTimeZone`); ties go to the later UUIDv7.
+
 ## Next
-1. **Book comments (user's request, do first).** Unlimited free-text comments per book, shown in a good spot on the
-   book page. Suggested shape (confirm with the user before building):
-   - `BookComment : Entity` (BookId FK, cascade delete with the book, `Text` with a `TextMaxLength` constant, index on
-     (BookId, CreatedAtUtc)) + migration. Separate from `ReadingSession.Notes`, which belong to one read-through.
-   - `ILibraryService`: list/add/update/delete comment methods returning a `BookCommentDto`, `Result` errors
-     (`ErrorCodes` for comment not found), validation via `InputValidator`. Service tests in `Bookside.Data.Tests`.
-   - UI: a "Comments" section on `BookDetailsPage` (add box, list with timestamps, edit/delete via `ConfirmButton`),
-     working at both widths. bUnit tests.
-   - Decide with the user: order (newest first?), whether editing is allowed and shows "edited", whether text
-     needs formatting (plain text with line breaks vs Markdown), whether a comment can link to a reading session,
-     and where the section sits relative to Reading history.
-2. Vocabulary UI: word list (search, per-book filter), add word (from a book page too, with context/page),
+1. Vocabulary UI: word list (search, per-book filter), add word (from a book page too, with context/page),
    word details with definition (meanings, phonetic, audio), "retry definition" / refresh, edit/delete. Add a
    Vocabulary nav link; link "Words saved" on the book page to the filtered list.
-3. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
+2. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
    Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
-4. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+3. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.

@@ -128,7 +128,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Sessions, cover and author links cascade in the database; vocabulary words are set to null.
+        // Sessions, comments, cover and author links cascade in the database; vocabulary words are set to null.
         var deleted = await db.Books.Where(b => b.Id == bookId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
         if (deleted == 0)
         {
@@ -284,11 +284,73 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         return deleted == 0 ? SessionNotFound(sessionId) : Result.Success();
     }
 
+    public async Task<Result<BookCommentDto>> AddCommentAsync(
+        Guid bookId,
+        BookCommentInput input,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        var validator = new InputValidator();
+        var text = validator.Required(nameof(BookCommentInput.Text), input.Text, BookComment.TextMaxLength);
+        if (!validator.IsValid)
+        {
+            return validator.ToError();
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        if (!await db.Books.AnyAsync(b => b.Id == bookId, cancellationToken).ConfigureAwait(false))
+        {
+            return BookNotFound(bookId);
+        }
+
+        var comment = new BookComment { BookId = bookId, Text = text };
+        db.BookComments.Add(comment);
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return ToDto(comment);
+    }
+
+    public async Task<Result<BookCommentDto>> UpdateCommentAsync(
+        Guid commentId,
+        BookCommentInput input,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        var validator = new InputValidator();
+        var text = validator.Required(nameof(BookCommentInput.Text), input.Text, BookComment.TextMaxLength);
+
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var comment = await db.BookComments.SingleOrDefaultAsync(c => c.Id == commentId, cancellationToken).ConfigureAwait(false);
+        if (comment is null)
+        {
+            return CommentNotFound(commentId);
+        }
+
+        if (!validator.IsValid)
+        {
+            return validator.ToError();
+        }
+
+        // Unchanged text leaves the entity unmodified, so UpdatedAtUtc (and "edited") stays as it was.
+        comment.Text = text;
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return ToDto(comment);
+    }
+
+    public async Task<Result> DeleteCommentAsync(Guid commentId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var deleted = await db.BookComments.Where(c => c.Id == commentId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
+        return deleted == 0 ? CommentNotFound(commentId) : Result.Success();
+    }
+
     private static ServiceError BookNotFound(Guid bookId) =>
         ServiceError.NotFound(ErrorCodes.BookNotFound, $"Book {bookId} was not found.");
 
     private static ServiceError SessionNotFound(Guid sessionId) =>
         ServiceError.NotFound(ErrorCodes.ReadingSessionNotFound, $"Reading session {sessionId} was not found.");
+
+    private static ServiceError CommentNotFound(Guid commentId) =>
+        ServiceError.NotFound(ErrorCodes.CommentNotFound, $"Comment {commentId} was not found.");
 
     private static Task<BookDetails?> LoadDetailsAsync(BooksideDbContext db, Guid bookId, CancellationToken cancellationToken) =>
         db.Books.AsNoTracking()
@@ -322,6 +384,18 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
                         Notes = s.Notes,
                         CreatedAtUtc = s.CreatedAtUtc,
                         UpdatedAtUtc = s.UpdatedAtUtc,
+                    })
+                    .ToList(),
+                Comments = b.Comments
+                    .OrderByDescending(c => c.CreatedAtUtc)
+                    .ThenByDescending(c => c.Id)
+                    .Select(c => new BookCommentDto
+                    {
+                        Id = c.Id,
+                        BookId = c.BookId,
+                        Text = c.Text,
+                        CreatedAtUtc = c.CreatedAtUtc,
+                        UpdatedAtUtc = c.UpdatedAtUtc,
                     })
                     .ToList(),
                 VocabularyWordCount = db.VocabularyWords.Count(w => w.BookId == b.Id),
@@ -510,5 +584,14 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         Notes = s.Notes,
         CreatedAtUtc = s.CreatedAtUtc,
         UpdatedAtUtc = s.UpdatedAtUtc,
+    };
+
+    private static BookCommentDto ToDto(BookComment c) => new()
+    {
+        Id = c.Id,
+        BookId = c.BookId,
+        Text = c.Text,
+        CreatedAtUtc = c.CreatedAtUtc,
+        UpdatedAtUtc = c.UpdatedAtUtc,
     };
 }

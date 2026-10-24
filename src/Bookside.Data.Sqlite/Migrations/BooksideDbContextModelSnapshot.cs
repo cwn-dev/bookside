@@ -123,6 +123,32 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.ToTable("BookAuthors", (string)null);
                 });
 
+            modelBuilder.Entity("Bookside.Core.Books.BookComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(10000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId", "CreatedAtUtc");
+
+                    b.ToTable("BookComments", (string)null);
+                });
+
             modelBuilder.Entity("Bookside.Core.Books.BookCover", b =>
                 {
                     b.Property<Guid>("BookId")
@@ -355,6 +381,17 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.Navigation("Book");
                 });
 
+            modelBuilder.Entity("Bookside.Core.Books.BookComment", b =>
+                {
+                    b.HasOne("Bookside.Core.Books.Book", "Book")
+                        .WithMany("Comments")
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+                });
+
             modelBuilder.Entity("Bookside.Core.Books.BookCover", b =>
                 {
                     b.HasOne("Bookside.Core.Books.Book", "Book")
@@ -402,6 +439,8 @@ namespace Bookside.Data.Sqlite.Migrations
             modelBuilder.Entity("Bookside.Core.Books.Book", b =>
                 {
                     b.Navigation("Authors");
+
+                    b.Navigation("Comments");
 
                     b.Navigation("Cover");
 

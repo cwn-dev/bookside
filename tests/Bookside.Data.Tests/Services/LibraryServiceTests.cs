@@ -83,14 +83,18 @@ public sealed class LibraryServiceTests : ServiceTestBase
         Assert.Equal(ErrorCodes.BookNotFound, Failure(await Library.DeleteBookAsync(id, Ct), ErrorType.NotFound).Code);
         Assert.Equal(ErrorCodes.CoverNotFound, Failure(await Library.GetCoverAsync(id, Ct), ErrorType.NotFound).Code);
         Assert.Equal(ErrorCodes.ReadingSessionNotFound, Failure(await Library.DeleteReadingSessionAsync(id, Ct), ErrorType.NotFound).Code);
+        Assert.Equal(ErrorCodes.BookNotFound, Failure(await Library.AddCommentAsync(id, new BookCommentInput { Text = "x" }, Ct), ErrorType.NotFound).Code);
+        Assert.Equal(ErrorCodes.CommentNotFound, Failure(await Library.UpdateCommentAsync(id, new BookCommentInput { Text = "x" }, Ct), ErrorType.NotFound).Code);
+        Assert.Equal(ErrorCodes.CommentNotFound, Failure(await Library.DeleteCommentAsync(id, Ct), ErrorType.NotFound).Code);
     }
 
     [Fact]
-    public async Task Delete_removes_sessions_cover_and_orphaned_authors_but_keeps_words()
+    public async Task Delete_removes_sessions_comments_cover_and_orphaned_authors_but_keeps_words()
     {
         var book = await AddBookAsync("Mort", "Terry Pratchett");
         await AddBookAsync("Coraline", "Neil Gaiman");
         Success(await Library.AddReadingSessionAsync(book.Id, new ReadingSessionInput(), Ct));
+        Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "Death takes an apprentice." }, Ct));
         Assert.True((await Library.SetCoverAsync(book.Id, new CoverInput { Content = new byte[] { 1, 2, 3 }, ContentType = "image/png" }, Ct)).IsSuccess);
         var word = Success(await Vocabulary.AddWordAsync(new WordInput { Term = "psychopomp", BookId = book.Id }, Ct));
 
@@ -98,6 +102,7 @@ public sealed class LibraryServiceTests : ServiceTestBase
 
         await using var db = Database.CreateContext();
         Assert.Empty(await db.ReadingSessions.ToListAsync(Ct));
+        Assert.Empty(await db.BookComments.ToListAsync(Ct));
         Assert.Empty(await db.BookCovers.ToListAsync(Ct));
         Assert.Equal(["Neil Gaiman"], await db.Authors.Select(a => a.Name).ToListAsync(Ct));
         Assert.Null((await db.VocabularyWords.SingleAsync(w => w.Id == word.Id, Ct)).BookId);
@@ -227,6 +232,62 @@ public sealed class LibraryServiceTests : ServiceTestBase
 
         Assert.True((await Library.DeleteReadingSessionAsync(session.Id, Ct)).IsSuccess);
         Assert.Empty(Success(await Library.GetBookAsync(book.Id, Ct)).ReadingSessions);
+    }
+
+    [Fact]
+    public async Task Comments_are_trimmed_and_listed_newest_first()
+    {
+        var book = await AddBookAsync("Mort");
+        var first = Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "  Slow start.\n\nThen great.  " }, Ct));
+        var second = Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "Re-read the ending." }, Ct));
+
+        Assert.Equal("Slow start.\n\nThen great.", first.Text);
+        Assert.False(first.IsEdited);
+        var comments = Success(await Library.GetBookAsync(book.Id, Ct)).Comments;
+        Assert.Equal([second.Id, first.Id], comments.Select(c => c.Id));
+        Assert.All(comments, c => Assert.Equal(book.Id, c.BookId));
+    }
+
+    [Fact]
+    public async Task Editing_a_comment_marks_it_edited_but_unchanged_text_does_not()
+    {
+        var book = await AddBookAsync("Mort");
+        var comment = Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "Funny" }, Ct));
+
+        var unchanged = Success(await Library.UpdateCommentAsync(comment.Id, new BookCommentInput { Text = " Funny " }, Ct));
+        Assert.False(unchanged.IsEdited);
+
+        var edited = Success(await Library.UpdateCommentAsync(comment.Id, new BookCommentInput { Text = "Very funny" }, Ct));
+        Assert.True(edited.IsEdited);
+        Assert.Equal(comment.CreatedAtUtc, edited.CreatedAtUtc);
+        var stored = Assert.Single(Success(await Library.GetBookAsync(book.Id, Ct)).Comments);
+        Assert.Equal("Very funny", stored.Text);
+        Assert.True(stored.IsEdited);
+    }
+
+    [Fact]
+    public async Task Invalid_comment_text_returns_a_field_error()
+    {
+        var book = await AddBookAsync("Mort");
+        var comment = Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "Funny" }, Ct));
+
+        var blank = Failure(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "   " }, Ct), ErrorType.Validation);
+        Assert.Equal(nameof(BookCommentInput.Text), Assert.Single(blank.FieldErrors).Field);
+
+        var tooLong = new BookCommentInput { Text = new string('x', BookComment.TextMaxLength + 1) };
+        var error = Failure(await Library.UpdateCommentAsync(comment.Id, tooLong, Ct), ErrorType.Validation);
+        Assert.Contains($"{BookComment.TextMaxLength}", Assert.Single(error.FieldErrors).Message, StringComparison.Ordinal);
+        Assert.Equal("Funny", Assert.Single(Success(await Library.GetBookAsync(book.Id, Ct)).Comments).Text);
+    }
+
+    [Fact]
+    public async Task Deleting_a_comment_removes_it_from_the_book()
+    {
+        var book = await AddBookAsync("Mort");
+        var comment = Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "Funny" }, Ct));
+
+        Assert.True((await Library.DeleteCommentAsync(comment.Id, Ct)).IsSuccess);
+        Assert.Empty(Success(await Library.GetBookAsync(book.Id, Ct)).Comments);
     }
 
     private static ReadingSessionInput Finished(DateOnly started, DateOnly finished) =>

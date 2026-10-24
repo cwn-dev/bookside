@@ -1,0 +1,7 @@
+.comment-form ::deep textarea {
+    min-height: 4.5rem;
+}
+
+.form-actions {
+    margin-top: 0.6rem;
+}

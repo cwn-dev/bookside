@@ -25,6 +25,8 @@ public class BooksideDbContext(DbContextOptions<BooksideDbContext> options, Time
 
     public DbSet<ReadingSession> ReadingSessions => Set<ReadingSession>();
 
+    public DbSet<BookComment> BookComments => Set<BookComment>();
+
     public DbSet<VocabularyWord> VocabularyWords => Set<VocabularyWord>();
 
     public DbSet<DictionaryEntry> DictionaryEntries => Set<DictionaryEntry>();

@@ -41,6 +41,8 @@ public class Book : Entity
     /// <summary>Times read = sessions with <see cref="ReadingStatus.Finished"/>; computed in queries, not stored.</summary>
     public ICollection<ReadingSession> ReadingSessions { get; } = new List<ReadingSession>();
 
+    public ICollection<BookComment> Comments { get; } = new List<BookComment>();
+
     /// <summary>Stored in its own table so loading a book never drags the image bytes along.</summary>
     public BookCover? Cover { get; set; }
 }

@@ -101,31 +101,36 @@
     margin-bottom: 1rem;
 }
 
-.sessions {
+.add-comment {
+    margin-bottom: 1rem;
+}
+
+.timeline {
     list-style: none;
     margin: 0;
     padding: 0;
     border-top: 1px solid var(--border);
 }
 
-.session {
+.entry {
     display: grid;
     gap: 0.4rem;
     padding: 0.85rem 0;
     border-bottom: 1px solid var(--border);
+    min-width: 0;
 }
 
 @media (min-width: 700px) {
-    .session {
+    .entry {
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: start;
     }
 
-    .session .notes {
+    .entry > :not(.entry-actions) {
         grid-column: 1;
     }
 
-    .session-actions {
+    .entry-actions {
         grid-row: 1;
         grid-column: 2;
     }
@@ -142,4 +147,45 @@
     margin: 0;
     white-space: pre-line;
     color: var(--text-muted);
+}
+
+.entry.started {
+    display: block;
+    padding: 0.55rem 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.started::before {
+    content: "";
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.5rem;
+    border-radius: 50%;
+    background: var(--accent);
+    vertical-align: 0.05em;
+}
+
+.comment-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    align-items: baseline;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+
+.comment-meta .kind {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.comment-text {
+    margin: 0;
+    max-width: 65ch;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }

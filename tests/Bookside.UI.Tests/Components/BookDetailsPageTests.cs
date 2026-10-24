@@ -19,7 +19,7 @@ public sealed class BookDetailsPageTests : ComponentTestBase
         Assert.Contains("Book one", page.Find(".subtitle").TextContent);
         Assert.Contains("Frank Herbert", page.Find(".authors").TextContent);
         Assert.Contains("412", page.Find(".facts").TextContent);
-        Assert.Contains("No reading sessions yet.", page.Markup);
+        Assert.Contains("Nothing here yet.", page.Markup);
     }
 
     [Fact]
@@ -83,5 +83,76 @@ public sealed class BookDetailsPageTests : ComponentTestBase
 
         page.WaitForAssertion(() => Assert.EndsWith("/books", Navigation.Uri, StringComparison.Ordinal));
         Assert.False((await Library.GetBookAsync(book.Id, Ct)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task Posting_a_comment_adds_it_to_the_log_and_clears_the_box()
+    {
+        var book = await AddBookAsync("Dune");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        page.Find(".add-comment textarea").Change("Spice must flow.\nSecond line.");
+        page.Find(".add-comment form").Submit();
+
+        page.WaitForAssertion(() => Assert.Equal("Spice must flow.\nSecond line.", page.Find(".comment .comment-text").TextContent));
+        Assert.Equal("", page.Find(".add-comment textarea").GetAttribute("value") ?? "");
+        Assert.Empty(page.FindAll(".comment .edited"));
+        Assert.Equal("Spice must flow.\nSecond line.", Assert.Single((await GetBookAsync(book.Id)).Comments).Text);
+    }
+
+    [Fact]
+    public async Task Blank_comment_shows_the_service_validation_error()
+    {
+        var book = await AddBookAsync("Dune");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        page.Find(".add-comment textarea").Change("   ");
+        page.Find(".add-comment form").Submit();
+
+        page.WaitForAssertion(() => Assert.Equal("Required.", page.Find(".add-comment .validation-message").TextContent));
+        Assert.Empty((await GetBookAsync(book.Id)).Comments);
+    }
+
+    [Fact]
+    public async Task Editing_a_comment_marks_it_edited_and_delete_asks_first()
+    {
+        var book = await AddBookAsync("Dune");
+        Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "Slow start" }, Ct));
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find(".comment"));
+
+        page.FindAll(".comment button").Single(b => b.TextContent == "Edit").Click();
+        page.Find(".comment textarea").Change("Slow start, great finish");
+        page.Find(".comment form").Submit();
+
+        page.WaitForAssertion(() => Assert.Equal("Slow start, great finish", page.Find(".comment .comment-text").TextContent));
+        Assert.Contains("edited", page.Find(".comment .edited").TextContent, StringComparison.Ordinal);
+
+        page.FindAll(".comment button").Single(b => b.TextContent == "Delete").Click();
+        Assert.Contains("Delete this comment?", page.Find(".comment").TextContent, StringComparison.Ordinal);
+        page.Find(".comment .confirm .btn-solid").Click();
+
+        page.WaitForAssertion(() => Assert.Empty(page.FindAll(".comment")));
+        Assert.Empty((await GetBookAsync(book.Id)).Comments);
+    }
+
+    [Fact]
+    public async Task Comments_and_sessions_share_one_newest_first_log()
+    {
+        var book = await AddBookAsync("Dune");
+        Success(await Library.AddReadingSessionAsync(
+            book.Id,
+            new ReadingSessionInput { Status = ReadingStatus.Finished, StartedOn = new(2020, 3, 1), FinishedOn = new(2020, 3, 30) },
+            Ct));
+        Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "Want to re-read" }, Ct));
+
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+
+        page.WaitForAssertion(() => Assert.Equal(3, page.FindAll(".timeline > .entry").Count));
+        var classes = page.FindAll(".timeline > .entry").Select(e => e.ClassName).ToList();
+        Assert.Equal(["entry comment", "entry session", "entry started"], classes);
+        Assert.StartsWith("Started reading", page.Find(".started").TextContent.Trim(), StringComparison.Ordinal);
     }
 }

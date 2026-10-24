@@ -119,6 +119,9 @@ public sealed record BookDetails
 
     public int TimesRead => ReadingSessions.Count(s => s.Status == ReadingStatus.Finished);
 
+    /// <summary>Newest first (by creation).</summary>
+    public IReadOnlyList<BookCommentDto> Comments { get; init; } = [];
+
     public int VocabularyWordCount { get; init; }
 
     public DateTime CreatedAtUtc { get; init; }
@@ -181,4 +184,26 @@ public sealed record CoverContent
     public required string Sha256 { get; init; }
 
     public DateTime UpdatedAtUtc { get; init; }
+}
+
+public sealed record BookCommentInput
+{
+    /// <summary>Required; trimmed. Plain text, line breaks kept.</summary>
+    public required string Text { get; init; }
+}
+
+public sealed record BookCommentDto
+{
+    public required Guid Id { get; init; }
+
+    public required Guid BookId { get; init; }
+
+    public required string Text { get; init; }
+
+    public DateTime CreatedAtUtc { get; init; }
+
+    public DateTime UpdatedAtUtc { get; init; }
+
+    /// <summary>Saving unchanged text doesn't count as an edit.</summary>
+    public bool IsEdited => UpdatedAtUtc > CreatedAtUtc;
 }

@@ -71,7 +71,7 @@ else
 
             <div class="actions">
                 <a class="btn" href="books/@_book.Id/edit">Edit</a>
-                <ConfirmButton Text="Delete book" Prompt="Delete this book and its reading history?" OnConfirm="DeleteAsync" />
+                <ConfirmButton Text="Delete book" Prompt="Delete this book, its reading log and comments?" OnConfirm="DeleteAsync" />
             </div>
             <ErrorAlert Messages="_errors" />
         </div>
@@ -79,7 +79,7 @@ else
 
     <section class="reading" aria-labelledby="reading-heading">
         <div class="section-header">
-            <h2 id="reading-heading">Reading history</h2>
+            <h2 id="reading-heading">Reading log</h2>
             @if (_editing is null)
             {
                 <div class="actions">
@@ -118,30 +118,74 @@ else
             </div>
         }
 
-        @if (_book.ReadingSessions.Count == 0)
+        <div class="add-comment">
+            <CommentForm @key="_newCommentKey" BookId="_book.Id" Model="_newComment" Label="Add a comment" LabelHidden
+                         Placeholder="Add a comment…" SubmitText="Post" OnSaved="CommentPostedAsync" />
+        </div>
+
+        @if (_timeline.Count == 0)
         {
-            <p class="muted">No reading sessions yet.</p>
+            <p class="muted">Nothing here yet. Start reading, log a past read or add a comment.</p>
         }
         else
         {
-            <ol class="sessions">
-                @foreach (var session in _book.ReadingSessions)
+            <ol class="timeline">
+                @foreach (var entry in _timeline)
                 {
-                    <li @key="session.Id" class="session">
-                        <div class="session-main">
-                            <span class="badge @StatusBadge(session.Status)">@StatusLabel(session.Status)</span>
-                            <span class="dates">@DateRange(session)</span>
-                            <RatingStars Rating="session.Rating" />
-                        </div>
-                        @if (session.Notes is not null)
-                        {
-                            <p class="notes">@session.Notes</p>
-                        }
-                        <div class="actions session-actions">
-                            <button type="button" class="btn btn-sm" @onclick="() => Edit(session)">Edit</button>
-                            <ConfirmButton Text="Delete" Prompt="Delete this session?" Small OnConfirm="() => DeleteSessionAsync(session.Id)" />
-                        </div>
-                    </li>
+                    switch (entry)
+                    {
+                        case SessionTimelineEntry { Session: var session }:
+                            <li @key="(entry.Id, 'S')" class="entry session">
+                                <div class="session-main">
+                                    <span class="badge @StatusBadge(session.Status)">@StatusLabel(session.Status)</span>
+                                    <span class="dates">@DateRange(session)</span>
+                                    <RatingStars Rating="session.Rating" />
+                                </div>
+                                @if (session.Notes is not null)
+                                {
+                                    <p class="notes">@session.Notes</p>
+                                }
+                                <div class="actions entry-actions">
+                                    <button type="button" class="btn btn-sm" @onclick="() => Edit(session)">Edit</button>
+                                    <ConfirmButton Text="Delete" Prompt="Delete this session?" Small OnConfirm="() => DeleteSessionAsync(session.Id)" />
+                                </div>
+                            </li>
+                            break;
+
+                        case SessionStartTimelineEntry { Session: var session }:
+                            <li @key="(entry.Id, 'B')" class="entry started">
+                                Started reading · @Format(session.StartedOn!.Value)
+                            </li>
+                            break;
+
+                        case CommentTimelineEntry { Comment: var comment }:
+                            <li @key="(entry.Id, 'C')" class="entry comment">
+                                <div class="comment-meta">
+                                    <span class="kind">Comment</span>
+                                    <time datetime="@comment.CreatedAtUtc.ToString("O", CultureInfo.InvariantCulture)">@FormatTime(comment.CreatedAtUtc)</time>
+                                    @if (comment.IsEdited)
+                                    {
+                                        <span class="edited" title="Edited @FormatTime(comment.UpdatedAtUtc)">· edited</span>
+                                    }
+                                </div>
+                                @if (_editingCommentId == comment.Id)
+                                {
+                                    <div class="comment-edit">
+                                        <CommentForm BookId="_book.Id" CommentId="comment.Id" Model="_editingComment!" Label="Edit comment"
+                                                     LabelHidden SubmitText="Save" OnSaved="CommentSavedAsync" OnCancel="CancelCommentEdit" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="comment-text">@comment.Text</p>
+                                    <div class="actions entry-actions">
+                                        <button type="button" class="btn btn-sm" @onclick="() => EditComment(comment)">Edit</button>
+                                        <ConfirmButton Text="Delete" Prompt="Delete this comment?" Small OnConfirm="() => DeleteCommentAsync(comment.Id)" />
+                                    </div>
+                                }
+                            </li>
+                            break;
+                    }
                 }
             </ol>
         }
@@ -158,6 +202,12 @@ else
     private Guid? _editingId;
     private string _editingTitle = "";
 
+    private IReadOnlyList<TimelineEntry> _timeline = [];
+    private CommentFormModel _newComment = new();
+    private int _newCommentKey;
+    private CommentFormModel? _editingComment;
+    private Guid? _editingCommentId;
+
     [Parameter]
     public Guid Id { get; set; }
 
@@ -169,6 +219,8 @@ else
     protected override async Task OnParametersSetAsync()
     {
         CancelEdit();
+        CancelCommentEdit();
+        _newComment = new();
         _errors = [];
         await ReloadAsync();
     }
@@ -178,6 +230,7 @@ else
         var result = await Library.GetBookAsync(Id);
         _notFound = !result.IsSuccess && result.Error.Type == ErrorType.NotFound;
         _book = result.IsSuccess ? result.Value : null;
+        _timeline = _book is null ? [] : BookTimeline.Build(_book, Clock.LocalTimeZone);
         if (!result.IsSuccess && !_notFound)
         {
             _errors = [result.Error.Message];
@@ -239,6 +292,44 @@ else
         await ReloadAsync();
     }
 
+    private async Task CommentPostedAsync()
+    {
+        // A fresh model and form instance clears the text and any validation state.
+        _newComment = new();
+        _newCommentKey++;
+        await ReloadAsync();
+    }
+
+    private void EditComment(BookCommentDto comment)
+    {
+        _editingCommentId = comment.Id;
+        _editingComment = new CommentFormModel { Text = comment.Text };
+    }
+
+    private void CancelCommentEdit()
+    {
+        _editingCommentId = null;
+        _editingComment = null;
+    }
+
+    private async Task CommentSavedAsync()
+    {
+        CancelCommentEdit();
+        await ReloadAsync();
+    }
+
+    private async Task DeleteCommentAsync(Guid commentId)
+    {
+        var result = await Library.DeleteCommentAsync(commentId);
+        _errors = result.IsSuccess ? [] : [result.Error.Message];
+        if (_editingCommentId == commentId)
+        {
+            CancelCommentEdit();
+        }
+
+        await ReloadAsync();
+    }
+
     private async Task DeleteAsync()
     {
         var result = await Library.DeleteBookAsync(Id);
@@ -253,6 +344,9 @@ else
     }
 
     private static string Format(DateOnly date) => date.ToString("d MMM yyyy", CultureInfo.CurrentCulture);
+
+    private string FormatTime(DateTime utc) =>
+        BookTimeline.ToLocal(utc, Clock.LocalTimeZone).ToString("d MMM yyyy, HH:mm", CultureInfo.CurrentCulture);
 
     private static string DateRange(ReadingSessionDto s) => (s.StartedOn, s.FinishedOn) switch
     {
