@@ -199,7 +199,12 @@
    (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
    migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
    touch (tap/swipe) on both widths; whether the library-page word should prefer due words.
-4. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+4. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
+   Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
+   date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
+   the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
+   list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
+5. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table
