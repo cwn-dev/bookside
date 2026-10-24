@@ -30,6 +30,7 @@ dotnet run --project src/Bookside.Web                                # http://lo
                                                                      #  "web-scratch" uses App_Data/scratch.db, use it for UI checks)
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
+docker compose up -d --build                                         # on the Docker host (no Docker on the dev Mac); see README "Deploy"
 ```
 
 ## Layout and dependency direction
@@ -54,7 +55,9 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
   bUnit). References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
   MAUI can reuse it. Components inject Core service interfaces.
 - `src/Bookside.Web`: Blazor Web App host (Interactive Server, no prerendering): `Program.cs`, `App.razor`, `Routes.razor`,
-  error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`.
+  error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`, `Bookside:DataProtectionKeysPath`.
+- `Dockerfile` / `compose.yaml` / `.dockerignore` at the root: the image copies only the root build files
+  (`global.json`, `Directory.*.props`, `.editorconfig`) and `src/`; add any new root-level build file to the `COPY`.
 - `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations on temp SQLite,
   controllable `FakeDictionaryLookup` via `Dictionary`) and
   `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`).

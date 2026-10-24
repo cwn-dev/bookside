@@ -11,10 +11,13 @@ public sealed class WebHostFactory : WebApplicationFactory<Program>
 
     public string DatabasePath => Path.Combine(_directory, "bookside.db");
 
+    public string KeysPath => Path.Combine(_directory, "keys");
+
     protected override void ConfigureWebHost(IWebHostBuilder builder) =>
         builder
             .UseEnvironment("Testing")
             .UseSetting("Bookside:DatabasePath", DatabasePath)
+            .UseSetting("Bookside:DataProtectionKeysPath", KeysPath)
             .UseSetting("Logging:LogLevel:Default", "Warning");
 
     public override async ValueTask DisposeAsync()

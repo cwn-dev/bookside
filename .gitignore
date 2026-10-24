@@ -488,3 +488,6 @@ $RECYCLE.BIN/
 
 # Local development database (Bookside.Web)
 src/Bookside.Web/App_Data/
+
+# Docker bind mount (compose.yaml)
+/data/

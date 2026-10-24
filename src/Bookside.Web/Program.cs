@@ -3,6 +3,7 @@ using Bookside.Data.Sqlite;
 using Bookside.Integrations;
 using Bookside.Web;
 using Bookside.Web.Components;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,15 @@ var databasePath = builder.Configuration["Bookside:DatabasePath"];
 if (string.IsNullOrWhiteSpace(databasePath))
 {
     throw new InvalidOperationException("Configuration value Bookside:DatabasePath is required.");
+}
+
+// Antiforgery tokens and Blazor circuit state are protected with these keys; persisting them lets
+// open pages and forms survive a container restart. Unset = ASP.NET Core's default location.
+var keysPath = builder.Configuration["Bookside:DataProtectionKeysPath"];
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("Bookside");
+if (!string.IsNullOrWhiteSpace(keysPath))
+{
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, keysPath)));
 }
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();

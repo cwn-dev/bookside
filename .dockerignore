@@ -1,0 +1,16 @@
+# Only the root build files and src/ are copied into the image; keep the context small and free of local data.
+**/bin/
+**/obj/
+**/App_Data/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+.git/
+.vs/
+.vscode/
+.idea/
+.claude/
+tests/
+TestResults/
+data/
+**/.DS_Store

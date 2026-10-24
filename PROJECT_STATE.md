@@ -55,9 +55,14 @@
   SQLite + services + dictionary client, runs `InitializeBooksideDatabaseAsync()` before serving. `App.razor` sets
   Interactive Server without prerendering globally (static only for `[ExcludeFromInteractiveRouting]` pages, i.e. `Error`).
   `Routes.razor` routes the UI assembly (+ host). `CoverEndpoint`: `GET /covers/{bookId}?v={sha256}`.
-  `ReconnectModal` from the template, restyled. `.claude/launch.json` has a `web` config (port 5233) for the preview pane, and `web-scratch` (same port,
+  `ReconnectModal` from the template, restyled. Session 8: Data Protection keys persisted to
+  `Bookside:DataProtectionKeysPath` (`/data/keys`; Development `App_Data/keys`; app name "Bookside"). `.claude/launch.json` has a `web` config (port 5233) for the preview pane, and `web-scratch` (same port,
   `App_Data/scratch.db`) for UI checks without touching the dev database.
-- `Bookside.UI.Tests`: 52 tests (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- Docker (session 8): root `Dockerfile` (SDK `10.0.203-noble` on `$BUILDPLATFORM`, `publish -a $TARGETARCH`, NuGet
+  cache mount; runtime `aspnet:10.0-noble-chiseled-extra`, UID 1654, port 8080), `.dockerignore`, `compose.yaml`
+  (`./data:/data`, `TZ`, forwarded headers on, port bound to `127.0.0.1` by default). README "Deploy" covers setup,
+  backup, proxy WebSockets.
+- `Bookside.UI.Tests`: 54 tests (session 8: `DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
@@ -152,6 +157,19 @@
   - Definition states on the word page: none (dictionary was down) → "Retry definition"; NotFound → "Check again"
     (refresh); Found → "Refresh" link. Unavailable shows a friendly retry-later message.
 
+- **Docker (session 8, user's choices: Dockerfile, chiseled-extra, existing reverse proxy, bind mount):**
+  - Multi-stage Dockerfile built on the Docker host (`docker compose up -d --build`); Docker isn't installed on the
+    dev Mac, so the image has **not been built or run yet**. Verified locally instead: Release publish for linux-x64
+    and linux-arm64 (both include `libe_sqlite3.so`) and the published app in Production with the compose settings.
+  - SDK image pinned to the global.json version (same analyzers, warnings-as-errors build is reproducible); runtime
+    image floats on `10.0` for security patches.
+  - Chiseled-extra: no shell/package manager (no in-container sqlite3/curl, no compose healthcheck); "extra" has
+    ICU + tzdata so `TZ` works. No `LANG` needed: date formats are explicit patterns (English month names).
+  - TLS by the user's existing proxy; compose enables `ASPNETCORE_FORWARDEDHEADERS_ENABLED` (trusts any proxy, so
+    the port is published on 127.0.0.1 by default). No HTTPS redirect/HSTS in the app; the proxy owns that.
+  - `./data` bind mount owned by UID 1654. Data Protection keys there unencrypted at rest (startup warning
+    "No XML encryptor configured" is expected); they only protect antiforgery tokens and circuit state.
+
 - **Dictionary fallback chain (session 7, all user's choices):**
   - Each provider is an `IDictionaryLookupService`; `DefinitionService` takes `IEnumerable<IDictionaryLookupService>`
     and tries them in registration order (no config). Chosen over a composite provider: fallback sits next to the
@@ -168,8 +186,8 @@
     hanging) is 16 s.
 
 ## Next
-1. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
-   Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
+1. **First deploy on the Docker host (user):** `docker compose up -d --build`, check through the proxy (WebSockets),
+   restart and confirm an open page reconnects. Fix anything the untested image build turns up.
 2. **Random word on the library page (user's request).** Show one random vocabulary word on `/books` (the home
    page), placed where it looks good at both widths (e.g. a small card above or beside the toolbar), linking to
    the word page. Decisions to make: placement/design; new each visit vs once per day; which words qualify (only
@@ -192,6 +210,8 @@
   Wiktionary attribution/link if the app is ever shared beyond personal use.
 - Quote-derived examples can include Wiktionary's editorial brackets ("[…]"); fine for now.
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.
+- Possible hardening once the image runs: `read_only: true` + tmpfs `/tmp` in compose, a `/healthz` endpoint for
+  the proxy (no compose healthcheck: chiseled has no curl).
 - Auth: none yet. Needs a decision before exposing the container beyond the LAN.
 - Local runtime is ASP.NET Core 10.0.7 while packages are 10.0.13; works, but consider updating the SDK/runtime.
 - Typed `HttpClient` captured by circuit-scoped services lives as long as the circuit (no handler rotation). Fine for
