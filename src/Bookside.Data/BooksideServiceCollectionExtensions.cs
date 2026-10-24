@@ -10,7 +10,8 @@ public static class BooksideServiceCollectionExtensions
 {
     /// <summary>
     /// Registers the EF-backed application services. Requires a provider registration (e.g. AddBooksideSqlite)
-    /// and an <see cref="Core.Vocabulary.Lookup.IDictionaryLookupService"/> (Bookside.Integrations).
+    /// and at least one <see cref="Core.Vocabulary.Lookup.IDictionaryLookupService"/> (Bookside.Integrations); several
+    /// are tried in registration order.
     /// Scoped, because the dictionary client will be a typed HttpClient (transient); the services hold no context.
     /// </summary>
     public static IServiceCollection AddBooksideServices(this IServiceCollection services)

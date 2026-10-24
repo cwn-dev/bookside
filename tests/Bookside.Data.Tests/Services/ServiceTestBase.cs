@@ -7,25 +7,37 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookside.Data.Tests.Services;
 
-/// <summary>Real migrated SQLite database + the production service registrations + a fake dictionary.</summary>
+/// <summary>
+/// Real migrated SQLite database + the production service registrations + a fake dictionary
+/// (<see cref="Dictionary"/>, optionally followed by fallback providers).
+/// </summary>
 public abstract class ServiceTestBase : IAsyncLifetime
 {
     private readonly SqliteTestDatabase _database;
     private AsyncServiceScope _scope;
 
-    protected ServiceTestBase()
+    /// <param name="fallbackSources">Extra fake providers registered after <see cref="Dictionary"/>, in order.</param>
+    protected ServiceTestBase(params string[] fallbackSources)
     {
+        Fallbacks = [.. fallbackSources.Select(source => new FakeDictionaryLookupService(source))];
         _database = new SqliteTestDatabase
         {
-            ConfigureServices = services => services
-                .AddBooksideServices()
-                .AddSingleton<IDictionaryLookupService>(Dictionary),
+            ConfigureServices = services =>
+            {
+                services.AddBooksideServices().AddSingleton<IDictionaryLookupService>(Dictionary);
+                foreach (var fallback in Fallbacks)
+                {
+                    services.AddSingleton<IDictionaryLookupService>(fallback);
+                }
+            },
         };
     }
 
     protected static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     protected FakeDictionaryLookupService Dictionary { get; } = new();
+
+    protected IReadOnlyList<FakeDictionaryLookupService> Fallbacks { get; }
 
     protected SqliteTestDatabase Database => _database;
 
@@ -65,9 +77,9 @@ public abstract class ServiceTestBase : IAsyncLifetime
     }
 }
 
-public sealed class FakeDictionaryLookupService : IDictionaryLookupService
+public sealed class FakeDictionaryLookupService(string source = "fake") : IDictionaryLookupService
 {
-    public string Source => "fake";
+    public string Source => source;
 
     public Dictionary<string, DictionaryLookupResult> Entries { get; } = new(StringComparer.Ordinal);
 
@@ -80,7 +92,7 @@ public sealed class FakeDictionaryLookupService : IDictionaryLookupService
         Calls.Add(term);
         if (Unavailable)
         {
-            throw new DictionaryLookupException("Simulated outage.");
+            throw new DictionaryLookupException($"Simulated {source} outage.");
         }
 
         return Task.FromResult(Entries.TryGetValue(term, out var result) ? result : DictionaryLookupResult.NotFound());

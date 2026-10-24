@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json;
 using Bookside.Core.Vocabulary;
 using Bookside.Core.Vocabulary.Lookup;
-using Polly;
 
 namespace Bookside.Integrations.Dictionary;
 
@@ -21,35 +20,21 @@ internal sealed class DictionaryApiClient(HttpClient http) : IDictionaryLookupSe
         ArgumentException.ThrowIfNullOrWhiteSpace(term);
         ArgumentException.ThrowIfNullOrWhiteSpace(language);
 
-        var path = new Uri($"entries/{Uri.EscapeDataString(language)}/{Uri.EscapeDataString(term)}", UriKind.Relative);
-        string body;
-        try
-        {
-            using var response = await http.GetAsync(path, cancellationToken).ConfigureAwait(false);
-            body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        var (status, body) = await DictionaryHttp.GetAsync(http, DictionaryHttp.EntriesPath(language, term), SourceId, cancellationToken)
+            .ConfigureAwait(false);
 
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                // The API's "No Definitions Found" reply is a JSON object. Anything else (an HTML 404 from a proxy,
-                // a moved route) is treated as a failure so it never gets cached as NotFound.
-                return IsJsonObject(body)
-                    ? DictionaryLookupResult.NotFound(body)
-                    : throw new DictionaryLookupException($"{SourceId} returned 404 without its JSON error body.");
-            }
+        if (status == HttpStatusCode.NotFound)
+        {
+            // The API's "No Definitions Found" reply is a JSON object. Anything else (an HTML 404 from a proxy,
+            // a moved route) is treated as a failure so it never gets cached as NotFound.
+            return IsJsonObject(body)
+                ? DictionaryLookupResult.NotFound(body)
+                : throw new DictionaryLookupException($"{SourceId} returned 404 without its JSON error body.");
+        }
 
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new DictionaryLookupException($"{SourceId} returned HTTP {(int)response.StatusCode}.");
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        if ((int)status is < 200 or > 299)
         {
-            throw;
-        }
-        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or ExecutionRejectedException)
-        {
-            // Network errors, response too large, timeouts (attempt/total), open circuit.
-            throw new DictionaryLookupException($"{SourceId} could not be reached.", ex);
+            throw new DictionaryLookupException($"{SourceId} returned HTTP {(int)status}.");
         }
 
         return Parse(body);
@@ -78,51 +63,26 @@ internal sealed class DictionaryApiClient(HttpClient http) : IDictionaryLookupSe
         return new DictionaryLookupResult
         {
             Status = DictionaryLookupStatus.Found,
-            Phonetic = entries.Select(e => e.Phonetic).Concat(phonetics.Select(p => p.Text))
-                .Select(p => p?.Trim())
-                .FirstOrDefault(p => !string.IsNullOrEmpty(p) && p.Length <= DictionaryEntry.PhoneticMaxLength),
+            Phonetic = MeaningListBuilder.FirstPhonetic(entries.Select(e => e.Phonetic).Concat(phonetics.Select(p => p.Text))),
             AudioUrl = phonetics.Select(p => NormalizeAudioUrl(p.Audio)).FirstOrDefault(a => a is not null),
             Meanings = meanings,
             RawResponse = body,
         };
     }
 
-    /// <summary>
-    /// The API returns one entry per etymology (e.g. "bank" has four). Merge them into one list grouped by
-    /// part of speech, in first-seen order, dropping duplicate and empty definitions.
-    /// </summary>
+    /// <summary>The API returns one entry per etymology (e.g. "bank" has four); they are merged into one list.</summary>
     private static List<DictionaryMeaning> MergeMeanings(List<ApiEntry> entries)
     {
-        var result = new List<DictionaryMeaning>();
+        var builder = new MeaningListBuilder();
         foreach (var apiMeaning in entries.SelectMany(e => e.Meanings ?? []))
         {
-            var partOfSpeech = apiMeaning.PartOfSpeech?.Trim();
-            if (string.IsNullOrEmpty(partOfSpeech))
-            {
-                partOfSpeech = "unknown";
-            }
-
-            var meaning = result.Find(m => string.Equals(m.PartOfSpeech, partOfSpeech, StringComparison.OrdinalIgnoreCase));
             foreach (var apiDefinition in apiMeaning.Definitions ?? [])
             {
-                var text = apiDefinition.Definition?.Trim();
-                if (string.IsNullOrEmpty(text) || meaning?.Definitions.Exists(d => d.Text == text) == true)
-                {
-                    continue;
-                }
-
-                if (meaning is null)
-                {
-                    meaning = new DictionaryMeaning { PartOfSpeech = partOfSpeech };
-                    result.Add(meaning);
-                }
-
-                var example = apiDefinition.Example?.Trim();
-                meaning.Definitions.Add(new DictionaryDefinition { Text = text, Example = string.IsNullOrEmpty(example) ? null : example });
+                builder.Add(apiMeaning.PartOfSpeech, apiDefinition.Definition, apiDefinition.Example);
             }
         }
 
-        return result;
+        return builder.Build();
     }
 
     private static string? NormalizeAudioUrl(string? audio)

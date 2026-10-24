@@ -8,9 +8,13 @@ namespace Bookside.Data.Services;
 
 internal sealed class DefinitionService(
     IDbContextFactory<BooksideDbContext> dbFactory,
-    IDictionaryLookupService lookup,
+    IEnumerable<IDictionaryLookupService> lookups,
     TimeProvider timeProvider) : IDefinitionService
 {
+    private readonly IDictionaryLookupService[] _providers = lookups.ToArray() is { Length: > 0 } providers
+        ? providers
+        : throw new InvalidOperationException("No IDictionaryLookupService is registered.");
+
     public async Task<Result<DefinitionDto>> GetDefinitionAsync(
         string term,
         string language = "en",
@@ -32,15 +36,11 @@ internal sealed class DefinitionService(
             return ToDto(entry);
         }
 
-        DictionaryLookupResult result;
-        try
-        {
-            result = await lookup.LookupAsync(normalized, lang, cancellationToken).ConfigureAwait(false);
-        }
-        catch (DictionaryLookupException ex)
+        var (result, source, failure) = await LookupAsync(normalized, lang, cancellationToken).ConfigureAwait(false);
+        if (result is null)
         {
             // Transient: never cached. A previously cached entry (on refresh) is left untouched.
-            return ServiceError.Unavailable(ErrorCodes.DictionaryUnavailable, $"The dictionary is unavailable: {ex.Message}");
+            return ServiceError.Unavailable(ErrorCodes.DictionaryUnavailable, $"The dictionary is unavailable: {failure}");
         }
 
         var isNew = entry is null;
@@ -48,10 +48,10 @@ internal sealed class DefinitionService(
         {
             NormalizedTerm = normalized,
             Language = lang,
-            Source = lookup.Source,
+            Source = source,
         }).Entity;
 
-        entry.Source = lookup.Source;
+        entry.Source = source;
         entry.Status = result.Status;
         entry.FetchedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
         entry.Phonetic = result.Phonetic;
@@ -77,6 +77,44 @@ internal sealed class DefinitionService(
         }
 
         return ToDto(entry);
+    }
+
+    /// <summary>
+    /// Tries each provider in order until one finds the term. NotFound is only an outcome (and so cached) when
+    /// every provider answered NotFound; the first one's reply is kept. If any provider failed and none found the
+    /// term, the outcome is null (Unavailable), so a later retry can still reach the provider that was down.
+    /// </summary>
+    private async Task<(DictionaryLookupResult? Result, string Source, string? Failure)> LookupAsync(
+        string term,
+        string language,
+        CancellationToken cancellationToken)
+    {
+        (DictionaryLookupResult Result, string Source)? notFound = null;
+        List<string>? failures = null;
+        foreach (var provider in _providers)
+        {
+            DictionaryLookupResult result;
+            try
+            {
+                result = await provider.LookupAsync(term, language, cancellationToken).ConfigureAwait(false);
+            }
+            catch (DictionaryLookupException ex)
+            {
+                (failures ??= []).Add(ex.Message);
+                continue;
+            }
+
+            if (result.Status == DictionaryLookupStatus.Found)
+            {
+                return (result, provider.Source, null);
+            }
+
+            notFound ??= (result, provider.Source);
+        }
+
+        return failures is null && notFound is { } nf
+            ? (nf.Result, nf.Source, null)
+            : (null, string.Empty, string.Join(" ", failures ?? []));
     }
 
     internal static DefinitionDto ToDto(DictionaryEntry entry) => new()

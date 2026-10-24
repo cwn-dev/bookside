@@ -41,10 +41,14 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review ge
 - `src/Bookside.Data.Sqlite`: SQLite wiring, `Migrations/`, design-time factory. References Data.
 - `src/Bookside.Integrations`: external API clients implementing Core interfaces (typed HttpClient + standard
   resilience handler), registered by `Add<Provider>Client()` extensions that return the `IHttpClientBuilder`.
+  Dictionary providers: several `IDictionaryLookupService` registrations, tried in registration order by
+  `DefinitionService`; new ones go through `AddDictionaryClient<TClient, TOptions>` (own client name) and reuse
+  `DictionaryHttp` + `MeaningListBuilder`.
 - `tests/Bookside.Integrations.Tests`: client tests through the real registration, with `StubHttpMessageHandler` as the
   primary handler (retry delay zeroed via the `{clientName}-standard` resilience options).
 - `tests/Bookside.Data.Tests`: tests against real temp SQLite files (`SqliteTestDatabase`); service tests derive
-  from `Services/ServiceTestBase` (production registrations + `FakeDictionaryLookupService`).
+  from `Services/ServiceTestBase` (production registrations + `FakeDictionaryLookupService`; pass fallback
+  sources to the base constructor for multi-provider tests).
 - `src/Bookside.UI`: Razor class library with pages (`Pages/`), layout, shared `Components/`, form models (`Forms/`) and
   `wwwroot/bookside.css`; display logic with no markup as plain classes (e.g. `BookTimeline`, unit-tested without
   bUnit). References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so

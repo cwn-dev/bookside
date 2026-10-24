@@ -1,8 +1,9 @@
 namespace Bookside.Core.Vocabulary.Lookup;
 
 /// <summary>
-/// Raw external dictionary lookup (planned implementation: dictionaryapi.dev). Callers should go through a
-/// cache-aware service that checks <see cref="DictionaryEntry"/> first; this interface always hits the provider.
+/// One external dictionary provider (implementations in Bookside.Integrations). Several can be registered; the
+/// cache-aware <see cref="Services.IDefinitionService"/> tries them in registration order. This interface always
+/// hits the provider.
 /// </summary>
 public interface IDictionaryLookupService
 {

@@ -16,6 +16,9 @@ builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services
     .AddBooksideSqlite(Path.Combine(builder.Environment.ContentRootPath, databasePath))
     .AddBooksideServices();
+
+// Dictionary providers, tried in this order when a word is looked up.
+builder.Services.AddFreeDictionaryApiClient();
 builder.Services.AddDictionaryApiClient();
 
 var app = builder.Build();

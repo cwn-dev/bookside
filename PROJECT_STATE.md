@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 6, 2026-10-24)
+# Bookside: project state (end of session 7, 2026-10-24)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -28,7 +28,11 @@
 - `Bookside.Integrations` (session 3): `AddDictionaryApiClient()` registers `DictionaryApiClient` (internal) as
   `IDictionaryLookupService`: typed HttpClient + `Microsoft.Extensions.Http.Resilience` 10.11.0 standard handler
   (3 s/attempt, 2 retries, 300 ms base delay, 8 s total), 1 MB response cap. Returns the `IHttpClientBuilder`.
-  Wired into `Bookside.Web`.
+  Session 7: `AddFreeDictionaryApiClient()` registers `FreeDictionaryApiClient` (freedictionaryapi.com) the same way.
+  Both go through private `AddDictionaryClient<TClient, TOptions>(name, …)`: each provider has its own named
+  HttpClient (base address, `{name}-standard` resilience options); shared `DictionaryHttp` (GET + transport-failure
+  mapping) and `MeaningListBuilder` (merge by part of speech, de-dup, phonetic length). `Program.cs` registers
+  freedictionaryapi.com, then dictionaryapi.dev.
 - `Bookside.UI` (session 4, RCL; references only Core + `Microsoft.AspNetCore.Components.Web`, so MAUI can reuse it):
   `Layout/MainLayout` (sticky header nav, `ErrorBoundary`), pages `LibraryPage` (`/books`: search, filter chips,
   sort, cover grid, "Show more" paging of 48), `BookDetailsPage` (`/books/{id}`: details, cover editor, reading
@@ -57,8 +61,10 @@
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
-- `Bookside.Integrations.Tests`: 14 tests through the real registration with a stubbed primary handler.
-- `Bookside.Data.Tests`: 59 passing tests. Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
+- `Bookside.Integrations.Tests`: 26 tests through the real registration with a stubbed primary handler
+  (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
+- `Bookside.Data.Tests`: 67 passing tests (session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
+  registers extra `FakeDictionaryLookupService(source)` providers after `Dictionary`). Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
   SQLite + production registrations + `FakeDictionaryLookupService`), `Isbn` and `Result` tests.
 
 ## Key decisions
@@ -144,31 +150,34 @@
   - Definition states on the word page: none (dictionary was down) → "Retry definition"; NotFound → "Check again"
     (refresh); Found → "Refresh" link. Unavailable shows a friendly retry-later message.
 
+- **Dictionary fallback chain (session 7, all user's choices):**
+  - Each provider is an `IDictionaryLookupService`; `DefinitionService` takes `IEnumerable<IDictionaryLookupService>`
+    and tries them in registration order (no config). Chosen over a composite provider: fallback sits next to the
+    caching rules it depends on. Adding a provider = one client class + one `Add…Client()` method + one line in `Program.cs`.
+  - Order: freedictionaryapi.com first (reliable, more senses), then dictionaryapi.dev (has audio, flaky).
+  - A failure **or** NotFound moves on to the next provider. NotFound is cached only when every provider says
+    NotFound (entry keeps the first one's source and raw reply). NotFound + a failure → Unavailable, nothing cached.
+    `DictionaryEntry.Source` records the provider that answered. Refresh re-runs the chain from the first provider.
+  - freedictionaryapi.com mapping: any non-200 (even 404) or a body without `entries` is a failure; `entries: []`
+    or no definitions → NotFound. Senses → definitions, subsenses (any depth) right after their parent. Example =
+    first example, else first quote text ≤ 300 chars (no reference). Phonetic = first untagged IPA, else first
+    IPA. No audio. Definition text keeps Wiktionary's "(countable)" style prefixes; `tags` are ignored.
+  - Latency: each provider keeps 3 s/attempt, 2 retries, 8 s total. A 530 fails over in ~1 s; worst case (both
+    hanging) is 16 s.
+
 ## Next
-1. **Second dictionary provider + fallback chain (session 7, user's request).** Add freedictionaryapi.com as another
-   dictionary lookup. Adding a word tries one provider, then the next; adding a provider should be easy (one class +
-   one registration). Propose the design before building. Findings so far (2026-10-24):
-   - `GET https://freedictionaryapi.com/api/v1/entries/{lang}/{word}`: no key, CORS, Wiktionary data (CC BY-SA 4.0),
-     behind Cloudflare. Spec: `/api/v1/openapi.json` (not yet read: check rate limits and query parameters).
-   - Not found is **200 with `"entries": []`**, not a 404 (unlike dictionaryapi.dev).
-   - Shape: `entries[]` per part of speech: `partOfSpeech`, `pronunciations[] {type: "ipa", text, tags}` (no audio
-     URL seen), `senses[] {definition, examples[], quotes[] {text, reference}, synonyms, antonyms, subsenses[]}`,
-     plus `forms`, `synonyms`; top-level `source.url` (Wiktionary page) and `license`.
-   - It answered while dictionaryapi.dev returned Cloudflare 530 for uncached words.
-   Decisions to make: provider order (config?); what counts as "try the next one" (only transient failures, or a
-   NotFound too?); whether a NotFound is cached per provider or only when every provider says NotFound;
-   `DictionaryEntry.Source` already records the provider; whether "Refresh" re-runs the whole chain; how to map
-   quotes/subsenses/tags into `DictionaryMeaning`; per-provider resilience options and tests through the real
-   registration (`StubHttpMessageHandler`).
-2. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
+1. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
    Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
-3. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+2. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table
   (context/page per occurrence) instead of the single `BookId`.
-- dictionaryapi.dev was still returning Cloudflare 530 for uncached words at the end of session 6 (edge-cached
-  words like "petrichor" worked). Next 1 adds freedictionaryapi.com as a fallback.
+- dictionaryapi.dev was still returning Cloudflare 530 for uncached words in session 7; freedictionaryapi.com
+  now answers first, so new words get no audio unless they fall through to dictionaryapi.dev.
+- Both providers serve Wiktionary content (CC BY-SA 4.0). The word page shows only the provider name; add a
+  Wiktionary attribution/link if the app is ever shared beyond personal use.
+- Quote-derived examples can include Wiktionary's editorial brackets ("[…]"); fine for now.
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.
 - Auth: none yet. Needs a decision before exposing the container beyond the LAN.
 - Local runtime is ASP.NET Core 10.0.7 while packages are 10.0.13; works, but consider updating the SDK/runtime.
