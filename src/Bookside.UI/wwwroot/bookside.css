@@ -80,6 +80,8 @@ a { color: var(--accent); }
 a:hover { color: var(--accent-hover); }
 
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* FocusOnNavigate focuses the page heading for screen readers; it isn't tabbable, so no outline. */
+h1:focus { outline: none; }
 
 img { max-width: 100%; }
 

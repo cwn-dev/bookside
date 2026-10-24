@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 7, 2026-10-24)
+# Bookside: project state (session 8, 2026-10-24)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -123,6 +123,8 @@
     immutable URLs, revalidation is rare, so loading the ≤2 MB BLOB for a 304 isn't worth an interface change.
   - "Today" (start/finish dates) uses `TimeProvider.GetLocalNow()`, i.e. the server's time zone: set `TZ` in the container.
   - UI covers the library only this session (user's choice); vocabulary pages next.
+  - Session 8: `FocusOnNavigate Selector="h1"` stays (screen readers announce the new page); `h1:focus { outline: none; }`
+    in `bookside.css` hides the outline on that programmatic focus (the heading isn't tabbable, so keyboard users lose nothing).
 
 - **Book comments (session 5, all user's choices):**
   - Book-level only (no link to a reading session; `ReadingSession.Notes` covers one read-through). Plain text with
@@ -166,12 +168,6 @@
     hanging) is 16 s.
 
 ## Next
-0. **Quick fix first thing next session (user's request):** after a full page load/refresh, the `h1` page titles
-   ("Library", "Vocabulary") show the orange focus outline. Cause: `Routes.razor` has
-   `<FocusOnNavigate Selector="h1">`, which focuses the heading programmatically, and `:focus-visible` in
-   `bookside.css` matches that focus when there's been no pointer input yet. Fix: keep `FocusOnNavigate` (screen
-   readers announce the new page) and hide the outline on programmatically focused headings, e.g.
-   `h1:focus { outline: none; }` (what the Blazor template does). Check both widths and dark mode.
 1. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
    Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
 2. **Random word on the library page (user's request).** Show one random vocabulary word on `/books` (the home
