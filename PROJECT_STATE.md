@@ -105,12 +105,23 @@
   - UI covers the library only this session (user's choice); vocabulary pages next.
 
 ## Next
-1. Vocabulary UI: word list (search, per-book filter), add word (from a book page too, with context/page),
+1. **Book comments (user's request, do first).** Unlimited free-text comments per book, shown in a good spot on the
+   book page. Suggested shape (confirm with the user before building):
+   - `BookComment : Entity` (BookId FK, cascade delete with the book, `Text` with a `TextMaxLength` constant, index on
+     (BookId, CreatedAtUtc)) + migration. Separate from `ReadingSession.Notes`, which belong to one read-through.
+   - `ILibraryService`: list/add/update/delete comment methods returning a `BookCommentDto`, `Result` errors
+     (`ErrorCodes` for comment not found), validation via `InputValidator`. Service tests in `Bookside.Data.Tests`.
+   - UI: a "Comments" section on `BookDetailsPage` (add box, list with timestamps, edit/delete via `ConfirmButton`),
+     working at both widths. bUnit tests.
+   - Decide with the user: order (newest first?), whether editing is allowed and shows "edited", whether text
+     needs formatting (plain text with line breaks vs Markdown), whether a comment can link to a reading session,
+     and where the section sits relative to Reading history.
+2. Vocabulary UI: word list (search, per-book filter), add word (from a book page too, with context/page),
    word details with definition (meanings, phonetic, audio), "retry definition" / refresh, edit/delete. Add a
    Vocabulary nav link; link "Words saved" on the book page to the filtered list.
-2. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
+3. Dockerfile + compose with `/data` volume; also persist ASP.NET Data Protection keys there; set `TZ`.
    Decide HTTPS/reverse proxy (the host currently has no HTTPS redirect/HSTS).
-3. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+4. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.
