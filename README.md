@@ -2,9 +2,18 @@
 
 A personal reading companion: library / reading log and a vocabulary builder.
 
-![Screenshot](./screenshots/screenshot-1.png)
+<img src="./screenshots/screenshot-1.png" width="500" alt="Screenshot-1">
+<img src="./screenshots/screenshot-2.png" width="500" alt="Screenshot-2">
 
 [Click here for more screenshots](./screenshots/)
+
+## Features
+
+* Home page with 'currently reading', 'recently finished', 'recent words', 'word of the day' and reading statistics.
+* Track your book collection in the Library section.
+* Log when you started/finished a book, give it a rating, and leave comments (multiple comments can be left and act as a reading notes companion).
+* Log new words you come across in the Vocabulary section to revisit later.
+* Link a new word to a book.
 
 ## Layout
 
