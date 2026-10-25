@@ -230,6 +230,10 @@
    toggles on the book page); whether tags have a colour or order; deleting a tag that's in use (confirm + remove from
    books); library filtering by tag (`?tag=` in the query string next to the existing filter chips; one tag or
    several, AND vs OR); showing tags on library cards and the book page; any starter tags.
+   **Also next session: "Add comment" on home page reading cards (user's request).** Works like the existing
+   inline "Add word" button: toggles an inline `CommentForm` on the currently-reading card (adds a book comment via
+   `AddCommentAsync`). Check: whether it stays open after saving like `WordForm` or closes with a "Comment added"
+   notice; only one inline form (Finished / Add word / Add comment) open per card at a time.
 2. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
