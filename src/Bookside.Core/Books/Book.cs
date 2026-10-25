@@ -10,10 +10,20 @@ public class Book : Entity
     public const int DescriptionMaxLength = 10_000;
     public const int MetadataSourceMaxLength = 50;
     public const int MetadataSourceIdMaxLength = 100;
+    public const double MaxSeriesNumber = 9999;
 
     public required string Title { get; set; }
 
     public string? Subtitle { get; set; }
+
+    public Guid? SeriesId { get; set; }
+
+    public Series? Series { get; set; }
+
+    /// <summary>
+    /// Position in <see cref="Series"/>; fractional for in-between entries (e.g. 2.5).
+    /// </summary>
+    public double? SeriesNumber { get; set; }
 
     public int? PageCount { get; set; }
 

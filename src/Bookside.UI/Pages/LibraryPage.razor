@@ -13,7 +13,7 @@
 <div class="toolbar">
     <div class="search">
         <label for="library-search" class="visually-hidden">Search</label>
-        <input id="library-search" type="search" placeholder="Search title or author"
+        <input id="library-search" type="search" placeholder="Search title, author or series"
                autocomplete="off" enterkeyhint="search"
                @bind="_searchText" @bind:event="oninput" @bind:after="SearchChangedAsync" />
     </div>
@@ -69,6 +69,10 @@ else
                     @if (book.Authors.Count > 0)
                     {
                         <span class="authors">@string.Join(", ", book.Authors)</span>
+                    }
+                    @if (SeriesLabel.Format(book.Series, book.SeriesNumber) is { } series)
+                    {
+                        <span class="series">@series</span>
                     }
                     <span class="badges">
                         @if (book.IsReading)

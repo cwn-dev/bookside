@@ -9,6 +9,10 @@ public sealed class BookFormModel
 
     public string? Subtitle { get; set; }
 
+    public string? Series { get; set; }
+
+    public double? SeriesNumber { get; set; }
+
     /// <summary>One entry per input box; blanks are dropped by the service.</summary>
     public List<AuthorEntry> Authors { get; } = [new()];
 
@@ -36,6 +40,8 @@ public sealed class BookFormModel
         {
             Title = book.Title,
             Subtitle = book.Subtitle,
+            Series = book.Series,
+            SeriesNumber = book.SeriesNumber,
             PageCount = book.PageCount,
             Isbn13 = book.Isbn13,
             Isbn10 = book.Isbn10,
@@ -59,6 +65,8 @@ public sealed class BookFormModel
     {
         Title = Title,
         Subtitle = Subtitle,
+        Series = Series,
+        SeriesNumber = SeriesNumber,
         Authors = Authors.Select(a => a.Name ?? "").ToList(),
         PageCount = PageCount,
         Isbn13 = Isbn13,

@@ -81,6 +81,12 @@ namespace Bookside.Data.Sqlite.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("SeriesId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("SeriesNumber")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("Subtitle")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
@@ -97,11 +103,15 @@ namespace Bookside.Data.Sqlite.Migrations
 
                     b.HasIndex("Isbn13");
 
+                    b.HasIndex("SeriesId");
+
                     b.HasIndex("Title");
 
                     b.ToTable("Books", null, t =>
                         {
                             t.HasCheckConstraint("CK_Books_PageCount", "PageCount IS NULL OR PageCount > 0");
+
+                            t.HasCheckConstraint("CK_Books_SeriesNumber", "SeriesNumber IS NULL OR (SeriesNumber >= 0 AND SeriesNumber <= 9999)");
                         });
                 });
 
@@ -228,6 +238,29 @@ namespace Bookside.Data.Sqlite.Migrations
 
                             t.HasCheckConstraint("CK_ReadingSessions_Rating", "Rating IS NULL OR Rating BETWEEN 1 AND 5");
                         });
+                });
+
+            modelBuilder.Entity("Bookside.Core.Books.Series", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Series", (string)null);
                 });
 
             modelBuilder.Entity("Bookside.Core.Vocabulary.DictionaryEntry", b =>
@@ -362,6 +395,16 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.ToTable("VocabularyWords", (string)null);
                 });
 
+            modelBuilder.Entity("Bookside.Core.Books.Book", b =>
+                {
+                    b.HasOne("Bookside.Core.Books.Series", "Series")
+                        .WithMany("Books")
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Series");
+                });
+
             modelBuilder.Entity("Bookside.Core.Books.BookAuthor", b =>
                 {
                     b.HasOne("Bookside.Core.Books.Author", "Author")
@@ -445,6 +488,11 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.Navigation("Cover");
 
                     b.Navigation("ReadingSessions");
+                });
+
+            modelBuilder.Entity("Bookside.Core.Books.Series", b =>
+                {
+                    b.Navigation("Books");
                 });
 #pragma warning restore 612, 618
         }

@@ -37,7 +37,8 @@
     overflow: hidden;
 }
 
-.book-card .authors {
+.book-card .authors,
+.book-card .series {
     color: var(--text-muted);
     font-size: 0.88rem;
     white-space: nowrap;

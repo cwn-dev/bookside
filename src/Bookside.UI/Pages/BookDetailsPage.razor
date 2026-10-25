@@ -35,6 +35,10 @@ else
             {
                 <p class="authors">by @string.Join(", ", _book.Authors)</p>
             }
+            @if (SeriesLabel.Format(_book.Series, _book.SeriesNumber) is { } series)
+            {
+                <p class="series"><a href="@SeriesUrl" title="Books in this series">@series</a></p>
+            }
 
             <dl class="facts">
                 @if (_book.PageCount is int pages)
@@ -210,6 +214,9 @@ else
 
 @code {
     private BookDetails? _book;
+
+    /// <summary>Library search for the series name, which lists its other books.</summary>
+    private string SeriesUrl => $"books?q={Uri.EscapeDataString(_book!.Series!)}";
     private bool _notFound;
     private bool _busy;
     private IReadOnlyList<string> _errors = [];

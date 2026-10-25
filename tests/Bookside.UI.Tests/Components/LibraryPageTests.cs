@@ -31,6 +31,16 @@ public sealed class LibraryPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Card_shows_the_series_under_the_book()
+    {
+        Success(await Library.AddBookAsync(new BookInput { Title = "Mort", Series = "Discworld", SeriesNumber = 4 }, Ct));
+
+        var page = Render<LibraryPage>();
+
+        page.WaitForAssertion(() => Assert.Equal("Discworld #4", page.Find(".book-card .series").TextContent));
+    }
+
+    [Fact]
     public async Task Query_string_filter_shows_only_matching_books()
     {
         var reading = await AddBookAsync("Middlemarch");

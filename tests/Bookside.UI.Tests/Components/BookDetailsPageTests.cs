@@ -23,6 +23,17 @@ public sealed class BookDetailsPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Series_links_to_a_library_search_for_it()
+    {
+        var book = Success(await Library.AddBookAsync(new BookInput { Title = "Mort", Series = "Discworld & Co", SeriesNumber = 4 }, Ct));
+
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+
+        page.WaitForAssertion(() => Assert.Equal("Discworld & Co #4", page.Find(".series a").TextContent));
+        Assert.Equal("books?q=Discworld%20%26%20Co", page.Find(".series a").GetAttribute("href"));
+    }
+
+    [Fact]
     public void Unknown_book_shows_not_found()
     {
         var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, Guid.NewGuid()));

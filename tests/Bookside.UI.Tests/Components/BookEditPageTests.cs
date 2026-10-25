@@ -75,6 +75,27 @@ public sealed class BookEditPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Series_suggests_existing_names_and_saves_with_a_number()
+    {
+        Success(await Library.AddBookAsync(new BookInput { Title = "Mort", Series = "Discworld" }, Ct));
+        Success(await Library.AddBookAsync(new BookInput { Title = "Dune", Series = "Dune" }, Ct));
+
+        var page = Render<BookEditPage>();
+        page.WaitForAssertion(() => Assert.Equal(
+            ["Discworld", "Dune"],
+            page.FindAll("#series-options option").Select(o => o.GetAttribute("value"))));
+
+        page.Find("#title").Change("Small Gods");
+        page.Find("#series").Change("discworld");
+        page.Find("#series-number").Change("13.5");
+        page.Find("form").Submit();
+
+        page.WaitForAssertion(() => Assert.Matches("/books/[0-9a-f-]{36}$", Navigation.Uri));
+        var saved = await GetBookAsync(Guid.Parse(Navigation.Uri[^36..]));
+        Assert.Equal(("Discworld", 13.5), (saved.Series, saved.SeriesNumber));
+    }
+
+    [Fact]
     public void Editing_a_missing_book_says_so()
     {
         var page = Render<BookEditPage>(p => p.Add(x => x.Id, Guid.NewGuid()));

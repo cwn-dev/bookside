@@ -11,6 +11,9 @@ internal sealed class BookConfiguration : IEntityTypeConfiguration<Book>
         builder.ToTable("Books", t =>
         {
             t.HasCheckConstraint("CK_Books_PageCount", "PageCount IS NULL OR PageCount > 0");
+            t.HasCheckConstraint(
+                "CK_Books_SeriesNumber",
+                FormattableString.Invariant($"SeriesNumber IS NULL OR (SeriesNumber >= 0 AND SeriesNumber <= {Book.MaxSeriesNumber})"));
         });
         builder.ConfigureEntity();
 
@@ -26,6 +29,12 @@ internal sealed class BookConfiguration : IEntityTypeConfiguration<Book>
         builder.HasIndex(b => b.Title);
         // Not unique: owning two editions/copies with the same ISBN is legitimate.
         builder.HasIndex(b => b.Isbn13);
+
+        // Series left without books are deleted by the service; SetNull just keeps the FK safe.
+        builder.HasOne(b => b.Series)
+            .WithMany(s => s.Books)
+            .HasForeignKey(b => b.SeriesId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne(b => b.Cover)
             .WithOne(c => c.Book)

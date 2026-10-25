@@ -11,11 +11,14 @@ public interface ILibraryService
 
     Task<Result<BookDetails>> AddBookAsync(BookInput input, CancellationToken cancellationToken = default);
 
-    /// <summary>Replaces all editable fields, including the author list. Authors left without books are deleted.</summary>
+    /// <summary>Replaces all editable fields, including the author list. Authors and series left without books are deleted.</summary>
     Task<Result<BookDetails>> UpdateBookAsync(Guid bookId, BookInput input, CancellationToken cancellationToken = default);
 
     /// <summary>Deletes sessions, comments and cover with the book; vocabulary words are kept and unlinked.</summary>
     Task<Result> DeleteBookAsync(Guid bookId, CancellationToken cancellationToken = default);
+
+    /// <summary>All series names, alphabetically (for the book form's picker).</summary>
+    Task<IReadOnlyList<string>> ListSeriesNamesAsync(CancellationToken cancellationToken = default);
 
     Task<Result<CoverContent>> GetCoverAsync(Guid bookId, CancellationToken cancellationToken = default);
 

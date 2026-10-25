@@ -290,6 +290,62 @@ public sealed class LibraryServiceTests : ServiceTestBase
         Assert.Empty(Success(await Library.GetBookAsync(book.Id, Ct)).Comments);
     }
 
+    [Fact]
+    public async Task Series_is_created_then_reused_case_insensitively_and_listed()
+    {
+        var mort = Success(await Library.AddBookAsync(new BookInput { Title = "Mort", Series = " Discworld ", SeriesNumber = 4 }, Ct));
+        var gods = Success(await Library.AddBookAsync(new BookInput { Title = "Small Gods", Series = "DISCWORLD", SeriesNumber = 13.5 }, Ct));
+        Success(await Library.AddBookAsync(new BookInput { Title = "Dune", Series = "Dune Chronicles" }, Ct));
+
+        Assert.Equal(("Discworld", 4.0), (mort.Series, mort.SeriesNumber));
+        Assert.Equal(("Discworld", 13.5), (gods.Series, gods.SeriesNumber));
+        Assert.Equal(["Discworld", "Dune Chronicles"], await Library.ListSeriesNamesAsync(Ct));
+
+        var summary = (await Library.ListBooksAsync(new BookQuery { Search = "Mort" }, Ct)).Items.Single();
+        Assert.Equal(("Discworld", 4.0), (summary.Series, summary.SeriesNumber));
+    }
+
+    [Fact]
+    public async Task Changing_clearing_or_deleting_removes_series_left_without_books()
+    {
+        var mort = Success(await Library.AddBookAsync(new BookInput { Title = "Mort", Series = "Discworld" }, Ct));
+        var dune = Success(await Library.AddBookAsync(new BookInput { Title = "Dune", Series = "Dune" }, Ct));
+        var coraline = Success(await Library.AddBookAsync(new BookInput { Title = "Coraline", Series = "Typo" }, Ct));
+
+        Success(await Library.UpdateBookAsync(mort.Id, new BookInput { Title = "Mort", Series = "discworld", SeriesNumber = 4 }, Ct));
+        Success(await Library.UpdateBookAsync(coraline.Id, new BookInput { Title = "Coraline" }, Ct));
+        Assert.True((await Library.DeleteBookAsync(dune.Id, Ct)).IsSuccess);
+
+        Assert.Equal(["Discworld"], await Library.ListSeriesNamesAsync(Ct)); // same name, other case: kept as is
+        Assert.Null(Success(await Library.GetBookAsync(coraline.Id, Ct)).Series);
+
+        Success(await Library.UpdateBookAsync(mort.Id, new BookInput { Title = "Mort", Series = "Death" }, Ct));
+        Assert.Equal(["Death"], await Library.ListSeriesNamesAsync(Ct));
+    }
+
+    [Fact]
+    public async Task Series_number_needs_a_series_and_a_valid_range()
+    {
+        var noSeries = Failure(await Library.AddBookAsync(new BookInput { Title = "Mort", SeriesNumber = 1 }, Ct), ErrorType.Validation);
+        var negative = Failure(await Library.AddBookAsync(new BookInput { Title = "Mort", Series = "Discworld", SeriesNumber = -1 }, Ct), ErrorType.Validation);
+        var tooLong = Failure(await Library.AddBookAsync(new BookInput { Title = "Mort", Series = new string('x', Series.NameMaxLength + 1) }, Ct), ErrorType.Validation);
+
+        Assert.Equal(["SeriesNumber"], noSeries.FieldErrors.Select(e => e.Field));
+        Assert.Equal(["SeriesNumber"], negative.FieldErrors.Select(e => e.Field));
+        Assert.Equal(["Series"], tooLong.FieldErrors.Select(e => e.Field));
+    }
+
+    [Fact]
+    public async Task Search_matches_series_name()
+    {
+        Success(await Library.AddBookAsync(new BookInput { Title = "Mort", Series = "Discworld" }, Ct));
+        await AddBookAsync("Dune");
+
+        var items = (await Library.ListBooksAsync(new BookQuery { Search = "DISCW" }, Ct)).Items;
+
+        Assert.Equal(["Mort"], items.Select(b => b.Title));
+    }
+
     private static ReadingSessionInput Finished(DateOnly started, DateOnly finished) =>
         new() { StartedOn = started, FinishedOn = finished, Status = ReadingStatus.Finished };
 }

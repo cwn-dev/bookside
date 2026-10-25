@@ -38,6 +38,14 @@
     font-size: 1.05rem;
 }
 
+.authors:has(+ .series) {
+    margin-bottom: 0.25rem;
+}
+
+.series {
+    margin: 0 0 1rem;
+}
+
 .facts {
     display: flex;
     flex-wrap: wrap;

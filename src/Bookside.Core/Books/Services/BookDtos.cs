@@ -7,6 +7,12 @@ public sealed record BookInput
 
     public string? Subtitle { get; init; }
 
+    /// <summary>Series name. Matched to an existing series case-insensitively (ASCII); a new name creates one.</summary>
+    public string? Series { get; init; }
+
+    /// <summary>Only allowed with <see cref="Series"/>; 0 to <see cref="Book.MaxSeriesNumber"/>.</summary>
+    public double? SeriesNumber { get; init; }
+
     /// <summary>In display order. Matched to existing authors case-insensitively (ASCII); new names create authors.</summary>
     public IReadOnlyList<string> Authors { get; init; } = [];
 
@@ -52,7 +58,7 @@ public enum BookSort
 
 public sealed record BookQuery
 {
-    /// <summary>Substring match on title, subtitle or author name (case-insensitive for ASCII).</summary>
+    /// <summary>Substring match on title, subtitle, series or author name (case-insensitive for ASCII).</summary>
     public string? Search { get; init; }
 
     public BookFilter Filter { get; init; } = BookFilter.All;
@@ -73,6 +79,10 @@ public sealed record BookSummary
     public string? Subtitle { get; init; }
 
     public required IReadOnlyList<string> Authors { get; init; }
+
+    public string? Series { get; init; }
+
+    public double? SeriesNumber { get; init; }
 
     /// <summary>Null when there is no cover; otherwise the ETag / cache-busting key for the image.</summary>
     public string? CoverSha256 { get; init; }
@@ -95,6 +105,10 @@ public sealed record BookDetails
     public string? Subtitle { get; init; }
 
     public required IReadOnlyList<string> Authors { get; init; }
+
+    public string? Series { get; init; }
+
+    public double? SeriesNumber { get; init; }
 
     public int? PageCount { get; init; }
 

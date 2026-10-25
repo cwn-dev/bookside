@@ -24,6 +24,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             books = books.Where(b =>
                 EF.Functions.Like(b.Title, pattern, LikePattern.EscapeCharacter)
                 || (b.Subtitle != null && EF.Functions.Like(b.Subtitle, pattern, LikePattern.EscapeCharacter))
+                || (b.Series != null && EF.Functions.Like(b.Series.Name, pattern, LikePattern.EscapeCharacter))
                 || b.Authors.Any(a => EF.Functions.Like(a.Author.Name, pattern, LikePattern.EscapeCharacter)));
         }
 
@@ -43,6 +44,8 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             Title = b.Title,
             Subtitle = b.Subtitle,
             Authors = b.Authors.OrderBy(a => a.Position).Select(a => a.Author.Name).ToList(),
+            Series = b.Series!.Name,
+            SeriesNumber = b.SeriesNumber,
             CoverSha256 = b.Cover!.Sha256,
             TimesRead = b.ReadingSessions.Count(s => s.Status == ReadingStatus.Finished),
             IsReading = b.ReadingSessions.Any(s => s.Status == ReadingStatus.Reading),
@@ -74,7 +77,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         ArgumentNullException.ThrowIfNull(input);
         var book = new Book { Title = string.Empty };
         var validator = new InputValidator();
-        var authorNames = ApplyInput(validator, input, book);
+        var (authorNames, seriesName) = ApplyInput(validator, input, book);
         if (!validator.IsValid)
         {
             return validator.ToError();
@@ -83,6 +86,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         db.Books.Add(book);
         await SetAuthorsAsync(db, book, authorNames, cancellationToken).ConfigureAwait(false);
+        await SetSeriesAsync(db, book, seriesName, cancellationToken).ConfigureAwait(false);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return (await LoadDetailsAsync(db, book.Id, cancellationToken).ConfigureAwait(false))!;
@@ -94,6 +98,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         var book = await db.Books
             .Include(b => b.Authors).ThenInclude(ba => ba.Author)
+            .Include(b => b.Series)
             .SingleOrDefaultAsync(b => b.Id == bookId, cancellationToken)
             .ConfigureAwait(false);
         if (book is null)
@@ -102,7 +107,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         }
 
         var validator = new InputValidator();
-        var authorNames = ApplyInput(validator, input, book);
+        var (authorNames, seriesName) = ApplyInput(validator, input, book);
         if (!validator.IsValid)
         {
             return validator.ToError();
@@ -110,8 +115,10 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         var removedAuthorIds = await SetAuthorsAsync(db, book, authorNames, cancellationToken).ConfigureAwait(false);
+        var previousSeriesId = await SetSeriesAsync(db, book, seriesName, cancellationToken).ConfigureAwait(false);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await DeleteOrphanedAuthorsAsync(db, removedAuthorIds, cancellationToken).ConfigureAwait(false);
+        await DeleteOrphanedSeriesAsync(db, previousSeriesId, cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return (await LoadDetailsAsync(db, bookId, cancellationToken).ConfigureAwait(false))!;
@@ -127,6 +134,11 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             .Select(ba => ba.AuthorId)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+        var seriesId = await db.Books
+            .Where(b => b.Id == bookId)
+            .Select(b => b.SeriesId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
 
         // Sessions, comments, cover and author links cascade in the database; vocabulary words are set to null.
         var deleted = await db.Books.Where(b => b.Id == bookId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
@@ -136,8 +148,19 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         }
 
         await DeleteOrphanedAuthorsAsync(db, authorIds, cancellationToken).ConfigureAwait(false);
+        await DeleteOrphanedSeriesAsync(db, seriesId, cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
+    }
+
+    public async Task<IReadOnlyList<string>> ListSeriesNamesAsync(CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await db.Series.AsNoTracking()
+            .OrderBy(s => s.Name)
+            .Select(s => s.Name)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public async Task<Result<CoverContent>> GetCoverAsync(Guid bookId, CancellationToken cancellationToken = default)
@@ -361,6 +384,8 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
                 Title = b.Title,
                 Subtitle = b.Subtitle,
                 Authors = b.Authors.OrderBy(a => a.Position).Select(a => a.Author.Name).ToList(),
+                Series = b.Series!.Name,
+                SeriesNumber = b.SeriesNumber,
                 PageCount = b.PageCount,
                 Isbn13 = b.Isbn13,
                 Isbn10 = b.Isbn10,
@@ -405,8 +430,8 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             .AsSplitQuery()
             .SingleOrDefaultAsync(cancellationToken);
 
-    /// <summary>Validates <paramref name="input"/> onto <paramref name="book"/> and returns the cleaned author names.</summary>
-    private List<string> ApplyInput(InputValidator v, BookInput input, Book book)
+    /// <summary>Validates <paramref name="input"/> onto <paramref name="book"/> and returns the cleaned author and series names.</summary>
+    private (List<string> Authors, string? Series) ApplyInput(InputValidator v, BookInput input, Book book)
     {
         book.Title = v.Required(nameof(BookInput.Title), input.Title, Book.TitleMaxLength);
         book.Subtitle = v.Optional(nameof(BookInput.Subtitle), input.Subtitle, Book.SubtitleMaxLength);
@@ -414,6 +439,14 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         book.Description = v.Optional(nameof(BookInput.Description), input.Description, Book.DescriptionMaxLength);
         book.MetadataSource = v.Optional(nameof(BookInput.MetadataSource), input.MetadataSource, Book.MetadataSourceMaxLength);
         book.MetadataSourceId = v.Optional(nameof(BookInput.MetadataSourceId), input.MetadataSourceId, Book.MetadataSourceIdMaxLength);
+
+        var seriesName = v.Optional(nameof(BookInput.Series), input.Series, Series.NameMaxLength);
+        v.Check(
+            input.SeriesNumber is null || (input.SeriesNumber >= 0 && input.SeriesNumber <= Book.MaxSeriesNumber),
+            nameof(BookInput.SeriesNumber),
+            FormattableString.Invariant($"Must be between 0 and {Book.MaxSeriesNumber}."));
+        v.Check(input.SeriesNumber is null || seriesName is not null, nameof(BookInput.SeriesNumber), "Needs a series.");
+        book.SeriesNumber = input.SeriesNumber;
 
         v.Check(input.PageCount is null or > 0, nameof(BookInput.PageCount), "Must be greater than zero.");
         book.PageCount = input.PageCount;
@@ -450,7 +483,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             names.Add(name);
         }
 
-        return names;
+        return (names, seriesName);
 
         static string? CleanOrNull(string? value) =>
             string.IsNullOrWhiteSpace(value) ? null : Isbn.Clean(value);
@@ -519,6 +552,48 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
 
         await db.Authors
             .Where(a => authorIds.Contains(a.Id) && !a.Books.Any())
+            .ExecuteDeleteAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>Links the book to the named series (reusing an existing one, ASCII case-insensitive) and returns the previous series id if it changed.</summary>
+    private static async Task<Guid?> SetSeriesAsync(BooksideDbContext db, Book book, string? name, CancellationToken cancellationToken)
+    {
+        var previous = book.Series;
+        if (previous is not null && string.Equals(previous.Name, name, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        Series? series = null;
+        if (name is not null)
+        {
+            series = await db.Series
+                .Where(s => EF.Functions.Like(s.Name, LikePattern.Exact(name), LikePattern.EscapeCharacter))
+                .OrderBy(s => s.CreatedAtUtc)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            if (series is null)
+            {
+                series = new Series { Name = name };
+                db.Series.Add(series);
+            }
+        }
+
+        book.Series = series;
+        book.SeriesId = series?.Id;
+        return previous?.Id;
+    }
+
+    private static async Task DeleteOrphanedSeriesAsync(BooksideDbContext db, Guid? seriesId, CancellationToken cancellationToken)
+    {
+        if (seriesId is null)
+        {
+            return;
+        }
+
+        await db.Series
+            .Where(s => s.Id == seriesId && !s.Books.Any())
             .ExecuteDeleteAsync(cancellationToken)
             .ConfigureAwait(false);
     }

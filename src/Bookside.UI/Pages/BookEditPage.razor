@@ -59,6 +59,24 @@ else
                 </fieldset>
 
                 <div class="field">
+                    <label for="series">Series</label>
+                    <InputText id="series" @bind-Value="_model.Series" maxlength="@Series.NameMaxLength" list="series-options" autocomplete="off" />
+                    <datalist id="series-options">
+                        @foreach (var name in _seriesNames)
+                        {
+                            <option value="@name"></option>
+                        }
+                    </datalist>
+                    <ValidationMessage For="() => _model.Series" />
+                </div>
+
+                <div class="field">
+                    <label for="series-number">Number in series</label>
+                    <InputNumber id="series-number" @bind-Value="_model.SeriesNumber" min="0" step="any" inputmode="decimal" />
+                    <ValidationMessage For="() => _model.SeriesNumber" />
+                </div>
+
+                <div class="field">
                     <label for="pages">Pages</label>
                     <InputNumber id="pages" @bind-Value="_model.PageCount" min="1" inputmode="numeric" />
                     <ValidationMessage For="() => _model.PageCount" />
@@ -106,6 +124,7 @@ else
 
 @code {
     private BookFormModel? _model;
+    private IReadOnlyList<string> _seriesNames = [];
     private ServiceErrorValidator? _validator;
     private IReadOnlyList<string> _errors = [];
     private bool _notFound;
@@ -118,6 +137,8 @@ else
     private bool IsNew => Id is null;
 
     private string CancelUrl => IsNew ? "books" : $"books/{Id}";
+
+    protected override async Task OnInitializedAsync() => _seriesNames = await Library.ListSeriesNamesAsync();
 
     protected override async Task OnParametersSetAsync()
     {

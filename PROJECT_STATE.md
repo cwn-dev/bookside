@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 9, 2026-10-24)
+# Bookside: project state (end of session 10, 2026-10-25)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -7,6 +7,7 @@
 - `Bookside.Core`: `Book`, `Author`, `BookAuthor` (ordered join), `BookCover` (BLOB, 1:1, own table, 2 MB cap, allowed
   content types), `ReadingSession` (DateOnly start/finish, Status Reading/Finished/Abandoned, Rating 1–5, Notes),
   `BookComment` (session 5: BookId FK cascade, plain `Text` ≤ 10 000, index (BookId, CreatedAtUtc)),
+  `Series` (session 10: name ≤ 300, like `Author`; `Book.SeriesId` FK set-null + `Book.SeriesNumber` double 0–9999),
   `VocabularyWord` (optional BookId, Context, PageNumber, DictionaryEntryId), `DictionaryEntry` (definition cache,
   Found/NotFound, Meanings as JSON, RawResponse), `TermNormalizer`, `Isbn` (clean, checksum, 10→13).
   Max-length constants live on the entities and are used by both configurations and validation.
@@ -26,7 +27,7 @@
   `AddBooksideServices()` (scoped; adds `TimeProvider.System` if missing).
 - `Bookside.Data.Sqlite`: `AddBooksideSqlite(path)` registers `IDbContextFactory<BooksideDbContext>`;
   `InitializeBooksideDatabaseAsync()` creates the directory, runs `MigrateAsync`, sets WAL. Migrations `InitialCreate`,
-  `AddBookComments` (session 5: new table only).
+  `AddBookComments` (session 5: new table only), `AddBookSeries` (session 10).
 - `Bookside.Integrations` (session 3): `AddDictionaryApiClient()` registers `DictionaryApiClient` (internal) as
   `IDictionaryLookupService`: typed HttpClient + `Microsoft.Extensions.Http.Resilience` 10.11.0 standard handler
   (3 s/attempt, 2 retries, 300 ms base delay, 8 s total), 1 MB response cap. Returns the `IHttpClientBuilder`.
@@ -35,6 +36,10 @@
   HttpClient (base address, `{name}-standard` resilience options); shared `DictionaryHttp` (GET + transport-failure
   mapping) and `MeaningListBuilder` (merge by part of speech, de-dup, phonetic length). `Program.cs` registers
   freedictionaryapi.com, then dictionaryapi.dev.
+- Book series (session 10): `BookInput`/`BookSummary`/`BookDetails` carry `Series` + `SeriesNumber`;
+  `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
+  + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page
+  shows it under "by …" as a link to `books?q={series}`. Library search matches the series name.
 - Home page (session 9): `HomePage` (`/`, replaces the redirect to `/books`; the brand links to it, no nav link).
   Currently reading cards (cover, authors, "Started … · day N", inline "Finished" form = `ReadingSessionForm`, inline
   "Add word" = `WordForm` that stays open), word of the day + "Another", quick-add word, recent words (5), recently
@@ -70,13 +75,13 @@
   cache mount; runtime `aspnet:10.0-noble-chiseled-extra`, UID 1654, port 8080), `.dockerignore`, `compose.yaml`
   (`./data:/data`, `TZ`, forwarded headers on, port bound to `127.0.0.1` by default). README "Deploy" covers setup,
   backup, proxy WebSockets.
-- `Bookside.UI.Tests`: 61 tests (session 9: `HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- `Bookside.UI.Tests`: 70 tests (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
 - `Bookside.Integrations.Tests`: 26 tests through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 79 passing tests (session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
+- `Bookside.Data.Tests`: 83 passing tests (session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
   virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
   `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
   registers extra `FakeDictionaryLookupService(source)` providers after `Dictionary`). Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
@@ -179,6 +184,14 @@
     the port is published on 127.0.0.1 by default). No HTTPS redirect/HSTS in the app; the proxy owns that.
   - `./data` bind mount owned by UID 1654. Data Protection keys there unencrypted at rest (startup warning
     "No XML encryptor configured" is expected); they only protect antiforgery tokens and circuit state.
+
+- **Book series (session 10, user's choices: own table, optional number):**
+  - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
+    (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.
+  - Number is `double?` (allows 2.5), not `decimal`: EF SQLite stores decimal as TEXT, which breaks the check
+    constraint and ordering. Shown with `"0.##"`. A number without a series is a validation error.
+  - No series page, filter or sort (keep it simple); the book page's series link reuses library search.
+  - Picker is a plain `<datalist>`: no JS, works on desktop and mobile; typing a new name creates the series.
 
 - **Home page (session 9, user's choices from a proposed layout):**
   - One `IHomeService.GetHomeAsync()` call (one context, ~8 queries) instead of several existing calls:

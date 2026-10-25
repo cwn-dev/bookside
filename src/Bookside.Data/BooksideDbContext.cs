@@ -21,6 +21,8 @@ public class BooksideDbContext(DbContextOptions<BooksideDbContext> options, Time
 
     public DbSet<BookAuthor> BookAuthors => Set<BookAuthor>();
 
+    public DbSet<Series> Series => Set<Series>();
+
     public DbSet<BookCover> BookCovers => Set<BookCover>();
 
     public DbSet<ReadingSession> ReadingSessions => Set<ReadingSession>();
