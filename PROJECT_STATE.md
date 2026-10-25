@@ -234,6 +234,10 @@
    inline "Add word" button: toggles an inline `CommentForm` on the currently-reading card (adds a book comment via
    `AddCommentAsync`). Check: whether it stays open after saving like `WordForm` or closes with a "Comment added"
    notice; only one inline form (Finished / Add word / Add comment) open per card at a time.
+   **Also next session: currently-reading cards side by side (user's request).** One book → full width (as now);
+   two or more → two columns on wide screens (each card has a lot of empty space on the right). Phones stay one
+   column. Check: the breakpoint (the main column is 2fr of the ≥900px grid, so maybe a container query); how 3+
+   books wrap; how an open inline form (Finished / Add word / Add comment) fits in a half-width card.
 2. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
