@@ -2,6 +2,10 @@
 
 A personal reading companion: library / reading log and a vocabulary builder.
 
+![Screenshot](./screenshots/screenshot-1.png)
+
+[Click here for more screenshots](./screenshots/)
+
 ## Layout
 
 | Project | Role |
