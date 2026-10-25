@@ -113,7 +113,8 @@
 - Blazor components inject the service interfaces (`ILibraryService` etc.), never a DbContext; each service method
   makes its own context from `IDbContextFactory`, so circuit-scoped services are safe.
 - Cover images are stored in SQLite. Vocabulary words are unique per (language, normalized term), each linked to at most one book.
-- Book metadata API (Open Library preferred; Google Books needs a key, returned 429 without one) is on the roadmap but not implemented.
+- Book metadata API (Open Library preferred; Google Books needs a key, returned 429 without one) is planned for
+  session 12 (see Next #1). `IBookLookupService` + `BookMetadata` exist in `Core/Books/Lookup` but nothing uses them yet.
 - Dictionary: dictionaryapi.dev (free, no key, Wiktionary-derived, no SLA). Cache NotFound; never cache transient failures.
 - **Services (session 2):**
   - Contracts and DTOs in Core, implementations in `Bookside.Data/Services`. They return DTOs, never entities, so a
@@ -243,18 +244,46 @@
     hanging) is 16 s.
 
 ## Next
-1. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
+1. **Book metadata import: plan it with the user first (user's request for session 12).** Start the session by
+   proposing the design and asking; don't build until it's agreed.
+   - **Providers:** Open Library first, then Google Books, as a fallback chain like the dictionary one (session 7):
+     a failure or "not found" moves on to the next provider, each with the same typed HttpClient + standard
+     resilience handler (3 s/attempt, 2 retries, 8 s total).
+   - **Extensible:** adding a provider must be as quick as adding a dictionary provider: one client class, one
+     `Add…Client()` registration (shared generic helper, own named HttpClient and `{name}-standard` options),
+     one line in `Program.cs`; providers tried in registration order. Shared HTTP/mapping helpers like
+     `DictionaryHttp` / `MeaningListBuilder`. Consider making the dictionary and book helpers one generic piece.
+   - **Google Books API key:** configurable as a Docker environment variable (e.g. `Bookside__GoogleBooks__ApiKey`
+     in `compose.yaml`) and for development/testing outside the repo (user secrets or git-ignored
+     `appsettings.Development.json` / env var). Without a key, skip or still try it? (it returned 429 keyless.)
+   - **`IBookLookupService`** (`FindByIsbnAsync`, `SearchAsync`, `Source`) + `BookMetadata` are unused, so they can
+     change freely. Likely a per-provider interface plus a service that runs the chain (like `DefinitionService`),
+     returning `Result` with Unavailable when every provider fails.
+   - **Questions to ask the user:**
+     - Entry point: fill some fields on the book form and click "Search" to fill the rest, or a separate search box
+       that takes an ISBN or a title (ISBN detected via `Isbn` checksum)? Or both?
+     - Multiple results: pick from a result list (cover, title, authors, year) or take the first match? An ISBN
+       usually gives one; title searches give many.
+     - Search by author alone, then pick the book from the results? That needs the multiple-results UI
+       (and paging or a result cap).
+     - Merge rules: does a lookup overwrite fields already typed, or only fill empty ones? Cover: download it
+       (`CoverImageUrl` → `SetCoverAsync`), and only if the book has none?
+     - Also on the edit page of an existing book ("Refresh from Open Library"), or only when adding?
+     - Which fields to fill: `Book` already has `PageCount`, `Publisher`, `Description`, `MetadataSource(Id)`.
+       Also subjects → tags? Series from metadata?
+     - Merge across providers (e.g. Open Library data + Google cover) or take the first provider that answers?
+2. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
    the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
    list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
-2. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
+3. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
    `/words`. Propose the design before building. Decisions to make: algorithm (Leitner boxes vs SM-2 vs FSRS);
    card front/back (term → definition, or also definition → term, sentence from the book as a cue); grading
    (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
    migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
    touch (tap/swipe) on both widths; whether the word of the day should prefer due words; a "Review" card on the home page.
-3. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+4. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - Deployment is the user's: they will test the image on the Docker host and set up a GitHub build that pushes it to
