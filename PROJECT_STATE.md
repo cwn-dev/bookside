@@ -173,9 +173,10 @@
     (refresh); Found → "Refresh" link. Unavailable shows a friendly retry-later message.
 
 - **Docker (session 8, user's choices: Dockerfile, chiseled-extra, existing reverse proxy, bind mount):**
-  - Multi-stage Dockerfile built on the Docker host (`docker compose up -d --build`); Docker isn't installed on the
-    dev Mac, so the image has **not been built or run yet**. Verified locally instead: Release publish for linux-x64
-    and linux-arm64 (both include `libe_sqlite3.so`) and the published app in Production with the compose settings.
+  - Multi-stage Dockerfile built on the Docker host (`docker compose up -d --build`) or by the GitHub workflow
+    (`.github/workflows/docker-publish.yml`, on release, linux/amd64 + linux/arm64 → Docker Hub). A multi-platform
+    `buildx` build succeeded on 2026-10-25; the image hasn't been run yet. The NuGet cache mount id is per
+    `$TARGETARCH`: with one shared id, the two parallel publishes raced on the same package files and restore failed.
   - SDK image pinned to the global.json version (same analyzers, warnings-as-errors build is reproducible); runtime
     image floats on `10.0` for security patches.
   - Chiseled-extra: no shell/package manager (no in-container sqlite3/curl, no compose healthcheck); "extra" has

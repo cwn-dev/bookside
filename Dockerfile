@@ -10,7 +10,9 @@ COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
 COPY src/ src/
 
 # NuGet packages are cached between builds (BuildKit cache mount), so a code change doesn't re-download them.
-RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+# One cache per target: a multi-platform build runs both publishes in parallel, and a shared cache makes their
+# restores race on the same package files.
+RUN --mount=type=cache,id=nuget-$TARGETARCH,target=/root/.nuget/packages \
     dotnet publish src/Bookside.Web/Bookside.Web.csproj -c Release -a $TARGETARCH -o /app -p:UseAppHost=false
 
 # Empty /data owned by the app user, so the container also starts without a mounted volume.
