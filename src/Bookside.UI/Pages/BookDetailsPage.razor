@@ -39,6 +39,7 @@ else
             {
                 <p class="series"><a href="@SeriesUrl" title="Books in this series">@series</a></p>
             }
+            <TagEditor BookId="_book.Id" Tags="_book.Tags" OnChanged="TagsChanged" />
 
             <dl class="facts">
                 @if (_book.PageCount is int pages)
@@ -357,6 +358,8 @@ else
 
         await ReloadAsync();
     }
+
+    private void TagsChanged(IReadOnlyList<string> tags) => _book = _book! with { Tags = tags };
 
     private void OpenAddWord()
     {

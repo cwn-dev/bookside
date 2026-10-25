@@ -30,8 +30,8 @@ public interface ILibraryService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes sessions, comments and cover with the book; vocabulary words are
-    /// kept and unlinked.
+    /// Deletes sessions, comments, cover and tag links with the book (tags are
+    /// kept); vocabulary words are kept and unlinked.
     /// </summary>
     Task<Result> DeleteBookAsync(
         Guid bookId,

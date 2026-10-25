@@ -54,14 +54,21 @@ else
                                             <span class="muted authors">@string.Join(", ", read.Authors)</span>
                                         }
                                         <span class="muted since">@Since(read.Session)</span>
-                                        @if (_panelSessionId != read.Session.Id)
-                                        {
-                                            <div class="actions">
-                                                <button type="button" class="btn btn-primary btn-sm" @onclick="() => OpenFinish(read)">Finished</button>
-                                                <button type="button" class="btn btn-sm" @onclick="() => OpenAddWord(read)">Add word</button>
-                                            </div>
-                                        }
                                     </div>
+                                    @if (_panelSessionId != read.Session.Id)
+                                    {
+                                        <div class="actions reading-actions">
+                                            <button type="button" class="btn btn-primary btn-sm" @onclick="() => OpenFinish(read)">Finished</button>
+                                            <button type="button" class="btn btn-sm" @onclick="() => OpenAddWord(read)">Add word</button>
+                                            <button type="button" class="btn btn-sm" @onclick="() => OpenAddComment(read)">Add comment</button>
+                                        </div>
+                                    }
+                                    @if (_commentAddedSessionId == read.Session.Id)
+                                    {
+                                        <p class="alert alert-success comment-added" role="status">
+                                            Comment added. <a href="books/@read.BookId">View</a>
+                                        </p>
+                                    }
                                 </div>
 
                                 @if (_panelSessionId == read.Session.Id && _finishing is not null)
@@ -82,6 +89,13 @@ else
                                         {
                                             <WordAddedNotice Word="_bookWordAdded" />
                                         }
+                                    </div>
+                                }
+                                else if (_panelSessionId == read.Session.Id && _bookComment is not null)
+                                {
+                                    <div class="panel">
+                                        <CommentForm BookId="read.BookId" Model="_bookComment" Label="Add a comment" AutoFocus
+                                                     SubmitText="Post" OnSaved="() => CommentAdded(read)" OnCancel="ClosePanel" />
                                     </div>
                                 }
                             </li>
@@ -189,12 +203,14 @@ else
     private int _quickAddKey;
     private WordDetails? _quickAdded;
 
-    // One open panel at a time, on one reading card: either the finish form or the add-word form.
+    // One open panel at a time, on one reading card: the finish, add-word or add-comment form.
     private Guid? _panelSessionId;
     private ReadingSessionFormModel? _finishing;
     private WordFormModel? _bookWord;
     private int _bookWordKey;
     private WordDetails? _bookWordAdded;
+    private CommentFormModel? _bookComment;
+    private Guid? _commentAddedSessionId;
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
 
@@ -245,12 +261,28 @@ else
         _bookWordKey++;
     }
 
+    private void OpenAddComment(BookRead read)
+    {
+        ClosePanel();
+        _panelSessionId = read.Session.Id;
+        _bookComment = new CommentFormModel();
+    }
+
     private void ClosePanel()
     {
         _panelSessionId = null;
         _finishing = null;
         _bookWord = null;
         _bookWordAdded = null;
+        _bookComment = null;
+        _commentAddedSessionId = null;
+    }
+
+    /// <summary>Comments are usually one-offs (unlike words met while reading), so the form closes with a notice.</summary>
+    private void CommentAdded(BookRead read)
+    {
+        ClosePanel();
+        _commentAddedSessionId = read.Session.Id;
     }
 
     private async Task FinishedAsync()

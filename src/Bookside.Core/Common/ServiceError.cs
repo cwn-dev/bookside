@@ -70,6 +70,8 @@ public static class ErrorCodes
     public const string AlreadyReading = "reading_session.already_reading";
     public const string CoverNotFound = "cover.not_found";
     public const string CommentNotFound = "comment.not_found";
+    public const string TagNotFound = "tag.not_found";
+    public const string DuplicateTag = "tag.duplicate";
     public const string WordNotFound = "word.not_found";
     public const string DuplicateWord = "word.duplicate";
     public const string DictionaryUnavailable = "dictionary.unavailable";

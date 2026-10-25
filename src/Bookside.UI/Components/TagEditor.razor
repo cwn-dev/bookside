@@ -1,0 +1,132 @@
+@* A book's tags as links to the filtered library, with an inline editor: toggle chips (saved per click) and a new-tag box. *@
+@inject ITagService TagService
+
+<div class="book-tags">
+    @if (_all is null)
+    {
+        @if (Tags.Count > 0)
+        {
+            <ul class="tag-list" aria-label="Tags">
+                @foreach (var tag in Tags)
+                {
+                    <li><a class="tag" href="@TagUrl(tag)" title="Books tagged @tag">@tag</a></li>
+                }
+            </ul>
+        }
+        @if (Tags.Count == 0)
+        {
+            <button type="button" class="add" @onclick="OpenAsync">+ Add tags</button>
+        }
+        else
+        {
+            <button type="button" class="btn btn-sm btn-ghost edit" @onclick="OpenAsync">Edit tags</button>
+        }
+    }
+    else
+    {
+        <div class="card tag-editor">
+            <h2 class="visually-hidden">Tags</h2>
+            @if (_all.Count > 0)
+            {
+                <div class="toggles" role="group" aria-label="Tags">
+                    @foreach (var tag in _all)
+                    {
+                        var on = Has(tag.Name);
+                        <button type="button" class="chip @(on ? "selected" : null)" aria-pressed="@(on ? "true" : "false")"
+                                disabled="@_busy" @onclick="() => ToggleAsync(tag.Name)">@tag.Name</button>
+                    }
+                </div>
+            }
+            <form class="new-tag" @onsubmit="AddAsync">
+                <label for="@_inputId" class="visually-hidden">New tag</label>
+                <input id="@_inputId" placeholder="New tag" maxlength="@Tag.NameMaxLength" autocomplete="off" enterkeyhint="done"
+                       @bind="_newName" />
+                <button type="submit" class="btn btn-sm" disabled="@_busy">Add</button>
+            </form>
+            <ErrorAlert Messages="_errors" />
+            <div class="actions">
+                <button type="button" class="btn btn-sm btn-primary" @onclick="Close">Done</button>
+                <a href="tags">Manage tags</a>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly string _inputId = $"tg-{Guid.NewGuid():N}"[..11];
+    private List<TagDto>? _all;
+    private string? _newName;
+    private bool _busy;
+    private IReadOnlyList<string> _errors = [];
+
+    [Parameter, EditorRequired]
+    public Guid BookId { get; set; }
+
+    /// <summary>The book's tag names, alphabetical.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<string> Tags { get; set; } = [];
+
+    /// <summary>Called with the book's new tag names after each change.</summary>
+    [Parameter]
+    public EventCallback<IReadOnlyList<string>> OnChanged { get; set; }
+
+    private async Task OpenAsync()
+    {
+        _errors = [];
+        _newName = null;
+        _all = [.. await TagService.ListTagsAsync()];
+    }
+
+    private void Close()
+    {
+        _all = null;
+        _errors = [];
+    }
+
+    private bool Has(string name) => Tags.Contains(name, StringComparer.OrdinalIgnoreCase);
+
+    private Task ToggleAsync(string name) =>
+        SaveAsync(Has(name) ? [.. Tags.Where(t => !string.Equals(t, name, StringComparison.OrdinalIgnoreCase))] : [.. Tags, name]);
+
+    private async Task AddAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newName))
+        {
+            return;
+        }
+
+        if (await SaveAsync([.. Tags, _newName]))
+        {
+            _newName = null;
+        }
+    }
+
+    private async Task<bool> SaveAsync(IReadOnlyList<string> names)
+    {
+        _busy = true;
+        _errors = [];
+        try
+        {
+            var result = await TagService.SetBookTagsAsync(BookId, names);
+            if (!result.IsSuccess)
+            {
+                _errors = result.Error.FieldErrors.Count > 0
+                    ? [.. result.Error.FieldErrors.Select(f => f.Message)]
+                    : [result.Error.Message];
+                return false;
+            }
+
+            await OnChanged.InvokeAsync(result.Value);
+
+            // Pick up a newly created tag.
+            _all = [.. await TagService.ListTagsAsync()];
+            return true;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string TagUrl(string tag) => $"books?tag={Uri.EscapeDataString(tag)}";
+}

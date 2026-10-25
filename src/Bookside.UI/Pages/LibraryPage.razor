@@ -1,6 +1,7 @@
 @page "/books"
 @implements IDisposable
 @inject ILibraryService Library
+@inject ITagService TagService
 @inject NavigationManager Navigation
 
 <PageTitle>Library · Bookside</PageTitle>
@@ -23,7 +24,7 @@
         {
             <a role="tab" aria-selected="@(Filter == filter ? "true" : "false")"
                class="chip @(Filter == filter ? "selected" : null)"
-               href="@UrlFor(filter, Sort, Q)">@FilterLabel(filter)</a>
+               href="@UrlFor(filter, Sort, Q, Tag)">@FilterLabel(filter)</a>
         }
     </div>
 
@@ -37,6 +38,20 @@
     </div>
 </div>
 
+@if (_tags.Count > 0)
+{
+    <nav class="filters tag-filters" aria-label="Tags">
+        @foreach (var tag in _tags)
+        {
+            var selected = IsSelected(tag);
+            <a class="chip @(selected ? "selected" : null)" aria-current="@(selected ? "true" : null)"
+               title="@(selected ? "Show all tags" : null)"
+               href="@UrlFor(Filter, Sort, Q, selected ? null : tag.Name)">@tag.Name</a>
+        }
+        <a class="manage" href="tags">Manage tags</a>
+    </nav>
+}
+
 @if (_books is null)
 {
     <p class="loading" role="status">Loading…</p>
@@ -44,7 +59,7 @@
 else if (_books.Count == 0)
 {
     <div class="empty card">
-        @if (_totalCount == 0 && string.IsNullOrWhiteSpace(Q) && Filter == BookFilter.All)
+        @if (_totalCount == 0 && string.IsNullOrWhiteSpace(Q) && string.IsNullOrWhiteSpace(Tag) && Filter == BookFilter.All)
         {
             <p>Your library is empty.</p>
             <a class="btn btn-primary" href="books/new">Add your first book</a>
@@ -83,6 +98,10 @@ else
                         {
                             <span class="badge badge-success">Read@(book.TimesRead > 1 ? $" ×{book.TimesRead}" : "")</span>
                         }
+                        @foreach (var tag in book.Tags)
+                        {
+                            <span class="tag">@tag</span>
+                        }
                     </span>
                 </a>
             </li>
@@ -102,6 +121,7 @@ else
     internal static readonly TimeSpan SearchDelay = TimeSpan.FromMilliseconds(300);
 
     private List<BookSummary>? _books;
+    private IReadOnlyList<TagDto> _tags = [];
     private int _totalCount;
     private bool _loading;
     private string? _searchText;
@@ -119,9 +139,15 @@ else
     [SupplyParameterFromQuery(Name = "sort")]
     public string? SortValue { get; set; }
 
+    /// <summary>Tag name; matched case-insensitively.</summary>
+    [SupplyParameterFromQuery(Name = "tag")]
+    public string? Tag { get; set; }
+
     private BookFilter Filter => Enum.TryParse<BookFilter>(FilterValue, ignoreCase: true, out var f) ? f : BookFilter.All;
 
     private BookSort Sort => Enum.TryParse<BookSort>(SortValue, ignoreCase: true, out var s) ? s : BookSort.Title;
+
+    protected override async Task OnInitializedAsync() => _tags = await TagService.ListTagsAsync();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -151,6 +177,7 @@ else
                 {
                     Search = Q,
                     Filter = Filter,
+                    Tag = Tag,
                     Sort = Sort,
                     Skip = append ? _books?.Count ?? 0 : 0,
                     Take = PageSize,
@@ -189,14 +216,14 @@ else
 
         var q = string.IsNullOrWhiteSpace(_searchText) ? null : _searchText.Trim();
         _lastQ = q;
-        Navigation.NavigateTo(UrlFor(Filter, Sort, q), replace: true);
+        Navigation.NavigateTo(UrlFor(Filter, Sort, q, Tag), replace: true);
     }
 
     private void SortChanged(ChangeEventArgs e) =>
-        Navigation.NavigateTo(UrlFor(Filter, Enum.Parse<BookSort>((string)e.Value!), Q), replace: true);
+        Navigation.NavigateTo(UrlFor(Filter, Enum.Parse<BookSort>((string)e.Value!), Q, Tag), replace: true);
 
     /// <summary>The list URL for these settings; defaults are left out to keep URLs short.</summary>
-    private string UrlFor(BookFilter filter, BookSort sort, string? q) =>
+    private string UrlFor(BookFilter filter, BookSort sort, string? q, string? tag) =>
         Navigation.GetUriWithQueryParameters(
             Navigation.ToAbsoluteUri("books").ToString(),
             new Dictionary<string, object?>
@@ -204,7 +231,11 @@ else
                 ["q"] = string.IsNullOrWhiteSpace(q) ? null : q,
                 ["filter"] = filter == BookFilter.All ? null : filter.ToString().ToLowerInvariant(),
                 ["sort"] = sort == BookSort.Title ? null : sort.ToString().ToLowerInvariant(),
+                ["tag"] = string.IsNullOrWhiteSpace(tag) ? null : tag,
             });
+
+    private bool IsSelected(TagDto tag) =>
+        !string.IsNullOrWhiteSpace(Tag) && TermNormalizer.Normalize(Tag) == TermNormalizer.Normalize(tag.Name);
 
     private static string FilterLabel(BookFilter filter) => filter switch
     {

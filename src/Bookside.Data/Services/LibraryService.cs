@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using Bookside.Core.Books;
 using Bookside.Core.Books.Services;
 using Bookside.Core.Common;
+using Bookside.Core.Vocabulary;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bookside.Data.Services;
@@ -28,6 +29,12 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
                 || b.Authors.Any(a => EF.Functions.Like(a.Author.Name, pattern, LikePattern.EscapeCharacter)));
         }
 
+        if (!string.IsNullOrWhiteSpace(query.Tag))
+        {
+            var tag = TermNormalizer.Normalize(query.Tag);
+            books = books.Where(b => b.Tags.Any(t => t.Tag.NormalizedName == tag));
+        }
+
         books = query.Filter switch
         {
             BookFilter.Reading => books.Where(b => b.ReadingSessions.Any(s => s.Status == ReadingStatus.Reading)),
@@ -46,6 +53,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             Authors = b.Authors.OrderBy(a => a.Position).Select(a => a.Author.Name).ToList(),
             Series = b.Series!.Name,
             SeriesNumber = b.SeriesNumber,
+            Tags = b.Tags.OrderBy(t => t.Tag.NormalizedName).Select(t => t.Tag.Name).ToList(),
             CoverSha256 = b.Cover!.Sha256,
             TimesRead = b.ReadingSessions.Count(s => s.Status == ReadingStatus.Finished),
             IsReading = b.ReadingSessions.Any(s => s.Status == ReadingStatus.Reading),
@@ -140,7 +148,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Sessions, comments, cover and author links cascade in the database; vocabulary words are set to null.
+        // Sessions, comments, cover, author and tag links cascade in the database; vocabulary words are set to null.
         var deleted = await db.Books.Where(b => b.Id == bookId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
         if (deleted == 0)
         {
@@ -386,6 +394,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
                 Authors = b.Authors.OrderBy(a => a.Position).Select(a => a.Author.Name).ToList(),
                 Series = b.Series!.Name,
                 SeriesNumber = b.SeriesNumber,
+                Tags = b.Tags.OrderBy(t => t.Tag.NormalizedName).Select(t => t.Tag.Name).ToList(),
                 PageCount = b.PageCount,
                 Isbn13 = b.Isbn13,
                 Isbn10 = b.Isbn10,

@@ -8,7 +8,7 @@
 
     <div class="field">
         <label for="@_textId" class="@(LabelHidden ? "visually-hidden" : null)">@Label</label>
-        <InputTextArea id="@_textId" @bind-Value="Model.Text" rows="3" maxlength="@BookComment.TextMaxLength"
+        <InputTextArea @ref="_textInput" id="@_textId" @bind-Value="Model.Text" rows="3" maxlength="@BookComment.TextMaxLength"
                        placeholder="@Placeholder" />
         <ValidationMessage For="() => Model.Text" />
     </div>
@@ -28,6 +28,11 @@
     private ServiceErrorValidator? _validator;
     private IReadOnlyList<string> _errors = [];
     private bool _saving;
+    private InputTextArea? _textInput;
+
+    /// <summary>Focus the text box when this form first renders.</summary>
+    [Parameter]
+    public bool AutoFocus { get; set; }
 
     [Parameter, EditorRequired]
     public Guid BookId { get; set; }
@@ -56,6 +61,14 @@
 
     [Parameter]
     public EventCallback OnCancel { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AutoFocus && _textInput?.Element is { } element)
+        {
+            await element.FocusAsync();
+        }
+    }
 
     private async Task SaveAsync()
     {

@@ -41,6 +41,38 @@ public sealed class LibraryPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Tag_chip_filters_the_list_and_cards_show_their_tags()
+    {
+        var mort = await AddBookAsync("Mort");
+        var dune = await AddBookAsync("Dune");
+        Success(await Tags.SetBookTagsAsync(mort.Id, ["Own", "Signed"], Ct));
+        Success(await Tags.SetBookTagsAsync(dune.Id, ["Have e-book"], Ct));
+
+        Navigation.NavigateTo("books?tag=own&filter=unread");
+        var page = Render<LibraryPage>();
+
+        page.WaitForAssertion(() => Assert.Single(page.FindAll(".book-card")));
+        Assert.Equal(["Own", "Signed"], page.FindAll(".book-card .tag").Select(t => t.TextContent));
+        var selected = page.Find(".tag-filters a.chip.selected");
+        Assert.Equal("Own", selected.TextContent);
+        Assert.Equal("true", selected.GetAttribute("aria-current"));
+        Assert.DoesNotContain("tag=", selected.GetAttribute("href"), StringComparison.Ordinal); // selecting again clears it
+        var other = page.FindAll(".tag-filters a.chip").Single(c => c.TextContent == "Signed");
+        Assert.EndsWith("books?filter=unread&tag=Signed", other.GetAttribute("href"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task No_tags_hides_the_tag_row()
+    {
+        await AddBookAsync("Dune");
+
+        var page = Render<LibraryPage>();
+
+        page.WaitForAssertion(() => page.Find(".book-card"));
+        Assert.Empty(page.FindAll(".tag-filters"));
+    }
+
+    [Fact]
     public async Task Query_string_filter_shows_only_matching_books()
     {
         var reading = await AddBookAsync("Middlemarch");

@@ -51,3 +51,20 @@
     flex-wrap: wrap;
     gap: 0.3rem;
 }
+
+.tag-filters {
+    margin: -0.25rem 0 1rem;
+    align-items: center;
+}
+
+.tag-filters .chip {
+    min-height: 32px;
+    padding: 0 0.75rem;
+    font-size: 0.85rem;
+}
+
+.tag-filters .manage {
+    margin-left: 0.4rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}

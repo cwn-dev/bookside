@@ -205,6 +205,24 @@ textarea { min-height: 7rem; resize: vertical; }
 .badge-accent { background: var(--accent-soft); color: var(--accent); }
 .badge-success { background: var(--success-soft); color: var(--success); }
 
+/* User-defined book tag: neutral and outlined, so it reads differently from status badges. */
+.tag {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0.05rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+a.tag { text-decoration: none; }
+a.tag:hover { background: var(--surface-muted); color: var(--text); }
+
 .page-header {
     display: flex;
     flex-wrap: wrap;

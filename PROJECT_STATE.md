@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 10, 2026-10-25)
+# Bookside: project state (end of session 11, 2026-10-25)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -8,6 +8,7 @@
   content types), `ReadingSession` (DateOnly start/finish, Status Reading/Finished/Abandoned, Rating 1–5, Notes),
   `BookComment` (session 5: BookId FK cascade, plain `Text` ≤ 10 000, index (BookId, CreatedAtUtc)),
   `Series` (session 10: name ≤ 300, like `Author`; `Book.SeriesId` FK set-null + `Book.SeriesNumber` double 0–9999),
+  `Tag` + `BookTag` (session 11: name ≤ 50, unique `NormalizedName` via `TermNormalizer`, join cascades from both sides),
   `VocabularyWord` (optional BookId, Context, PageNumber, DictionaryEntryId), `DictionaryEntry` (definition cache,
   Found/NotFound, Meanings as JSON, RawResponse), `TermNormalizer`, `Isbn` (clean, checksum, 10→13).
   Max-length constants live on the entities and are used by both configurations and validation.
@@ -19,15 +20,18 @@
     `IDefinitionService` (cache-aware definitions). Session 9: `IVocabularyService.GetRandomWordAsync(excludeWordId)`
     (random word with a Found definition) and `Home/Services/IHomeService.GetHomeAsync()` → `HomeSummary` (reading and
     recently finished as `BookRead` = book + session DTO, recent words, word of the day, `HomeStats` incl. `Today`).
+    Session 11: `ITagService` (`ListTagsAsync` with book counts, `SetBookTagsAsync(bookId, names)` replaces the set and
+    creates new names, `RenameTagAsync` (Conflict `tag.duplicate`), `DeleteTagAsync`); `BookSummary`/`BookDetails.Tags`
+    (alphabetical names), `BookQuery.Tag`.
   - External: `IBookLookupService` + `BookMetadata`, `IDictionaryLookupService` + `DictionaryLookupResult` +
     `DictionaryLookupException` (no implementations yet).
 - `Bookside.Data`: `BooksideDbContext` (UTC DateTimes, enums as strings, SaveChanges stamps timestamps, normalizes
   terms, enforces cover size; `DictionaryEntry.Meanings` via EF 10 `ComplexCollection(...).ToJson()`).
-  `Services/`: `LibraryService`, `VocabularyService`, `DefinitionService`, `HomeService` (session 9) (internal), registered by
+  `Services/`: `LibraryService`, `VocabularyService`, `DefinitionService`, `HomeService` (session 9), `TagService` (session 11) (internal), registered by
   `AddBooksideServices()` (scoped; adds `TimeProvider.System` if missing).
 - `Bookside.Data.Sqlite`: `AddBooksideSqlite(path)` registers `IDbContextFactory<BooksideDbContext>`;
   `InitializeBooksideDatabaseAsync()` creates the directory, runs `MigrateAsync`, sets WAL. Migrations `InitialCreate`,
-  `AddBookComments` (session 5: new table only), `AddBookSeries` (session 10).
+  `AddBookComments` (session 5: new table only), `AddBookSeries` (session 10), `AddBookTags` (session 11: new tables only).
 - `Bookside.Integrations` (session 3): `AddDictionaryApiClient()` registers `DictionaryApiClient` (internal) as
   `IDictionaryLookupService`: typed HttpClient + `Microsoft.Extensions.Http.Resilience` 10.11.0 standard handler
   (3 s/attempt, 2 retries, 300 ms base delay, 8 s total), 1 MB response cap. Returns the `IHttpClientBuilder`.
@@ -40,6 +44,16 @@
   `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
   + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page
   shows it under "by …" as a link to `books?q={series}`. Library search matches the series name.
+- Book tags (session 11): book page shows tags (links to `books?tag=`) + a dashed "+ Add tags" pill (no tags) / "Edit tags" link opening `TagEditor`
+  (all tags as toggle chips saved per click, "New tag" box, Done, "Manage tags"). Library: tag chip row under the
+  toolbar (`?tag=`, ANDed with search and status filter; clicking the selected chip clears it; hidden with no tags)
+  + "Manage tags"; cards show outlined `.tag` pills after the status badges (not links: the card is one `<a>`).
+  `TagsPage` (`/tags`, no nav link): name, book count linking to the filtered library, inline rename, two-step delete
+  ("Remove it from N books and delete it?").
+- Home page reading cards (session 11): "Add comment" opens an inline `CommentForm` (now has `AutoFocus`); saving
+  closes it with "Comment added. View" (book link) until another panel opens. One panel per card still. With 2+
+  books the list is two-up when the section is ≥ 640px wide (container query; i.e. desktop main column, not
+  ≤ ~1000px viewports); actions sit under cover + text when a card is < 400px wide (card container query).
 - Home page (session 9): `HomePage` (`/`, replaces the redirect to `/books`; the brand links to it, no nav link).
   Currently reading cards (cover, authors, "Started … · day N", inline "Finished" form = `ReadingSessionForm`, inline
   "Add word" = `WordForm` that stays open), word of the day + "Another", quick-add word, recent words (5), recently
@@ -75,13 +89,13 @@
   cache mount; runtime `aspnet:10.0-noble-chiseled-extra`, UID 1654, port 8080), `.dockerignore`, `compose.yaml`
   (`./data:/data`, `TZ`, forwarded headers on, port bound to `127.0.0.1` by default). README "Deploy" covers setup,
   backup, proxy WebSockets.
-- `Bookside.UI.Tests`: 70 tests (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- `Bookside.UI.Tests`: 80 tests (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
 - `Bookside.Integrations.Tests`: 26 tests through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 83 passing tests (session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
+- `Bookside.Data.Tests`: 90 passing tests (session 11: `TagServiceTests`; session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
   virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
   `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
   registers extra `FakeDictionaryLookupService(source)` providers after `Dictionary`). Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
@@ -194,6 +208,13 @@
   - No series page, filter or sort (keep it simple); the book page's series link reuses library search.
   - Picker is a plain `<datalist>`: no JS, works on desktop and mobile; typing a new name creates the series.
 
+- **Book tags (session 11, user's choices: book-page toggles, `/tags` page, no colour, one tag ANDed):**
+  - Separate `ITagService` rather than growing `ILibraryService`; tags are not part of `BookInput`, so the edit form
+    doesn't touch them and toggles save immediately.
+  - Unlike authors/series, a tag with no books is kept (standing labels like "Own"); only `/tags` deletes it.
+  - Uniqueness on `NormalizedName` (NFKC, collapsed spaces, lower-case invariant; same as vocabulary terms), so
+    case-insensitive for all scripts, unlike LIKE matching. Existing spelling wins when reused; rename may change case.
+  - Alphabetical order by `NormalizedName`. No starter tags. A unique-index race in `SetBookTagsAsync` retries once.
 - **Home page (session 9, user's choices from a proposed layout):**
   - One `IHomeService.GetHomeAsync()` call (one context, ~8 queries) instead of several existing calls:
     `BookSummary` has no start date or rating, and stats needed counts; one round trip suits the future API client.
@@ -222,34 +243,18 @@
     hanging) is 16 s.
 
 ## Next
-1. **Next session: book tags (user's request).** User-defined tags (e.g. "Own", "Have e-book"), several per book.
-   Propose the design before building.
-   Likely model: `Tag` entity (name, unique case-insensitively, max-length constant) + `BookTag` join table
-   (cascade on book and tag delete) + migration. Decisions to make: where tags are managed (a `/tags` page vs
-   creating them inline from the book form); how they're set on a book (chips/checkboxes on the edit form, or quick
-   toggles on the book page); whether tags have a colour or order; deleting a tag that's in use (confirm + remove from
-   books); library filtering by tag (`?tag=` in the query string next to the existing filter chips; one tag or
-   several, AND vs OR); showing tags on library cards and the book page; any starter tags.
-   **Also next session: "Add comment" on home page reading cards (user's request).** Works like the existing
-   inline "Add word" button: toggles an inline `CommentForm` on the currently-reading card (adds a book comment via
-   `AddCommentAsync`). Check: whether it stays open after saving like `WordForm` or closes with a "Comment added"
-   notice; only one inline form (Finished / Add word / Add comment) open per card at a time.
-   **Also next session: currently-reading cards side by side (user's request).** One book → full width (as now);
-   two or more → two columns on wide screens (each card has a lot of empty space on the right). Phones stay one
-   column. Check: the breakpoint (the main column is 2fr of the ≥900px grid, so maybe a container query); how 3+
-   books wrap; how an open inline form (Finished / Add word / Add comment) fits in a half-width card.
-2. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
+1. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
    the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
    list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
-3. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
+2. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
    `/words`. Propose the design before building. Decisions to make: algorithm (Leitner boxes vs SM-2 vs FSRS);
    card front/back (term → definition, or also definition → term, sentence from the book as a cue); grading
    (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
    migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
    touch (tap/swipe) on both widths; whether the word of the day should prefer due words; a "Review" card on the home page.
-4. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
+3. Later: Open Library import (maps `BookMetadata` → `BookInput` + `SetCoverAsync`), `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - Deployment is the user's: they will test the image on the Docker host and set up a GitHub build that pushes it to

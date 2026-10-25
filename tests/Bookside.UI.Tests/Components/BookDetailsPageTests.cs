@@ -42,6 +42,56 @@ public sealed class BookDetailsPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Tags_are_added_toggled_and_link_to_the_filtered_library()
+    {
+        var book = await AddBookAsync("Mort");
+        var other = await AddBookAsync("Dune");
+        Success(await Tags.SetBookTagsAsync(other.Id, ["Own"], Ct));
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find(".book-tags"));
+        Assert.Empty(page.FindAll(".book-tags a.tag"));
+
+        page.FindAll(".book-tags button").Single(b => b.TextContent == "+ Add tags").Click();
+        page.WaitForAssertion(() => page.Find(".tag-editor"));
+        page.Find(".tag-editor .new-tag input").Change("Have e-book");
+        page.Find(".tag-editor .new-tag").Submit();
+        page.WaitForAssertion(() => Assert.Equal(["Have e-book", "Own"], page.FindAll(".toggles .chip").Select(c => c.TextContent)));
+        page.FindAll(".toggles .chip").Single(c => c.TextContent == "Own").Click();
+
+        page.WaitForAssertion(() => Assert.Equal(
+            ["true", "true"],
+            page.FindAll(".toggles .chip").Select(c => c.GetAttribute("aria-pressed"))));
+        Assert.Equal("", page.Find(".tag-editor .new-tag input").GetAttribute("value") ?? "");
+        Assert.Equal(["Have e-book", "Own"], (await GetBookAsync(book.Id)).Tags);
+
+        page.FindAll(".toggles .chip").Single(c => c.TextContent == "Have e-book").Click();
+        page.WaitForAssertion(() => Assert.Equal(["Own"], page.FindAll(".toggles .chip.selected").Select(c => c.TextContent)));
+        page.FindAll(".tag-editor button").Single(b => b.TextContent == "Done").Click();
+
+        var link = page.Find(".book-tags a.tag");
+        Assert.Equal("Own", link.TextContent);
+        Assert.Equal("books?tag=Own", link.GetAttribute("href"));
+        Assert.Equal("Edit tags", page.Find(".book-tags button").TextContent);
+        Assert.Equal(["Own"], (await GetBookAsync(book.Id)).Tags);
+    }
+
+    [Fact]
+    public async Task Too_long_new_tag_shows_the_error()
+    {
+        var book = await AddBookAsync("Mort");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find(".book-tags button"));
+        page.Find(".book-tags button").Click();
+
+        page.WaitForAssertion(() => page.Find(".tag-editor"));
+        page.Find(".tag-editor .new-tag input").Change(new string('x', Tag.NameMaxLength + 1));
+        page.Find(".tag-editor .new-tag").Submit();
+
+        page.WaitForAssertion(() => Assert.Contains("at most 50 characters", page.Find(".tag-editor .alert").TextContent, StringComparison.Ordinal));
+        Assert.Empty((await GetBookAsync(book.Id)).Tags);
+    }
+
+    [Fact]
     public async Task Start_reading_then_finish_with_a_rating()
     {
         var book = await AddBookAsync("Dune");

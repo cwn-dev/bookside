@@ -25,6 +25,7 @@ public static class BooksideServiceCollectionExtensions
 
         services.AddScoped<IHomeService, HomeService>();
         services.AddScoped<ILibraryService, LibraryService>();
+        services.AddScoped<ITagService, TagService>();
         services.AddScoped<IVocabularyService, VocabularyService>();
         services.AddScoped<IDefinitionService, DefinitionService>();
 

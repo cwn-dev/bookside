@@ -90,6 +90,12 @@ public sealed record BookQuery
 
     public BookFilter Filter { get; init; } = BookFilter.All;
 
+    /// <summary>
+    /// Only books with this tag (name, case-insensitive). Combined with
+    /// <see cref="Search"/> and <see cref="Filter"/>.
+    /// </summary>
+    public string? Tag { get; init; }
+
     public BookSort Sort { get; init; } = BookSort.Title;
 
     public int Skip { get; init; }
@@ -110,6 +116,11 @@ public sealed record BookSummary
     public string? Series { get; init; }
 
     public double? SeriesNumber { get; init; }
+
+    /// <summary>
+    /// Tag names, alphabetical.
+    /// </summary>
+    public IReadOnlyList<string> Tags { get; init; } = [];
 
     /// <summary>
     /// Null when there is no cover; otherwise the ETag / cache-busting key
@@ -139,6 +150,11 @@ public sealed record BookDetails
     public string? Series { get; init; }
 
     public double? SeriesNumber { get; init; }
+
+    /// <summary>
+    /// Tag names, alphabetical.
+    /// </summary>
+    public IReadOnlyList<string> Tags { get; init; } = [];
 
     public int? PageCount { get; init; }
 

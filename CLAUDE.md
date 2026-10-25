@@ -28,6 +28,9 @@ dotnet test                                                          # xUnit v3 
 dotnet run --project src/Bookside.Web                                # http://localhost:5233, DB in src/Bookside.Web/App_Data
                                                                      # (.claude/launch.json "web" = same, for the Claude preview pane;
                                                                      #  "web-scratch" uses App_Data/scratch.db, use it for UI checks)
+# UI screenshots: no prerendering, so `firefox --screenshot` is blank. Drive headless Firefox over Marionette instead
+# (firefox --headless --marionette -remote-allow-system-access --no-remote --profile <tmp>; TCP 2828, length-prefixed
+#  JSON; chrome-context pref layout.css.prefers-color-scheme.content-override = 0 for dark mode).
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
 docker compose up -d --build                                         # on the Docker host (no Docker on the dev Mac); see README "Deploy"

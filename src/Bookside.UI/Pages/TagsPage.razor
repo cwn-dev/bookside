@@ -1,0 +1,124 @@
+@page "/tags"
+@inject ITagService TagService
+
+<PageTitle>Tags · Bookside</PageTitle>
+
+<p class="back"><a href="books">← Library</a></p>
+
+<div class="page-header">
+    <h1>Tags</h1>
+</div>
+
+<ErrorAlert Messages="_errors" />
+
+@if (_tags is null)
+{
+    <p class="loading" role="status">Loading…</p>
+}
+else if (_tags.Count == 0)
+{
+    <div class="empty card">
+        <p>No tags yet. Add them from a book's page with "Add tags".</p>
+        <a class="btn" href="books">Go to the library</a>
+    </div>
+}
+else
+{
+    <ul class="tag-rows">
+        @foreach (var tag in _tags)
+        {
+            <li @key="tag.Id" class="tag-row">
+                @if (_renamingId == tag.Id)
+                {
+                    <EditForm Model="_rename!" OnValidSubmit="() => RenameAsync(tag.Id)" class="rename">
+                        <ServiceErrorValidator @ref="_validator" />
+                        <div class="field">
+                            <label for="rename-@tag.Id" class="visually-hidden">Name</label>
+                            <InputText id="@($"rename-{tag.Id}")" @bind-Value="_rename!.Name" maxlength="@Tag.NameMaxLength" autocomplete="off" />
+                            <ValidationMessage For="() => _rename!.Name" />
+                        </div>
+                        <div class="actions">
+                            <button type="submit" class="btn btn-primary btn-sm" disabled="@_busy">Save</button>
+                            <button type="button" class="btn btn-sm" disabled="@_busy" @onclick="CancelRename">Cancel</button>
+                        </div>
+                        <ErrorAlert Messages="_renameErrors" />
+                    </EditForm>
+                }
+                else
+                {
+                    <span class="name">@tag.Name</span>
+                    <a class="count muted" href="@($"books?tag={Uri.EscapeDataString(tag.Name)}")">@BookCount(tag.BookCount)</a>
+                    <div class="actions">
+                        <button type="button" class="btn btn-sm" @onclick="() => StartRename(tag)">Rename</button>
+                        <ConfirmButton Text="Delete" Small OnConfirm="() => DeleteAsync(tag.Id)"
+                                       Prompt="@(tag.BookCount == 0 ? "Delete this tag?" : $"Remove it from {BookCount(tag.BookCount)} and delete it?")" />
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private IReadOnlyList<TagDto>? _tags;
+    private IReadOnlyList<string> _errors = [];
+    private Guid? _renamingId;
+    private TagFormModel? _rename;
+    private IReadOnlyList<string> _renameErrors = [];
+    private ServiceErrorValidator? _validator;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync() => _tags = await TagService.ListTagsAsync();
+
+    private void StartRename(TagDto tag)
+    {
+        _renamingId = tag.Id;
+        _rename = new TagFormModel { Name = tag.Name };
+        _renameErrors = [];
+    }
+
+    private void CancelRename()
+    {
+        _renamingId = null;
+        _rename = null;
+        _renameErrors = [];
+    }
+
+    private async Task RenameAsync(Guid tagId)
+    {
+        _busy = true;
+        try
+        {
+            var result = await TagService.RenameTagAsync(tagId, _rename!.ToInput());
+            if (result.IsSuccess)
+            {
+                CancelRename();
+                await ReloadAsync();
+            }
+            else
+            {
+                _renameErrors = _validator!.Show(result.Error);
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeleteAsync(Guid tagId)
+    {
+        var result = await TagService.DeleteTagAsync(tagId);
+        _errors = result.IsSuccess || result.Error.Type == ErrorType.NotFound ? [] : [result.Error.Message];
+        if (_renamingId == tagId)
+        {
+            CancelRename();
+        }
+
+        await ReloadAsync();
+    }
+
+    private static string BookCount(int count) => count == 1 ? "1 book" : $"{count} books";
+}

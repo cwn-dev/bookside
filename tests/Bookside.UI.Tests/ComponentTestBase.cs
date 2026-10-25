@@ -34,6 +34,8 @@ public abstract class ComponentTestBase : BunitContext, IAsyncLifetime
 
     protected ILibraryService Library => Services.GetRequiredService<ILibraryService>();
 
+    protected ITagService Tags => Services.GetRequiredService<ITagService>();
+
     protected IVocabularyService Vocabulary => Services.GetRequiredService<IVocabularyService>();
 
     protected BunitNavigationManager Navigation => Services.GetRequiredService<BunitNavigationManager>();

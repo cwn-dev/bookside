@@ -50,6 +50,8 @@ public abstract class ServiceTestBase : IAsyncLifetime
 
     protected ILibraryService Library => _scope.ServiceProvider.GetRequiredService<ILibraryService>();
 
+    protected ITagService Tags => _scope.ServiceProvider.GetRequiredService<ITagService>();
+
     protected IVocabularyService Vocabulary => _scope.ServiceProvider.GetRequiredService<IVocabularyService>();
 
     protected IHomeService Home => _scope.ServiceProvider.GetRequiredService<IHomeService>();

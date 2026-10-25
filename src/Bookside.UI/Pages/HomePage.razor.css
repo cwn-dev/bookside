@@ -80,6 +80,11 @@ section h2 {
 
 /* ---------- Currently reading ---------- */
 
+/* Two cards per row once the section itself is wide enough, whatever the viewport. */
+.reading {
+    container-type: inline-size;
+}
+
 .nothing p {
     margin-top: 0;
 }
@@ -90,16 +95,29 @@ section h2 {
     padding: 0;
     display: grid;
     gap: 1rem;
+    align-items: start;
 }
 
+@container (min-width: 640px) {
+    .reading-list:has(> li + li) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.reading-card {
+    container: reading-card / inline-size;
+}
+
+/* Cover beside the text; actions and notice under the text, or under both when the card is narrow. */
 .reading-book {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 0 1rem;
+    align-items: start;
 }
 
 .reading-cover {
-    flex: 0 0 76px;
+    grid-row: span 3;
 }
 
 /* Small cover: tighter placeholder text so short titles don't break mid-word. */
@@ -108,9 +126,25 @@ section h2 {
     font-size: 0.8rem;
 }
 
-@media (min-width: 640px) {
+.reading-actions,
+.comment-added {
+    grid-column: 2;
+}
+
+@container reading-card (min-width: 460px) {
+    .reading-book {
+        grid-template-columns: 96px minmax(0, 1fr);
+    }
+}
+
+@container reading-card (max-width: 399px) {
     .reading-cover {
-        flex-basis: 96px;
+        grid-row: auto;
+    }
+
+    .reading-actions,
+    .comment-added {
+        grid-column: 1 / -1;
     }
 }
 
@@ -143,8 +177,8 @@ section h2 {
     font-size: 0.9rem;
 }
 
-.reading-info .actions {
-    margin-top: 0.6rem;
+.reading-actions {
+    margin-top: 0.75rem;
 }
 
 .panel {
@@ -156,6 +190,12 @@ section h2 {
 .panel h3 {
     margin: 0 0 0.75rem;
     font-size: 1.05rem;
+}
+
+.comment-added {
+    margin: 0.6rem 0 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.92rem;
 }
 
 .panel ::deep .alert {

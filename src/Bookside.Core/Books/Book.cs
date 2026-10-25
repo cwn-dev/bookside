@@ -67,6 +67,8 @@ public class Book : Entity
 
     public ICollection<BookComment> Comments { get; } = [];
 
+    public ICollection<BookTag> Tags { get; } = [];
+
     /// <summary>
     /// Stored in its own table so loading a book never drags the image bytes along.
     /// </summary>

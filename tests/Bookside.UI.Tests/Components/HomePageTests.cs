@@ -90,6 +90,46 @@ public sealed class HomePageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Add_comment_from_the_reading_card_closes_with_a_notice()
+    {
+        var book = await AddBookAsync("Dune");
+        await AddSessionAsync(book.Id, new ReadingSessionInput { Status = ReadingStatus.Reading, StartedOn = Today });
+        var page = Render<HomePage>();
+        page.WaitForAssertion(() => page.Find(".reading-card"));
+
+        page.FindAll(".reading-card button").Single(b => b.TextContent == "Add word").Click();
+        page.FindAll(".reading-card button").Single(b => b.TextContent == "Cancel").Click();
+        page.FindAll(".reading-card button").Single(b => b.TextContent == "Add comment").Click();
+        Assert.Single(page.FindAll(".panel"));
+        page.Find(".panel textarea").Change("The spice must flow.");
+        page.Find(".panel form").Submit();
+
+        page.WaitForAssertion(() => Assert.Empty(page.FindAll(".panel")));
+        var notice = page.Find(".reading-card .comment-added");
+        Assert.Contains("Comment added.", notice.TextContent, StringComparison.Ordinal);
+        Assert.Equal($"books/{book.Id}", notice.QuerySelector("a")!.GetAttribute("href"));
+        Assert.Equal("The spice must flow.", Assert.Single((await GetBookAsync(book.Id)).Comments).Text);
+
+        page.FindAll(".reading-card button").Single(b => b.TextContent == "Add word").Click();
+        Assert.Empty(page.FindAll(".comment-added"));
+    }
+
+    [Fact]
+    public async Task Empty_comment_shows_the_validation_error_and_stays_open()
+    {
+        var book = await AddBookAsync("Dune");
+        await AddSessionAsync(book.Id, new ReadingSessionInput { Status = ReadingStatus.Reading, StartedOn = Today });
+        var page = Render<HomePage>();
+        page.WaitForAssertion(() => page.Find(".reading-card"));
+
+        page.FindAll(".reading-card button").Single(b => b.TextContent == "Add comment").Click();
+        page.Find(".panel form").Submit();
+
+        page.WaitForAssertion(() => Assert.Contains("Required.", page.Find(".panel").TextContent, StringComparison.Ordinal));
+        Assert.Empty((await GetBookAsync(book.Id)).Comments);
+    }
+
+    [Fact]
     public async Task Another_shows_a_different_defined_word()
     {
         Dictionary.Define("ennui", "Listlessness.");

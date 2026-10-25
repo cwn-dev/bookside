@@ -1,0 +1,82 @@
+.book-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 1rem;
+}
+
+.tag-list {
+    display: contents;
+    list-style: none;
+}
+
+.tag-list li {
+    display: contents;
+}
+
+.tag-list .tag {
+    font-size: 0.85rem;
+    padding: 0.15rem 0.65rem;
+}
+
+.edit {
+    min-height: 30px;
+    padding: 0 0.5rem;
+    font-size: 0.85rem;
+    color: var(--accent);
+}
+
+/* No tags yet: a dashed pill, so it reads as a tag slot rather than plain text. */
+.add {
+    min-height: 32px;
+    padding: 0 0.8rem;
+    border: 1px dashed var(--accent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.add:hover {
+    background: var(--accent-soft);
+}
+
+.tag-editor {
+    display: grid;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.toggles .chip {
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+.new-tag {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 24rem;
+}
+
+.new-tag input {
+    flex: 1;
+    min-width: 0;
+}
+
+.tag-editor ::deep .alert {
+    margin: 0;
+}
+
+.actions {
+    gap: 0.75rem;
+}
