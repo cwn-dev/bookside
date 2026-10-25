@@ -5,7 +5,9 @@ namespace Bookside.Data.Configurations;
 
 internal static class EntityConfigurationExtensions
 {
-    /// <summary>Shared mapping for <see cref="Entity"/>: client-generated UUIDv7 key.</summary>
+    /// <summary>
+    /// Shared mapping for <see cref="Entity"/>: client-generated UUIDv7 key.
+    /// </summary>
     public static void ConfigureEntity<T>(this EntityTypeBuilder<T> builder)
         where T : Entity
     {
