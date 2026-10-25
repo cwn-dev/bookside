@@ -66,6 +66,10 @@ docker compose up -d --build                                         # on the Do
 
 ## Conventions
 
+- Match the existing code style and keep it consistent across the project. Before writing code, look at nearby files
+  and copy their formatting and patterns, e.g. XML doc layout (if `<summary>` text sits on its own line, keep doing
+  that), member ordering, naming, comment style, file structure. Don't introduce a new style alongside an existing one.
+
 - Package versions live only in `Directory.Packages.props`; common build settings in `Directory.Build.props`.
 - Entities derive from `Entity` (UUIDv7 `Id`, `CreatedAtUtc`/`UpdatedAtUtc` stamped in `SaveChanges`). All DateTimes are UTC.
 - Enums are stored as strings. Constraints belong in entity configurations (check constraints, indexes, delete behaviour).
