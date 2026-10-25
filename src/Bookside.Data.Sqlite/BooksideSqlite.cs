@@ -3,7 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Bookside.Data.Sqlite;
 
-/// <summary>Single place that defines how Bookside talks to SQLite (used by DI and design-time tooling).</summary>
+/// <summary>
+/// Single place that defines how Bookside talks to SQLite (used by DI and
+/// design-time tooling).
+/// </summary>
 public static class BooksideSqlite
 {
     public static string BuildConnectionString(string databasePath)

@@ -22,13 +22,17 @@
 </html>
 
 @code {
-    // Prerendering is off (user's choice): pages render once the circuit connects, so data loads once and nothing
-    // is clickable before it works. Pages marked [ExcludeFromInteractiveRouting] (the error page) stay static.
-    private static readonly IComponentRenderMode InteractiveServerNoPrerender = new InteractiveServerRenderMode(prerender: false);
+    // Prerendering is off (user's choice): pages render once the circuit
+    // connects, so data loads once and nothing is clickable before it works.
+    // Pages marked [ExcludeFromInteractiveRouting] (the error page) stay static.
+    private static readonly IComponentRenderMode InteractiveServerNoPrerender 
+        = new InteractiveServerRenderMode(prerender: false);
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
     private IComponentRenderMode? PageRenderMode =>
-        HttpContext.AcceptsInteractiveRouting() ? InteractiveServerNoPrerender : null;
+        HttpContext.AcceptsInteractiveRouting() 
+            ? InteractiveServerNoPrerender
+            : null;
 }

@@ -10,21 +10,36 @@ var builder = WebApplication.CreateBuilder(args);
 var databasePath = builder.Configuration["Bookside:DatabasePath"];
 if (string.IsNullOrWhiteSpace(databasePath))
 {
-    throw new InvalidOperationException("Configuration value Bookside:DatabasePath is required.");
+    throw new InvalidOperationException(
+        "Configuration value Bookside:DatabasePath is required.");
 }
 
-// Antiforgery tokens and Blazor circuit state are protected with these keys; persisting them lets
-// open pages and forms survive a container restart. Unset = ASP.NET Core's default location.
+// Antiforgery tokens and Blazor circuit state are protected with these keys;
+// persisting them lets open pages and forms survive a container restart. 
+// Unset = ASP.NET Core's default location.
 var keysPath = builder.Configuration["Bookside:DataProtectionKeysPath"];
-var dataProtection = builder.Services.AddDataProtection().SetApplicationName("Bookside");
+
+var dataProtection = builder
+    .Services
+    .AddDataProtection()
+    .SetApplicationName("Bookside");
+
 if (!string.IsNullOrWhiteSpace(keysPath))
 {
-    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, keysPath)));
+    dataProtection.PersistKeysToFileSystem(
+        new DirectoryInfo(Path.Combine(
+            builder.Environment.ContentRootPath,
+            keysPath)));
 }
 
-builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services
-    .AddBooksideSqlite(Path.Combine(builder.Environment.ContentRootPath, databasePath))
+    .AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+builder.Services
+    .AddBooksideSqlite(Path.Combine(
+        builder.Environment.ContentRootPath,
+        databasePath))
     .AddBooksideServices();
 
 // Dictionary providers, tried in this order when a word is looked up.
@@ -40,11 +55,14 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseAntiforgery();
+app.UseStatusCodePagesWithReExecute(
+    "/not-found",
+    createScopeForStatusCodePages: true);
 
+app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapCoverEndpoint();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddAdditionalAssemblies(typeof(Bookside.UI.CoverUrls).Assembly);
