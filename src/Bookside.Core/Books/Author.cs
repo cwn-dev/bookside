@@ -8,5 +8,5 @@ public class Author : Entity
 
     public required string Name { get; set; }
 
-    public ICollection<BookAuthor> Books { get; } = new List<BookAuthor>();
+    public ICollection<BookAuthor> Books { get; } = [];
 }

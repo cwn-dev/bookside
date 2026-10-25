@@ -13,5 +13,9 @@ public sealed record DictionaryLookupResult
     public string? RawResponse { get; init; }
 
     public static DictionaryLookupResult NotFound(string? rawResponse = null) =>
-        new() { Status = DictionaryLookupStatus.NotFound, RawResponse = rawResponse };
+        new()
+        {
+            Status = DictionaryLookupStatus.NotFound,
+            RawResponse = rawResponse
+        };
 }

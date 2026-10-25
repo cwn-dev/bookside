@@ -3,7 +3,9 @@ using Bookside.Core.Common;
 
 namespace Bookside.Core.Vocabulary;
 
-/// <summary>A word on my list. Unique per (language, normalized term).</summary>
+/// <summary>
+/// A word on the list. Unique per (language, normalized term).
+/// </summary>
 public class VocabularyWord : Entity
 {
     public const int TermMaxLength = 200;
@@ -11,28 +13,40 @@ public class VocabularyWord : Entity
     public const int ContextMaxLength = 2000;
     public const int NotesMaxLength = 4000;
 
-    /// <summary>As typed by the user.</summary>
+    /// <summary>
+    /// As typed by the user.
+    /// </summary>
     public required string Term { get; set; }
 
-    /// <summary>See <see cref="TermNormalizer"/>. Kept in sync by the data layer.</summary>
+    /// <summary>
+    /// See <see cref="TermNormalizer"/>. Kept in sync by the data layer.
+    /// </summary>
     public string NormalizedTerm { get; set; } = string.Empty;
 
-    /// <summary>BCP-47-ish language code; "en" for now.</summary>
+    /// <summary>
+    /// BCP-47-ish language code; "en" for now.
+    /// </summary>
     public string Language { get; set; } = "en";
 
-    /// <summary>The book I found it in, if any.</summary>
+    /// <summary>
+    /// The book the word was found it in, if any.
+    /// </summary>
     public Guid? BookId { get; set; }
 
     public Book? Book { get; set; }
 
-    /// <summary>The sentence it appeared in.</summary>
+    /// <summary>
+    /// The sentence it appeared in.
+    /// </summary>
     public string? Context { get; set; }
 
     public int? PageNumber { get; set; }
 
     public string? Notes { get; set; }
 
-    /// <summary>Set once a definition has been looked up (from cache or API).</summary>
+    /// <summary>
+    /// Set once a definition has been looked up (from cache or API).
+    /// </summary>
     public Guid? DictionaryEntryId { get; set; }
 
     public DictionaryEntry? DictionaryEntry { get; set; }

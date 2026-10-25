@@ -17,10 +17,14 @@ public class Book : Entity
 
     public int? PageCount { get; set; }
 
-    /// <summary>Digits only, no hyphens.</summary>
+    /// <summary>
+    /// Digits only, no hyphens.
+    /// </summary>
     public string? Isbn13 { get; set; }
 
-    /// <summary>Digits (and a trailing X), no hyphens.</summary>
+    /// <summary>
+    /// Digits (and a trailing X), no hyphens.
+    /// </summary>
     public string? Isbn10 { get; set; }
 
     public string? Publisher { get; set; }
@@ -29,20 +33,32 @@ public class Book : Entity
 
     public string? Description { get; set; }
 
-    /// <summary>Where imported metadata came from, e.g. "openlibrary". Null for manual entry.</summary>
+    /// <summary>
+    /// Where imported metadata came from, e.g. "openlibrary".
+    /// Null for manual entry.
+    /// </summary>
     public string? MetadataSource { get; set; }
 
-    /// <summary>The source's identifier, e.g. an Open Library edition key.</summary>
+    /// <summary>
+    /// The source's identifier, e.g. an Open Library edition key.
+    /// </summary>
     public string? MetadataSourceId { get; set; }
 
-    /// <summary>Ordered by <see cref="BookAuthor.Position"/>.</summary>
-    public ICollection<BookAuthor> Authors { get; } = new List<BookAuthor>();
+    /// <summary>
+    /// Ordered by <see cref="BookAuthor.Position"/>.
+    /// </summary>
+    public ICollection<BookAuthor> Authors { get; } = [];
 
-    /// <summary>Times read = sessions with <see cref="ReadingStatus.Finished"/>; computed in queries, not stored.</summary>
-    public ICollection<ReadingSession> ReadingSessions { get; } = new List<ReadingSession>();
+    /// <summary>
+    /// Times read = sessions with <see cref="ReadingStatus.Finished"/>;
+    /// computed in queries, not stored.
+    /// </summary>
+    public ICollection<ReadingSession> ReadingSessions { get; } = [];
 
-    public ICollection<BookComment> Comments { get; } = new List<BookComment>();
+    public ICollection<BookComment> Comments { get; } = [];
 
-    /// <summary>Stored in its own table so loading a book never drags the image bytes along.</summary>
+    /// <summary>
+    /// Stored in its own table so loading a book never drags the image bytes along.
+    /// </summary>
     public BookCover? Cover { get; set; }
 }

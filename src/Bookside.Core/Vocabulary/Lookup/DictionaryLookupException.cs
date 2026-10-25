@@ -1,6 +1,8 @@
 namespace Bookside.Core.Vocabulary.Lookup;
 
-/// <summary>Transient/provider failure; the result must not be cached.</summary>
+/// <summary>
+/// Transient/provider failure; the result must not be cached.
+/// </summary>
 public class DictionaryLookupException : Exception
 {
     public DictionaryLookupException()

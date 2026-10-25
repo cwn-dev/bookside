@@ -2,7 +2,9 @@ using Bookside.Core.Common;
 
 namespace Bookside.Core.Books;
 
-/// <summary>One read-through of a book. A book read three times has three sessions.</summary>
+/// <summary>
+/// A read-through of a book.
+/// </summary>
 public class ReadingSession : Entity
 {
     public const int MinRating = 1;
@@ -19,7 +21,9 @@ public class ReadingSession : Entity
 
     public ReadingStatus Status { get; set; } = ReadingStatus.Reading;
 
-    /// <summary>Optional, <see cref="MinRating"/>–<see cref="MaxRating"/>.</summary>
+    /// <summary>
+    /// Optional, <see cref="MinRating"/>–<see cref="MaxRating"/>.
+    /// </summary>
     public int? Rating { get; set; }
 
     public string? Notes { get; set; }

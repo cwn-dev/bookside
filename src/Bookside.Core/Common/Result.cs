@@ -2,7 +2,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Bookside.Core.Common;
 
-/// <summary>Outcome of an operation that can fail in an expected way. Return a <see cref="ServiceError"/> to fail.</summary>
+/// <summary>
+/// Outcome of an operation that can fail in an expected way.
+/// Return a <see cref="ServiceError"/> to fail.
+/// </summary>
 public class Result
 {
     private static readonly Result SuccessResult = new(null);
@@ -36,7 +39,10 @@ public class Result
     public static implicit operator Result(ServiceError error) => Failure(error);
 }
 
-/// <summary>A <see cref="Result"/> carrying a value on success. Values and errors convert implicitly.</summary>
+/// <summary>
+/// A <see cref="Result"/> carrying a value on success.
+/// Values and errors convert implicitly.
+/// </summary>
 public sealed class Result<T> : Result
 {
     private readonly T? _value;
@@ -52,7 +58,9 @@ public sealed class Result<T> : Result
     {
     }
 
-    /// <summary>Throws if the result is a failure; check <see cref="Result.IsSuccess"/> first.</summary>
+    /// <summary>
+    /// Throws if the result is a failure; check <see cref="Result.IsSuccess"/> first.
+    /// </summary>
     public T Value => IsSuccess
         ? _value!
         : throw new InvalidOperationException($"Result is a failure ({Error.Code}); there is no value.");

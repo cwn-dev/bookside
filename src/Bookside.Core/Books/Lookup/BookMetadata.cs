@@ -1,6 +1,9 @@
 namespace Bookside.Core.Books.Lookup;
 
-/// <summary>Provider-neutral metadata returned by <see cref="IBookLookupService"/>, ready to map onto a <see cref="Book"/>.</summary>
+/// <summary>
+/// Provider-neutral metadata returned by <see cref="IBookLookupService"/>,
+/// ready to map onto a <see cref="Book"/>.
+/// </summary>
 public sealed record BookMetadata
 {
     public required string Source { get; init; }
@@ -25,6 +28,8 @@ public sealed record BookMetadata
 
     public string? Description { get; init; }
 
-    /// <summary>Download URL; the importer fetches the bytes into a <see cref="BookCover"/>.</summary>
+    /// <summary>
+    /// Download URL; the importer fetches the bytes into a <see cref="BookCover"/>.
+    /// </summary>
     public Uri? CoverImageUrl { get; init; }
 }
