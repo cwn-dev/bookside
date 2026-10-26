@@ -62,5 +62,8 @@ docker compose up -d --build
   `BOOKSIDE_BIND=0.0.0.0` when the proxy runs elsewhere (then keep the port reachable only by the proxy).
 - **Reverse proxy:** must pass WebSockets (Blazor Server), e.g. nginx needs `proxy_http_version 1.1` plus the
   `Upgrade`/`Connection` headers; Caddy and Traefik do it by default. `X-Forwarded-For`/`-Proto` are trusted.
+- **Book lookup:** Open Library needs no key. To add Google Books as a fallback, put `GOOGLE_BOOKS_API_KEY=…` in
+  `.env` (a Google Cloud API key with the Books API enabled). In development:
+  `dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web`.
 - **No authentication yet:** don't expose it beyond your LAN/VPN.
 - **Update:** `git pull && docker compose up -d --build` (migrations run at startup).

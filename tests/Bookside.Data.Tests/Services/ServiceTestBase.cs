@@ -58,6 +58,13 @@ public abstract class ServiceTestBase : IAsyncLifetime
 
     protected IDefinitionService Definitions => _scope.ServiceProvider.GetRequiredService<IDefinitionService>();
 
+    /// <summary>
+    /// Needs an <see cref="Core.Books.Lookup.IBookLookupService"/> registered
+    /// in <see cref="ConfigureServices"/>.
+    /// </summary>
+    protected IBookMetadataService Metadata =>
+        _scope.ServiceProvider.GetRequiredService<IBookMetadataService>();
+
     public async ValueTask InitializeAsync()
     {
         await _database.InitializeAsync();

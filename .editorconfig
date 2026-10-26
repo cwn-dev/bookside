@@ -7,6 +7,10 @@ indent_size = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+# Aim for ~80, 100 max (see CLAUDE.md). Editors show/wrap at this; the build doesn't enforce it.
+[*.{cs,razor}]
+max_line_length = 100
+
 [*.{csproj,props,targets,json,slnx,yml,yaml}]
 indent_size = 2
 

@@ -1,6 +1,7 @@
 @page "/books/new"
 @page "/books/{Id:guid}/edit"
 @inject ILibraryService Library
+@inject IBookMetadataService Metadata
 @inject NavigationManager Navigation
 
 <PageTitle>@(IsNew ? "Add book" : "Edit book") · Bookside</PageTitle>
@@ -20,6 +21,8 @@ else if (_model is null)
 else
 {
     <div class="book-form">
+        <BookLookup OnPick="Fill" />
+
         <EditForm Model="_model" OnValidSubmit="SaveAsync" class="card">
             <ServiceErrorValidator @ref="_validator" />
             <ErrorAlert Messages="_errors" />
@@ -129,6 +132,13 @@ else
     private IReadOnlyList<string> _errors = [];
     private bool _notFound;
     private bool _saving;
+    private bool _hasCover;
+
+    /// <summary>
+    /// The picked lookup result whose cover is downloaded on save (only if the
+    /// book has none).
+    /// </summary>
+    private BookMetadata? _coverFrom;
 
     /// <summary>Null when adding a book.</summary>
     [Parameter]
@@ -155,6 +165,7 @@ else
         if (result.IsSuccess)
         {
             _model = BookFormModel.From(result.Value);
+            _hasCover = result.Value.CoverSha256 is not null;
         }
         else
         {
@@ -175,6 +186,7 @@ else
 
             if (result.IsSuccess)
             {
+                await AddCoverAsync(result.Value.Id);
                 Navigation.NavigateTo($"books/{result.Value.Id}", replace: IsNew);
             }
             else if (result.Error.Type == ErrorType.NotFound)
@@ -189,6 +201,31 @@ else
         finally
         {
             _saving = false;
+        }
+    }
+
+    private void Fill(BookMetadata book)
+    {
+        _model!.FillEmpty(book);
+        _coverFrom = _hasCover || book.CoverImageUrl is null ? null : book;
+        _validator?.Clear();
+    }
+
+    /// <summary>
+    /// The book is already saved, so a failed download is only a missing cover
+    /// (upload it on the book page).
+    /// </summary>
+    private async Task AddCoverAsync(Guid bookId)
+    {
+        if (_coverFrom is null)
+        {
+            return;
+        }
+
+        var cover = await Metadata.DownloadCoverAsync(_coverFrom);
+        if (cover.IsSuccess)
+        {
+            await Library.SetCoverAsync(bookId, cover.Value);
         }
     }
 }

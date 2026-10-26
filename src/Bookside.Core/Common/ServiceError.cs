@@ -75,4 +75,5 @@ public static class ErrorCodes
     public const string WordNotFound = "word.not_found";
     public const string DuplicateWord = "word.duplicate";
     public const string DictionaryUnavailable = "dictionary.unavailable";
+    public const string BookLookupUnavailable = "book_lookup.unavailable";
 }

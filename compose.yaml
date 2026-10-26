@@ -17,4 +17,6 @@ services:
       TZ: ${TZ:-Etc/UTC}
       # Trust X-Forwarded-For/-Proto from the proxy (client IP and scheme). Keep port 8080 reachable only by the proxy.
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      # Optional: Google Books as a fallback for book lookups (Open Library is always used). Empty = not used.
+      Bookside__GoogleBooks__ApiKey: ${GOOGLE_BOOKS_API_KEY:-}
     stop_grace_period: 30s

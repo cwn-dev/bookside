@@ -1,3 +1,4 @@
+using Bookside.Core.Books.Lookup;
 using Bookside.Core.Books.Services;
 
 namespace Bookside.UI.Forms;
@@ -61,6 +62,36 @@ public sealed class BookFormModel
         return model;
     }
 
+    /// <summary>
+    /// Copies looked-up values into the fields that are still empty; anything
+    /// already typed wins.
+    /// </summary>
+    public void FillEmpty(BookMetadata book)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+        Title = Blank(Title) ? book.Title : Title;
+        Subtitle = Blank(Subtitle) ? book.Subtitle : Subtitle;
+        PageCount ??= book.PageCount;
+        Isbn13 = Blank(Isbn13) ? book.Isbn13 : Isbn13;
+        Isbn10 = Blank(Isbn10) ? book.Isbn10 : Isbn10;
+        Publisher = Blank(Publisher) ? book.Publisher : Publisher;
+        PublishedYear ??= book.PublishedYear;
+        Description = Blank(Description) ? book.Description : Description;
+        if (Blank(MetadataSource))
+        {
+            MetadataSource = book.Source;
+            MetadataSourceId = book.SourceId;
+        }
+
+        if (Authors.All(a => Blank(a.Name)) && book.Authors.Count > 0)
+        {
+            Authors.Clear();
+            Authors.AddRange(book.Authors.Select(name => new AuthorEntry { Name = name }));
+        }
+
+        static bool Blank(string? value) => string.IsNullOrWhiteSpace(value);
+    }
+
     public BookInput ToInput() => new()
     {
         Title = Title,
@@ -79,7 +110,10 @@ public sealed class BookFormModel
     };
 }
 
-/// <summary>A reference type per row so inputs keep their identity when rows are added or removed.</summary>
+/// <summary>
+/// A reference type per row so inputs keep their identity when rows are added
+/// or removed.
+/// </summary>
 public sealed class AuthorEntry
 {
     public string? Name { get; set; }

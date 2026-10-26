@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 11, 2026-10-25)
+# Bookside: project state (end of session 12, 2026-10-26)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -23,8 +23,8 @@
     Session 11: `ITagService` (`ListTagsAsync` with book counts, `SetBookTagsAsync(bookId, names)` replaces the set and
     creates new names, `RenameTagAsync` (Conflict `tag.duplicate`), `DeleteTagAsync`); `BookSummary`/`BookDetails.Tags`
     (alphabetical names), `BookQuery.Tag`.
-  - External: `IBookLookupService` + `BookMetadata`, `IDictionaryLookupService` + `DictionaryLookupResult` +
-    `DictionaryLookupException` (no implementations yet).
+  - External: `IBookLookupService` (per provider) + `BookMetadata` + `BookLookupException`,
+    `IDictionaryLookupService` + `DictionaryLookupResult` + `DictionaryLookupException`.
 - `Bookside.Data`: `BooksideDbContext` (UTC DateTimes, enums as strings, SaveChanges stamps timestamps, normalizes
   terms, enforces cover size; `DictionaryEntry.Meanings` via EF 10 `ComplexCollection(...).ToJson()`).
   `Services/`: `LibraryService`, `VocabularyService`, `DefinitionService`, `HomeService` (session 9), `TagService` (session 11) (internal), registered by
@@ -40,6 +40,20 @@
   HttpClient (base address, `{name}-standard` resilience options); shared `DictionaryHttp` (GET + transport-failure
   mapping) and `MeaningListBuilder` (merge by part of speech, de-dup, phonetic length). `Program.cs` registers
   freedictionaryapi.com, then dictionaryapi.dev.
+- Book metadata import (session 12): `IBookMetadataService` (`Data/Services/BookMetadataService`) runs the
+  `IBookLookupService` providers in registration order. `SearchAsync(query)`: a valid ISBN-10/13 → `FindByIsbnAsync`
+  (ISBN-13), else text search (10 results); `DownloadCoverAsync(metadata)` goes through the provider that found it.
+  Results are cleaned (over-long values, bad ISBNs, pages ≤ 0 dropped; no title → result dropped). Providers in
+  `Integrations/Books`: `OpenLibraryClient` (ISBN: `api/books?jscmd=data` = edition with ISBNs/publisher; text:
+  `search.json` = works, no ISBN/publisher/description) and `GoogleBooksClient` (`volumes?q=`, key in the
+  `X-Goog-Api-Key` header, thumbnails rewritten to https). Registration shares `AddLookupClient<TService, TClient,
+  TOptions>` with the dictionaries; HTTP via shared `LookupHttp` (`DictionaryHttp` now delegates). Covers download
+  through one shared `BookCoverDownloader` (`book-covers` client: 15 s/attempt, 1 retry, 30 s; 2 MB cap; https +
+  the provider's own image hosts only). `Program.cs`: Open Library, then Google Books only if
+  `Bookside:GoogleBooks:ApiKey` is set (compose: `GOOGLE_BOOKS_API_KEY` in `.env`; dev: user secrets, Web has a
+  `UserSecretsId`). UI: `BookLookup` card above the book form (add and edit; not a `<form>`, Enter or "Look up"),
+  result list (thumb, title, authors, year, "Results from …"); picking calls `BookFormModel.FillEmpty` and, if the
+  book has no cover, the cover is downloaded after the book saves (failure = no cover, silently).
 - Book series (session 10): `BookInput`/`BookSummary`/`BookDetails` carry `Series` + `SeriesNumber`;
   `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
   + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page
@@ -89,13 +103,15 @@
   cache mount; runtime `aspnet:10.0-noble-chiseled-extra`, UID 1654, port 8080), `.dockerignore`, `compose.yaml`
   (`./data:/data`, `TZ`, forwarded headers on, port bound to `127.0.0.1` by default). README "Deploy" covers setup,
   backup, proxy WebSockets.
-- `Bookside.UI.Tests`: 80 tests (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- `Bookside.UI.Tests`: 82 tests (session 12: edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
-- `Bookside.Integrations.Tests`: 26 tests through the real registration with a stubbed primary handler
+- `Bookside.Integrations.Tests`: 36 tests (session 12: `BookLookupClientTests`, both providers + covers);
+  26 before through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 90 passing tests (session 11: `TagServiceTests`; session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
+- `Bookside.Data.Tests`: 96 passing tests (session 12: `BookMetadataServiceTests` with `FakeBookLookupService`;
+  `ServiceTestBase.Metadata` needs a provider registered in `ConfigureServices`); 90 in session 11 (session 11: `TagServiceTests`; session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
   virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
   `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
   registers extra `FakeDictionaryLookupService(source)` providers after `Dictionary`). Model/migration tests, plus service tests (`Services/ServiceTestBase`: real
@@ -113,8 +129,6 @@
 - Blazor components inject the service interfaces (`ILibraryService` etc.), never a DbContext; each service method
   makes its own context from `IDbContextFactory`, so circuit-scoped services are safe.
 - Cover images are stored in SQLite. Vocabulary words are unique per (language, normalized term), each linked to at most one book.
-- Book metadata API (Open Library preferred; Google Books needs a key, returned 429 without one) is planned for
-  session 12 (see Next #1). `IBookLookupService` + `BookMetadata` exist in `Core/Books/Lookup` but nothing uses them yet.
 - Dictionary: dictionaryapi.dev (free, no key, Wiktionary-derived, no SLA). Cache NotFound; never cache transient failures.
 - **Services (session 2):**
   - Contracts and DTOs in Core, implementations in `Bookside.Data/Services`. They return DTOs, never entities, so a
@@ -201,6 +215,17 @@
   - `./data` bind mount owned by UID 1654. Data Protection keys there unencrypted at rest (startup warning
     "No XML encryptor configured" is expected); they only protect antiforgery tokens and circuit state.
 
+- **Book metadata import (session 12, user's choices: one box + result list, fill empty fields only, cover only
+  if the book has none, Google only with a key, separate cover client):**
+  - Fallback chain like the dictionary one: a failure or no results → next provider; first provider with results
+    wins (no merging across providers); Unavailable only if one failed and none had results. No caching.
+  - An ISBN search always shows the list too (usually one row), so one UI covers ISBN, title and author searches.
+  - Fill rules: only empty fields; authors only when every author box is blank; `MetadataSource(Id)` only if
+    unset. Open Library ids are the key path (`/books/OL…M` from ISBN, `/works/OL…W` from text search).
+  - Open Library covers redirect via archive.org and take 4–8 s, hence the own `book-covers` client; lookups keep
+    the 3 s / 8 s budget. Saving waits for the download. Search thumbnails load straight from the provider in the browser.
+  - Google key verified only by stubbed tests (no key available; keyless = 429). Header auth is documented by Google
+    for API keys; if it is rejected, switch to `key=` in the query.
 - **Book series (session 10, user's choices: own table, optional number):**
   - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
     (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.
@@ -244,48 +269,22 @@
     hanging) is 16 s.
 
 ## Next
-1. **Book metadata import: plan it with the user first (user's request for session 12).** Start the session by
-   proposing the design and asking; don't build until it's agreed.
-   - **Providers:** Open Library first, then Google Books, as a fallback chain like the dictionary one (session 7):
-     a failure or "not found" moves on to the next provider, each with the same typed HttpClient + standard
-     resilience handler (3 s/attempt, 2 retries, 8 s total).
-   - **Extensible:** adding a provider must be as quick as adding a dictionary provider: one client class, one
-     `Add…Client()` registration (shared generic helper, own named HttpClient and `{name}-standard` options),
-     one line in `Program.cs`; providers tried in registration order. Shared HTTP/mapping helpers like
-     `DictionaryHttp` / `MeaningListBuilder`. Consider making the dictionary and book helpers one generic piece.
-   - **Google Books API key:** configurable as a Docker environment variable (e.g. `Bookside__GoogleBooks__ApiKey`
-     in `compose.yaml`) and for development/testing outside the repo (user secrets or git-ignored
-     `appsettings.Development.json` / env var). Without a key, skip or still try it? (it returned 429 keyless.)
-   - **`IBookLookupService`** (`FindByIsbnAsync`, `SearchAsync`, `Source`) + `BookMetadata` are unused, so they can
-     change freely. Likely a per-provider interface plus a service that runs the chain (like `DefinitionService`),
-     returning `Result` with Unavailable when every provider fails.
-   - **Questions to ask the user:**
-     - Entry point: fill some fields on the book form and click "Search" to fill the rest, or a separate search box
-       that takes an ISBN or a title (ISBN detected via `Isbn` checksum)? Or both?
-     - Multiple results: pick from a result list (cover, title, authors, year) or take the first match? An ISBN
-       usually gives one; title searches give many.
-     - Search by author alone, then pick the book from the results? That needs the multiple-results UI
-       (and paging or a result cap).
-     - Merge rules: does a lookup overwrite fields already typed, or only fill empty ones? Cover: download it
-       (`CoverImageUrl` → `SetCoverAsync`), and only if the book has none?
-     - Also on the edit page of an existing book ("Refresh from Open Library"), or only when adding?
-     - Which fields to fill: `Book` already has `PageCount`, `Publisher`, `Description`, `MetadataSource(Id)`.
-       Also subjects → tags? Series from metadata?
-     - Merge across providers (e.g. Open Library data + Google cover) or take the first provider that answers?
-2. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
+1. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
    the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
    list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
-3. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
+2. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
    `/words`. Propose the design before building. Decisions to make: algorithm (Leitner boxes vs SM-2 vs FSRS);
    card front/back (term → definition, or also definition → term, sentence from the book as a cue); grading
    (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
    migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
    touch (tap/swipe) on both widths; whether the word of the day should prefer due words; a "Review" card on the home page.
-4. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
+3. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
+- Book import: subjects → tags, series from metadata, descriptions for Open Library text results (needs a works
+  call) and merging providers were skipped. Open Library text results have no ISBN; an ISBN search fills it.
 - Deployment is the user's: they will test the image on the Docker host and set up a GitHub build that pushes it to
   Docker Hub. Fix image problems if they report any; don't plan deploy work otherwise.
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table

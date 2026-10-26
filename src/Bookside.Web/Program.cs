@@ -46,6 +46,14 @@ builder.Services
 builder.Services.AddFreeDictionaryApiClient();
 builder.Services.AddDictionaryApiClient();
 
+// Book metadata providers, tried in this order.
+// Google Books only with a key (keyless calls get HTTP 429).
+builder.Services.AddOpenLibraryClient();
+if (builder.Configuration["Bookside:GoogleBooks:ApiKey"] is { Length: > 0 } googleBooksKey)
+{
+    builder.Services.AddGoogleBooksClient(o => o.ApiKey = googleBooksKey);
+}
+
 var app = builder.Build();
 
 await app.Services.InitializeBooksideDatabaseAsync();

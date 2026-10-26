@@ -28,6 +28,7 @@ public static class BooksideServiceCollectionExtensions
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<IVocabularyService, VocabularyService>();
         services.AddScoped<IDefinitionService, DefinitionService>();
+        services.AddScoped<IBookMetadataService, BookMetadataService>();
 
         return services;
     }

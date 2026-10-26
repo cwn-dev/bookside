@@ -4,6 +4,8 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <!-- Component code must resume on the renderer's sync context, so ConfigureAwait(false) is wrong here. -->
     <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <!-- Development secrets, e.g. dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> -->
+    <UserSecretsId>941cede2-1ff6-49c9-808a-a285f0813286</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Bookside.UI\Bookside.UI.csproj" />

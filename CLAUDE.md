@@ -31,6 +31,7 @@ dotnet run --project src/Bookside.Web                                # http://lo
 # UI screenshots: no prerendering, so `firefox --screenshot` is blank. Drive headless Firefox over Marionette instead
 # (firefox --headless --marionette -remote-allow-system-access --no-remote --profile <tmp>; TCP 2828, length-prefixed
 #  JSON; chrome-context pref layout.css.prefers-color-scheme.content-override = 0 for dark mode).
+dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web   # optional Google Books fallback
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
 docker compose up -d --build                                         # on the Docker host (no Docker on the dev Mac); see README "Deploy"
@@ -47,9 +48,12 @@ docker compose up -d --build                                         # on the Do
   resilience handler), registered by `Add<Provider>Client()` extensions that return the `IHttpClientBuilder`.
   Dictionary providers: several `IDictionaryLookupService` registrations, tried in registration order by
   `DefinitionService`; new ones go through `AddDictionaryClient<TClient, TOptions>` (own client name) and reuse
-  `DictionaryHttp` + `MeaningListBuilder`.
+  `DictionaryHttp` + `MeaningListBuilder`. Book providers (`Books/`): several `IBookLookupService` registrations
+  tried in order by `BookMetadataService`; same `AddLookupClient` helper, shared `BookHttp`, covers through the
+  shared `BookCoverDownloader` (`book-covers` client). Both kinds share `LookupHttp` for GETs.
 - `tests/Bookside.Integrations.Tests`: client tests through the real registration, with `StubHttpMessageHandler` as the
-  primary handler (retry delay zeroed via the `{clientName}-standard` resilience options).
+  primary handler (retry delay zeroed via the `{clientName}-standard` resilience options; covers use the
+  `BookCoverClientName` client).
 - `tests/Bookside.Data.Tests`: tests against real temp SQLite files (`SqliteTestDatabase`); service tests derive
   from `Services/ServiceTestBase` (production registrations + `FakeDictionaryLookupService`; pass fallback
   sources to the base constructor for multi-provider tests; override `ConfigureServices` to register e.g. a
@@ -63,7 +67,7 @@ docker compose up -d --build                                         # on the Do
 - `Dockerfile` / `compose.yaml` / `.dockerignore` at the root: the image copies only the root build files
   (`global.json`, `Directory.*.props`, `.editorconfig`) and `src/`; add any new root-level build file to the `COPY`.
 - `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations on temp SQLite,
-  controllable `FakeDictionaryLookup` via `Dictionary`) and
+  controllable `FakeDictionaryLookup` via `Dictionary`, `FakeBookLookup` via `BookLookup`) and
   `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`).
 - Planned: `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
 
@@ -72,6 +76,25 @@ docker compose up -d --build                                         # on the Do
 - Match the existing code style and keep it consistent across the project. Before writing code, look at nearby files
   and copy their formatting and patterns, e.g. XML doc layout (if `<summary>` text sits on its own line, keep doing
   that), member ordering, naming, comment style, file structure. Don't introduce a new style alongside an existing one.
+
+- Format to standard C# conventions (.NET runtime / Microsoft style), and use the rules below where they're more
+  specific. Where older code breaks these rules, follow the rules, not the older code.
+- Line length: aim for ~80 characters, 100 max where reasonable (`max_line_length = 100` in `.editorconfig`).
+  Break long argument lists, conditions, LINQ chains and Razor attribute lists one item per line rather than
+  letting them run on. Older code has many longer lines: fix them only in code you're already changing.
+- Expression bodies: when the parameter list wraps (one parameter per line), keep `=>` at the end of the last
+  parameter line and indent the body one level deeper than the parameters, so it doesn't line up with them.
+  When wrapped generic arguments are followed by wrapped call arguments, indent the call arguments one level
+  deeper than the type arguments.
+- Comments (XML docs, `//`, Razor `@* *@`): wrap at ~80 columns including indentation, even when the code
+  around them is longer. Keep each `<see cref="…"/>` whole on one line.
+- XML docs: `<summary>` and `</summary>` on their own lines with the text between, even for one sentence:
+  ```csharp
+  /// <summary>
+  /// Text.
+  /// </summary>
+  ```
+  Short `<param>`/`<returns>` may stay on one line. Don't copy the older one-line summaries.
 
 - Package versions live only in `Directory.Packages.props`; common build settings in `Directory.Build.props`.
 - Entities derive from `Entity` (UUIDv7 `Id`, `CreatedAtUtc`/`UpdatedAtUtc` stamped in `SaveChanges`). All DateTimes are UTC.

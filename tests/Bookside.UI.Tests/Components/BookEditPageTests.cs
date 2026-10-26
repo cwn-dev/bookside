@@ -1,3 +1,4 @@
+using Bookside.Core.Books.Lookup;
 using Bookside.Core.Books.Services;
 using Bookside.UI.Pages;
 
@@ -23,6 +24,60 @@ public sealed class BookEditPageTests : ComponentTestBase
         Assert.Equal("The Dispossessed", book.Title);
         Assert.Equal(["Ursula K. Le Guin", "Second Author"], book.Authors);
         Assert.Equal("9780060512750", book.Isbn13);
+    }
+
+    [Fact]
+    public async Task Picking_a_lookup_result_fills_only_empty_fields_and_adds_the_cover_on_save()
+    {
+        BookLookup.Results =
+        [
+            new BookMetadata
+            {
+                Source = "openlibrary",
+                SourceId = "/books/OL1M",
+                Title = "Mort",
+                Authors = ["Terry Pratchett"],
+                Publisher = "Corgi",
+                PageCount = 288,
+                CoverImageUrl = new Uri("https://covers.openlibrary.org/b/id/1-L.jpg"),
+            },
+        ];
+        var page = Render<BookEditPage>();
+        page.Find("#title").Change("My title");
+
+        page.Find("#lookup-query").Input("mort");
+        page.Find(".lookup-row button").Click();
+        page.WaitForElement(".lookup-results button").Click();
+
+        Assert.Equal("My title", page.Find("#title").GetAttribute("value"));
+        Assert.Equal("Terry Pratchett", page.Find("#author-0").GetAttribute("value"));
+        Assert.Equal("Corgi", page.Find("#publisher").GetAttribute("value"));
+        Assert.Contains(
+            "Open Library",
+            page.Find(".book-lookup .alert-success").TextContent,
+            StringComparison.Ordinal);
+
+        page.Find("form").Submit();
+
+        page.WaitForAssertion(() => Assert.Matches("/books/[0-9a-f-]{36}$", Navigation.Uri));
+        var book = await GetBookAsync(Guid.Parse(Navigation.Uri[^36..]));
+        Assert.Equal(("My title", 288), (book.Title, book.PageCount));
+        Assert.Equal(("openlibrary", "/books/OL1M"), (book.MetadataSource, book.MetadataSourceId));
+        Assert.NotNull(book.CoverSha256);
+    }
+
+    [Fact]
+    public void A_lookup_with_no_results_says_so()
+    {
+        var page = Render<BookEditPage>();
+
+        page.Find("#lookup-query").Input("nothing");
+        page.Find("#lookup-query").KeyDown("Enter");
+
+        page.WaitForAssertion(() => Assert.Contains(
+            "Nothing found",
+            page.Find(".book-lookup").TextContent,
+            StringComparison.Ordinal));
     }
 
     [Fact]

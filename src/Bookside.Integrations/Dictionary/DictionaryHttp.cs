@@ -1,6 +1,5 @@
 using System.Net;
 using Bookside.Core.Vocabulary.Lookup;
-using Polly;
 
 namespace Bookside.Integrations.Dictionary;
 
@@ -18,37 +17,14 @@ internal static class DictionaryHttp
             $"entries/{Uri.EscapeDataString(language)}/{Uri.EscapeDataString(term)}",
             UriKind.Relative);
 
-    public static async Task<(HttpStatusCode Status, string Body)> GetAsync(
+    public static Task<(HttpStatusCode Status, string Body)> GetAsync(
         HttpClient http,
         Uri path,
         string source,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            using var response = await http
-                .GetAsync(path, cancellationToken)
-                .ConfigureAwait(false);
-
-            var body = await response
-                .Content
-                .ReadAsStringAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            return (response.StatusCode, body);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception ex) when (ex is HttpRequestException 
-            or OperationCanceledException
-            or ExecutionRejectedException)
-        {
-            // Network errors, response too large, timeouts (attempt/total), open circuit.
-            throw new DictionaryLookupException(
-                $"{source} could not be reached.",
-                ex);
-        }
-    }
+        CancellationToken cancellationToken) =>
+            LookupHttp.GetStringAsync(
+                http,
+                path,
+                ex => new DictionaryLookupException($"{source} could not be reached.", ex),
+                cancellationToken);
 }

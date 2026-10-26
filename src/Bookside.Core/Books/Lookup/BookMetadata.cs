@@ -29,7 +29,8 @@ public sealed record BookMetadata
     public string? Description { get; init; }
 
     /// <summary>
-    /// Download URL; the importer fetches the bytes into a <see cref="BookCover"/>.
+    /// Download through
+    /// <see cref="Services.IBookMetadataService.DownloadCoverAsync"/>.
     /// </summary>
     public Uri? CoverImageUrl { get; init; }
 }

@@ -1,3 +1,4 @@
+using Bookside.Core.Books.Lookup;
 using Bookside.Core.Books.Services;
 using Bookside.Core.Common;
 using Bookside.Core.Vocabulary;
@@ -24,13 +25,20 @@ public abstract class ComponentTestBase : BunitContext, IAsyncLifetime
         Services
             .AddBooksideSqlite(Path.Combine(_directory, "bookside.db"))
             .AddBooksideServices()
-            .AddSingleton<IDictionaryLookupService>(Dictionary);
+            .AddSingleton<IDictionaryLookupService>(Dictionary)
+            .AddSingleton<IBookLookupService>(BookLookup);
     }
 
     protected static CancellationToken Ct => Xunit.TestContext.Current.CancellationToken;
 
     /// <summary>Unknown terms are NotFound; set <see cref="FakeDictionaryLookup.Unavailable"/> to simulate an outage.</summary>
     protected FakeDictionaryLookup Dictionary { get; } = new();
+
+    /// <summary>
+    /// Book metadata provider: <see cref="FakeBookLookup.Results"/> answer
+    /// every search; covers are a tiny PNG.
+    /// </summary>
+    protected FakeBookLookup BookLookup { get; } = new();
 
     protected ILibraryService Library => Services.GetRequiredService<ILibraryService>();
 
@@ -93,4 +101,32 @@ public sealed class FakeDictionaryLookup : IDictionaryLookupService
             },
         ],
     };
+}
+
+public sealed class FakeBookLookup : IBookLookupService
+{
+    public string Source => "openlibrary";
+
+    public IReadOnlyList<BookMetadata> Results { get; set; } = [];
+
+    public Task<BookMetadata?> FindByIsbnAsync(
+        string isbn13,
+        CancellationToken cancellationToken = default) =>
+            Task.FromResult(Results.Count > 0 ? Results[0] : null);
+
+    public Task<IReadOnlyList<BookMetadata>> SearchAsync(
+        string query,
+        int maxResults,
+        CancellationToken cancellationToken = default) =>
+            Task.FromResult(Results);
+
+    public Task<CoverInput> DownloadCoverAsync(
+        Uri url,
+        CancellationToken cancellationToken = default) =>
+            Task.FromResult(new CoverInput
+            {
+                Content = new byte[] { 0x89, 0x50, 0x4E, 0x47 },
+                ContentType = "image/png",
+                SourceUrl = url.AbsoluteUri,
+            });
 }
