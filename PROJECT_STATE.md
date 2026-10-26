@@ -100,9 +100,11 @@
   `Bookside:DataProtectionKeysPath` (`/data/keys`; Development `App_Data/keys`; app name "Bookside"). `.claude/launch.json` has a `web` config (port 5233) for the preview pane, and `web-scratch` (same port,
   `App_Data/scratch.db`) for UI checks without touching the dev database.
 - Docker (session 8): root `Dockerfile` (SDK `10.0.203-noble` on `$BUILDPLATFORM`, `publish -a $TARGETARCH`, NuGet
-  cache mount; runtime `aspnet:10.0-noble-chiseled-extra`, UID 1654, port 8080), `.dockerignore`, `compose.yaml`
+  cache mount; runtime `aspnet:10.0-noble-chiseled-extra`, UID 1654, port 8080), `.dockerignore`, `docker-compose.yaml`
   (`./data:/data`, `TZ`, forwarded headers on, port bound to `127.0.0.1` by default). README "Deploy" covers setup,
   backup, proxy WebSockets.
+- CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
+  `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
 - `Bookside.UI.Tests`: 82 tests (session 12: edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`

@@ -1,5 +1,12 @@
 # Bookside
 
+<p align="center">
+  <a href="https://hub.docker.com/r/cwndev/bookside"><img src="https://img.shields.io/docker/v/cwndev/bookside?sort=semver&label=docker&logo=docker&logoColor=white" alt="Docker image version"></a>
+  <a href="https://github.com/cwn-dev/
+  bookside/releases/latest"><img src="https://img.shields.io/github/v/release/cwn-dev/bookside?sort=semver&logo=github" alt="Latest release"></a>
+  <a href="https://github.com/cwn-dev/bookside/actions/workflows/build-and-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/cwn-dev/bookside/build-and-test.yml?branch=main&label=build%20%26%20tests&logo=githubactions&logoColor=white" alt="Build and tests"></a>
+</p>
+
 Bookside is a self-hosted reading companion. It keeps your library of books, with covers, authors, series and tags, and imports details by ISBN, title or author from Open Library (or Google Books). For each book you log when you started and finished it, rate it and keep running reading notes. Words you meet while reading go into a vocabulary list, linked to the book, page and sentence they came from, with definitions fetched automatically. A home page brings together what you're reading now, recently finished books, recent words, a word of the day and reading stats.
 
 ## Desktop Browser UI

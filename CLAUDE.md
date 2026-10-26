@@ -64,7 +64,7 @@ docker compose up -d --build                                         # on the Do
   MAUI can reuse it. Components inject Core service interfaces.
 - `src/Bookside.Web`: Blazor Web App host (Interactive Server, no prerendering): `Program.cs`, `App.razor`, `Routes.razor`,
   error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`, `Bookside:DataProtectionKeysPath`.
-- `Dockerfile` / `compose.yaml` / `.dockerignore` at the root: the image copies only the root build files
+- `Dockerfile` / `docker-compose.yaml` / `.dockerignore` at the root: the image copies only the root build files
   (`global.json`, `Directory.*.props`, `.editorconfig`) and `src/`; add any new root-level build file to the `COPY`.
 - `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations on temp SQLite,
   controllable `FakeDictionaryLookup` via `Dictionary`, `FakeBookLookup` via `BookLookup`) and
