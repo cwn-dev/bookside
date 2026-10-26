@@ -68,6 +68,7 @@
   closes it with "Comment added. View" (book link) until another panel opens. One panel per card still. With 2+
   books the list is two-up when the section is ≥ 640px wide (container query; i.e. desktop main column, not
   ≤ ~1000px viewports); actions sit under cover + text when a card is < 400px wide (card container query).
+  Side-by-side cards share a height (actions at the bottom; title 1.1rem), except while one has a form open.
 - Home page (session 9): `HomePage` (`/`, replaces the redirect to `/books`; the brand links to it, no nav link).
   Currently reading cards (cover, authors, "Started … · day N", inline "Finished" form = `ReadingSessionForm`, inline
   "Add word" = `WordForm` that stays open), word of the day + "Another", quick-add word, recent words (5), recently

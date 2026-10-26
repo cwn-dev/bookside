@@ -95,6 +95,11 @@ section h2 {
     padding: 0;
     display: grid;
     gap: 1rem;
+}
+
+/* Side-by-side cards share a height, except while one has a form open: then
+   the other keeps its own height instead of filling with empty space. */
+.reading-list:has(.panel) {
     align-items: start;
 }
 
@@ -106,12 +111,18 @@ section h2 {
 
 .reading-card {
     container: reading-card / inline-size;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Cover beside the text; actions and notice under the text, or under both when the card is narrow. */
 .reading-book {
+    flex: 1;
     display: grid;
     grid-template-columns: 76px minmax(0, 1fr);
+    /* Text row takes the spare height, so the actions line up at the bottom
+       of equal-height cards. */
+    grid-template-rows: 1fr auto auto;
     gap: 0 1rem;
     align-items: start;
 }
@@ -157,7 +168,7 @@ section h2 {
 
 .book-title {
     font-family: var(--font-display);
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     line-height: 1.25;
     color: var(--text);
