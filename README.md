@@ -1,11 +1,24 @@
 # Bookside
 
-A personal reading companion: library / reading log and a vocabulary builder.
+Bookside is a self-hosted reading companion. It keeps your library of books, with covers, authors, series and tags, and imports details by ISBN, title or author from Open Library (or Google Books). For each book you log when you started and finished it, rate it and keep running reading notes. Words you meet while reading go into a vocabulary list, linked to the book, page and sentence they came from, with definitions fetched automatically. A home page brings together what you're reading now, recently finished books, recent words, a word of the day and reading stats.
 
-<img src="./screenshots/screenshot-1.png" width="500" alt="Screenshot-1">
-<img src="./screenshots/screenshot-2.png" width="500" alt="Screenshot-2">
+<p align="center">
+  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-22%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-22%20Bookside.png" height="230" alt="Home page"></a>
+  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png" height="230" alt="Book details and reading log"></a>
+  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png" height="230" alt="Vocabulary list"></a>
+</p>
 
-[Click here for more screenshots](./screenshots/)
+<p align="center">
+  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png" height="230" alt="Vocabulary quick-add"></a>
+  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png" height="230" alt="Word details"></a>
+</p>
+
+<p align="center">
+  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png" height="230" alt="Add book with metadata lookup"></a>
+  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png" height="230" alt="Add book form"></a>
+</p>
+
+[More screenshots](./screenshots/)
 
 ## Features
 
