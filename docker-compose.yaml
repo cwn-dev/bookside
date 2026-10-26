@@ -1,0 +1,22 @@
+# Before the first start:
+# `mkdir -p bookside_data && sudo chown 1654:1654 bookside_data`
+# (the image runs as UID 1654).
+
+# Settings come from the environment or a .env file next to this one (see README).
+services:
+  bookside:
+    image: bookside:latest
+    container_name: bookside
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    volumes:
+      - ./bookside_data:/data
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+      # Trust X-Forwarded-For/-Proto from the proxy (client IP and scheme).
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      # Optional: Google Books as a fallback for book lookups
+      # (Open Library is always used). Empty = not used.
+      Bookside__GoogleBooks__ApiKey: ${GOOGLE_BOOKS_API_KEY:-}
+    stop_grace_period: 30s
