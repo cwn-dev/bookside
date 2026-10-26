@@ -45,6 +45,10 @@ Bookside is a self-hosted reading companion. It keeps your library of books, wit
 * Log when you started/finished a book, give it a rating, and leave comments (multiple comments can be left and act as a reading notes companion).
 * Log new words you come across in the Vocabulary section to revisit later.
 * Link a new word to a book.
+* Word definition is looked up using multiple providers when adding a new word to the dictionary.
+* Look up book metadata using Open Library or Google Books API (you'll need your own key, which is free).
+* Automatic cover download.
+* Books can be tagged with as many tags as you need - you could tag the genre, wishlist, own, etc. (the read/reading tags are separate to these).
 
 ## Layout
 
