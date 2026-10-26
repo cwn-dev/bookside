@@ -2,6 +2,8 @@
 
 Bookside is a self-hosted reading companion. It keeps your library of books, with covers, authors, series and tags, and imports details by ISBN, title or author from Open Library (or Google Books). For each book you log when you started and finished it, rate it and keep running reading notes. Words you meet while reading go into a vocabulary list, linked to the book, page and sentence they came from, with definitions fetched automatically. A home page brings together what you're reading now, recently finished books, recent words, a word of the day and reading stats.
 
+## Desktop Browser UI
+
 <p align="center">
   <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-22%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-22%20Bookside.png" height="230" alt="Home page"></a>
   <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png" height="230" alt="Book details and reading log"></a>
@@ -16,6 +18,15 @@ Bookside is a self-hosted reading companion. It keeps your library of books, wit
 <p align="center">
   <a href="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png" height="230" alt="Add book with metadata lookup"></a>
   <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png" height="230" alt="Add book form"></a>
+</p>
+
+## Mobile Browser UI
+
+<p align="center">
+  <a href="./screenshots/mobile/home.png"><img src="./screenshots/mobile/home.png" height="400" alt="Home page on mobile"></a>
+  <a href="./screenshots/mobile/a%20book.png"><img src="./screenshots/mobile/a%20book.png" height="400" alt="Book page on mobile"></a>
+  <a href="./screenshots/mobile/reading%20log.png"><img src="./screenshots/mobile/reading%20log.png" height="400" alt="Reading log on mobile"></a>
+  <a href="./screenshots/mobile/voacbulary%20entry.png"><img src="./screenshots/mobile/voacbulary%20entry.png" height="400" alt="Vocabulary entry on mobile"></a>
 </p>
 
 [More screenshots](./screenshots/)
