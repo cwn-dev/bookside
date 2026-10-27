@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 12, 2026-10-26)
+# Bookside: project state (end of session 13, 2026-10-27)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -54,6 +54,17 @@
   `UserSecretsId`). UI: `BookLookup` card above the book form (add and edit; not a `<form>`, Enter or "Look up"),
   result list (thumb, title, authors, year, "Results from …"); picking calls `BookFormModel.FillEmpty` and, if the
   book has no cover, the cover is downloaded after the book saves (failure = no cover, silently).
+- Flash cards (session 13): `WordReview` (own table `WordReviews`, keyed by `WordId`, cascade from the word;
+  `DueOn`/`FirstReviewedOn`/`LastReviewedOn` local `DateOnly`s, `IntervalDays`, `Ease` ≥ 1.3, `Repetitions`,
+  `Lapses`; migration `AddWordReviews`, new table only). No row = new card. `Core/Vocabulary/ReviewScheduler`
+  (pure SM-2, `NewWordsPerDay` = 10). `IReviewService` (`Data/Services/ReviewService`): `GetStatusAsync` →
+  `ReviewStatus` (due, new available today, new waiting, next due date), `GetQueueAsync` → `ReviewCard`s (due
+  oldest first, then new oldest added first up to the day's limit; max 100), `RecordReviewAsync(wordId, knew)`.
+  Only words with a Found definition are cards. `HomeSummary.Review` reuses the status query.
+  UI: `ReviewPage` (`/words/review`): term + phonetic + audio, "Show answer", then meanings (`DefinitionView`,
+  shared with the word page), book/page/sentence, "Forgot" / "Knew it" with next-interval hints
+  (`ReviewLabels`); keys Space, 1, 2. `/words` header "Review (N)" and a home "Flash cards" card (side column,
+  second on phones) when anything is due.
 - Book series (session 10): `BookInput`/`BookSummary`/`BookDetails` carry `Series` + `SeriesNumber`;
   `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
   + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page
@@ -106,14 +117,14 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 82 tests (session 12: edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- `Bookside.UI.Tests`: 99 tests (session 13: `ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
 - `Bookside.Integrations.Tests`: 36 tests (session 12: `BookLookupClientTests`, both providers + covers);
   26 before through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 96 passing tests (session 12: `BookMetadataServiceTests` with `FakeBookLookupService`;
+- `Bookside.Data.Tests`: 109 tests (session 13: `ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
   `ServiceTestBase.Metadata` needs a provider registered in `ConfigureServices`); 90 in session 11 (session 11: `TagServiceTests`; session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
   virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
   `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
@@ -229,6 +240,18 @@
     the 3 s / 8 s budget. Saving waits for the download. Search thumbnails load straight from the provider in the browser.
   - Google key verified only by stubbed tests (no key available; keyless = 429). Header auth is documented by Google
     for API keys; if it is rejected, switch to `key=` in the query.
+- **Flash cards (session 13, user's choices: self-graded cards, word → meaning only, SM-2, two buttons, entry from
+  `/words` + home, defined words only, 10 new a day):**
+  - Two-grade SM-2: "Knew it" = quality 4 (1 day, 6 days, then interval × ease, at least +1 day, capped at 3650);
+    "Forgot" = back to 1 day, ease −0.2 (Anki's penalty, not SM-2's −0.54), lapse counted if it had been learnt.
+    With two buttons the ease never rises. For a new card both buttons say "tomorrow".
+  - Only the first grade of a word per day is recorded; a forgotten card comes back at the end of the session
+    (UI only, no hints shown). A lost race creating the review row returns the existing schedule.
+  - Own table rather than columns on `VocabularyWord`: no change to the word table, and new = no row. No review
+    log yet: add one (per-review rows) if stats, streaks or FSRS are wanted later.
+  - Daily new limit counts rows with `FirstReviewedOn` = today; "today" is the server's local date, like sessions.
+  - Keyboard: focus moves to "Show answer", then "Knew it", so Space/Enter work natively; the card handles 1 / 2
+    (`tabindex="-1"` keeps focus inside after a click). No JS. Key hint hidden on `hover: none` devices.
 - **Book series (session 10, user's choices: own table, optional number):**
   - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
     (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.
@@ -272,18 +295,23 @@
     hanging) is 16 s.
 
 ## Next
-1. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
+1. **Flash cards stay visible when nothing is due (user's request, do this first).** Today the `/words` "Review"
+   button and the home "Flash cards" card only show when `ToReviewCount > 0`, so after the day's 10 new words
+   the feature looks gone. User chose:
+   - Always show the Review entry when any word is reviewable: e.g. "All done · next review tomorrow" on the
+     home card and a plain "Review" button on `/words` (still "Review (N)" when due). Hide only with no defined words.
+   - "Practice anyway" on the done/nothing-due screen: review words without changing their schedule (no
+     `RecordReviewAsync` call). Decide which words (random, most-forgotten by `Lapses`, recently added, or one
+     book's) and how many per round; the existing card UI can be reused with grading not recorded.
+2. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
    the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
    list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
-2. **Flash cards with spaced repetition (user's request).** A review mode for vocabulary, probably reached from
-   `/words`. Propose the design before building. Decisions to make: algorithm (Leitner boxes vs SM-2 vs FSRS);
-   card front/back (term → definition, or also definition → term, sentence from the book as a cue); grading
-   (2 buttons vs Again/Hard/Good/Easy); review state per word (due date, interval, ease/box: new columns +
-   migration, or a separate review table); daily limits / new-card cap; words with no definition; keyboard and
-   touch (tap/swipe) on both widths; whether the word of the day should prefer due words; a "Review" card on the home page.
-3. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
+3. Flash card follow-ups (not chosen yet, from the session 13 ideas): reverse cards (meaning → word), cloze
+   cards from the saved sentence, multiple choice / spelling / matching quizzes, per-book recap, review stats and
+   streak (needs a review log), word of the day preferring due words, Anki CSV export.
+4. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - Book import: subjects → tags, series from metadata, descriptions for Open Library text results (needs a works

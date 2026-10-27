@@ -1,0 +1,25 @@
+@* Meanings grouped by part of speech, each with its definitions and examples. *@
+
+@foreach (var meaning in Meanings)
+{
+    <div class="meaning">
+        <h3 class="part-of-speech">@meaning.PartOfSpeech</h3>
+        <ol>
+            @foreach (var definition in meaning.Definitions)
+            {
+                <li>
+                    @definition.Text
+                    @if (definition.Example is { } example)
+                    {
+                        <span class="example">“@example”</span>
+                    }
+                </li>
+            }
+        </ol>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DictionaryMeaning> Meanings { get; set; } = [];
+}

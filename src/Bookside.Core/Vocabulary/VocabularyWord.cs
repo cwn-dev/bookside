@@ -50,4 +50,9 @@ public class VocabularyWord : Entity
     public Guid? DictionaryEntryId { get; set; }
 
     public DictionaryEntry? DictionaryEntry { get; set; }
+
+    /// <summary>
+    /// Null until the word is first reviewed as a flash card.
+    /// </summary>
+    public WordReview? Review { get; set; }
 }

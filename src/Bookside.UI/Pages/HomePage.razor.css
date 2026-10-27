@@ -1,5 +1,6 @@
 /* Phones: one column in priority order (the column wrappers dissolve so `order` can interleave their sections).
-   Wide screens: main column (reading, finished) beside a narrower side column (word, quick-add, recent words). */
+   Wide screens: main column (reading, finished) beside a narrower side column
+   (review, word, quick-add, recent words). */
 
 .home {
     display: grid;
@@ -13,11 +14,12 @@
 }
 
 .reading { order: 1; }
-.word-of-the-day { order: 2; }
-.quick-add { order: 3; }
-.recent-words { order: 4; }
-.finished { order: 5; }
-.stats { order: 6; }
+.review { order: 2; }
+.word-of-the-day { order: 3; }
+.quick-add { order: 4; }
+.recent-words { order: 5; }
+.finished { order: 6; }
+.stats { order: 7; }
 
 @media (min-width: 900px) {
     .home {
@@ -255,6 +257,30 @@ section h2 {
 
 .finished-card .date {
     font-size: 0.85rem;
+}
+
+/* ---------- Flash cards ---------- */
+
+.review {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.review .eyebrow {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.review-count {
+    margin: 0;
+}
+
+.review-count strong {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
 }
 
 /* ---------- Word of the day ---------- */

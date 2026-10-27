@@ -439,6 +439,52 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.ToTable("VocabularyWords", (string)null);
                 });
 
+            modelBuilder.Entity("Bookside.Core.Vocabulary.WordReview", b =>
+                {
+                    b.Property<Guid>("WordId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("DueOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Ease")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateOnly>("FirstReviewedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("IntervalDays")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Lapses")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("LastReviewedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Repetitions")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("WordId");
+
+                    b.HasIndex("DueOn");
+
+                    b.HasIndex("FirstReviewedOn");
+
+                    b.ToTable("WordReviews", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_WordReviews_Ease", "Ease >= 1.3");
+
+                            t.HasCheckConstraint("CK_WordReviews_IntervalDays", "IntervalDays >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Bookside.Core.Books.Book", b =>
                 {
                     b.HasOne("Bookside.Core.Books.Series", "Series")
@@ -537,6 +583,17 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.Navigation("DictionaryEntry");
                 });
 
+            modelBuilder.Entity("Bookside.Core.Vocabulary.WordReview", b =>
+                {
+                    b.HasOne("Bookside.Core.Vocabulary.VocabularyWord", "Word")
+                        .WithOne("Review")
+                        .HasForeignKey("Bookside.Core.Vocabulary.WordReview", "WordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Word");
+                });
+
             modelBuilder.Entity("Bookside.Core.Books.Author", b =>
                 {
                     b.Navigation("Books");
@@ -563,6 +620,11 @@ namespace Bookside.Data.Sqlite.Migrations
             modelBuilder.Entity("Bookside.Core.Books.Tag", b =>
                 {
                     b.Navigation("Books");
+                });
+
+            modelBuilder.Entity("Bookside.Core.Vocabulary.VocabularyWord", b =>
+                {
+                    b.Navigation("Review");
                 });
 #pragma warning restore 612, 618
         }

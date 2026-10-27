@@ -2,12 +2,19 @@
 @implements IDisposable
 @inject IVocabularyService Vocabulary
 @inject ILibraryService Library
+@inject IReviewService Reviews
 @inject NavigationManager Navigation
 
 <PageTitle>Vocabulary · Bookside</PageTitle>
 
 <div class="page-header">
     <h1>Vocabulary</h1>
+    @if (_review is { ToReviewCount: > 0 } review)
+    {
+        <a class="btn btn-primary review-link" href="words/review">
+            Review (@review.ToReviewCount)
+        </a>
+    }
 </div>
 
 <div class="quick-add card">
@@ -114,6 +121,7 @@ else
     private WordFormModel _newWord = new();
     private int _addKey;
     private WordDetails? _added;
+    private ReviewStatus? _review;
     private CancellationTokenSource? _loadCts;
     private CancellationTokenSource? _searchCts;
 
@@ -137,6 +145,11 @@ else
         {
             _searchText = Q;
             _lastQ = Q;
+        }
+
+        if (_firstLoad)
+        {
+            _review = await Reviews.GetStatusAsync();
         }
 
         if (_firstLoad || BookFilter != _lastBook)
@@ -173,6 +186,7 @@ else
     {
         _added = word;
         ResetQuickAdd();
+        _review = await Reviews.GetStatusAsync();
         await LoadAsync(append: false);
     }
 

@@ -132,6 +132,16 @@ else
         </div>
 
         <div class="home-side">
+            @if (_home.Review is { ToReviewCount: > 0 } review)
+            {
+                <section class="card review" aria-labelledby="review-heading">
+                    <h2 id="review-heading" class="eyebrow">Flash cards</h2>
+                    @{ var noun = review.ToReviewCount == 1 ? "word" : "words"; }
+                    <p class="review-count"><strong>@review.ToReviewCount</strong> @noun to review</p>
+                    <a class="btn btn-primary" href="words/review">Review now</a>
+                </section>
+            }
+
             @if (_word is not null)
             {
                 <section class="card word-of-the-day" aria-labelledby="wotd-heading">

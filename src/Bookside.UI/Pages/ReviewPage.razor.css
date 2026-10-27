@@ -1,0 +1,123 @@
+.progress {
+    font-size: 0.95rem;
+}
+
+.flashcard {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 1.5rem;
+    display: grid;
+    gap: 1.25rem;
+}
+
+.flashcard:focus {
+    outline: none;
+}
+
+.front {
+    display: grid;
+    justify-items: center;
+    gap: 0.35rem;
+    padding: 1.5rem 0 0.5rem;
+    text-align: center;
+}
+
+.term {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 8vw, 2.75rem);
+    font-weight: 600;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.phonetic {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+}
+
+.pronunciation {
+    width: min(100%, 300px);
+    height: 40px;
+    margin-top: 0.25rem;
+}
+
+.answer {
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+}
+
+.found {
+    margin-top: 1.25rem;
+}
+
+.found-in {
+    margin: 0 0 0.5rem;
+    font-size: 0.92rem;
+}
+
+.context {
+    margin: 0;
+    padding: 0.25rem 0 0.25rem 1rem;
+    border-left: 3px solid var(--accent-soft);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.answer-actions {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.grades {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.reveal,
+.grade {
+    min-height: 3.25rem;
+    font-size: 1.05rem;
+}
+
+.grade {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    line-height: 1.2;
+}
+
+.hint {
+    font-size: 0.8rem;
+    font-weight: 400;
+    opacity: 0.85;
+}
+
+.keys {
+    max-width: 40rem;
+    margin: 0.75rem auto 0;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+/* No keyboard hint on touch screens. */
+@media (hover: none) {
+    .keys {
+        display: none;
+    }
+}
+
+.summary {
+    max-width: 40rem;
+    margin: 0 auto;
+}
+
+.summary h2 {
+    margin-top: 0;
+}
+
+.summary .actions {
+    margin-top: 1.25rem;
+}
