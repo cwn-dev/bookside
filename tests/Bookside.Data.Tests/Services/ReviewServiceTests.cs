@@ -31,7 +31,7 @@ public sealed class ReviewServiceTests : ServiceTestBase
         Assert.True(card.IsNew);
         Assert.Equal(1, card.KnownIntervalDays);
         Assert.Equal("Listlessness.", card.Word.Definition!.Meanings[0].Definitions[0].Text);
-        Assert.Equal(new ReviewStatus { NewCount = 1 }, status);
+        Assert.Equal(new ReviewStatus { NewCount = 1, ReviewableCount = 1 }, status);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class ReviewServiceTests : ServiceTestBase
         Assert.Equal(new ReviewOutcome { DueOn = Today.AddDays(1), IntervalDays = 1 }, outcome);
         Assert.Empty(await Reviews.GetQueueAsync(Ct));
         Assert.Equal(
-            new ReviewStatus { NextDueOn = Today.AddDays(1) },
+            new ReviewStatus { NextDueOn = Today.AddDays(1), ReviewableCount = 1 },
             await Reviews.GetStatusAsync(Ct));
 
         SetToday(Today.AddDays(1));
@@ -112,6 +112,66 @@ public sealed class ReviewServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task Practice_of_forgotten_words_has_only_those_forgotten_today()
+    {
+        var yesterday = await AddDefinedWordAsync("a");
+        var forgotten = await AddDefinedWordAsync("b");
+        var known = await AddDefinedWordAsync("c");
+        await AddDefinedWordAsync("d");
+        Success(await Reviews.RecordReviewAsync(yesterday.Id, knew: false, Ct));
+        SetToday(Today.AddDays(1));
+        Success(await Reviews.RecordReviewAsync(forgotten.Id, knew: false, Ct));
+        Success(await Reviews.RecordReviewAsync(known.Id, knew: true, Ct));
+
+        var cards = await Reviews.GetPracticeCardsAsync(PracticeSet.ForgottenToday, Ct);
+
+        Assert.Equal("b", Assert.Single(cards).Word.Term);
+        Assert.Equal(1, (await Reviews.GetStatusAsync(Ct)).ForgottenTodayCount);
+    }
+
+    [Fact]
+    public async Task Practice_of_most_forgotten_words_puts_the_hardest_first()
+    {
+        var once = await AddDefinedWordAsync("a");
+        var twice = await AddDefinedWordAsync("b");
+        var lapsed = await AddDefinedWordAsync("c");
+        var known = await AddDefinedWordAsync("d");
+        await AddDefinedWordAsync("e");
+        Success(await Reviews.RecordReviewAsync(once.Id, knew: false, Ct));
+        Success(await Reviews.RecordReviewAsync(twice.Id, knew: false, Ct));
+        Success(await Reviews.RecordReviewAsync(lapsed.Id, knew: true, Ct));
+        Success(await Reviews.RecordReviewAsync(known.Id, knew: true, Ct));
+        SetToday(Today.AddDays(1));
+        Success(await Reviews.RecordReviewAsync(twice.Id, knew: false, Ct));
+        Success(await Reviews.RecordReviewAsync(lapsed.Id, knew: false, Ct));
+
+        var cards = await Reviews.GetPracticeCardsAsync(PracticeSet.MostForgotten, Ct);
+
+        // c lapsed after being learnt; b's ease dropped twice, a's once.
+        Assert.Equal(["c", "b", "a"], cards.Select(c => c.Word.Term));
+    }
+
+    [Fact]
+    public async Task Random_practice_takes_a_round_of_defined_words()
+    {
+        for (var i = 0; i < ReviewScheduler.PracticeRoundSize + 5; i++)
+        {
+            await AddDefinedWordAsync($"w{i:00}");
+        }
+
+        Success(await Vocabulary.AddWordAsync(new WordInput { Term = "brillig" }, Ct));
+
+        var cards = await Reviews.GetPracticeCardsAsync(PracticeSet.Random, Ct);
+
+        Assert.Equal(ReviewScheduler.PracticeRoundSize, cards.Count);
+        Assert.Equal(cards.Count, cards.Select(c => c.Word.Id).Distinct().Count());
+        Assert.DoesNotContain(cards, c => c.Word.Term == "brillig");
+        Assert.Equal(
+            ReviewScheduler.PracticeRoundSize + 5,
+            (await Reviews.GetStatusAsync(Ct)).ReviewableCount);
+    }
+
+    [Fact]
     public async Task Unknown_word_is_not_found()
     {
         var error = Failure(
@@ -140,7 +200,7 @@ public sealed class ReviewServiceTests : ServiceTestBase
 
         var home = await Home.GetHomeAsync(Ct);
 
-        Assert.Equal(new ReviewStatus { NewCount = 1 }, home.Review);
+        Assert.Equal(new ReviewStatus { NewCount = 1, ReviewableCount = 1 }, home.Review);
     }
 
     private async Task<WordDetails> AddDefinedWordAsync(string term)

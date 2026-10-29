@@ -18,6 +18,16 @@ public interface IReviewService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Cards for a practice round, which doesn't change the schedule:
+    /// today's forgotten words (all of them), or up to
+    /// <see cref="ReviewScheduler.PracticeRoundSize"/> random or most-forgotten
+    /// words.
+    /// </summary>
+    Task<IReadOnlyList<ReviewCard>> GetPracticeCardsAsync(
+        PracticeSet words,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Records a review and schedules the word. Only the first review of a
     /// word each day counts; later ones return the existing schedule.
     /// </summary>

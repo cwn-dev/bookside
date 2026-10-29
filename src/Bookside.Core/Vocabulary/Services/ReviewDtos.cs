@@ -22,6 +22,16 @@ public sealed record ReviewStatus
     /// </summary>
     public DateOnly? NextDueOn { get; init; }
 
+    /// <summary>
+    /// All words with a definition, i.e. all flash cards.
+    /// </summary>
+    public int ReviewableCount { get; init; }
+
+    /// <summary>
+    /// Words graded "Forgot" today.
+    /// </summary>
+    public int ForgottenTodayCount { get; init; }
+
     public int ToReviewCount => DueCount + NewCount;
 }
 

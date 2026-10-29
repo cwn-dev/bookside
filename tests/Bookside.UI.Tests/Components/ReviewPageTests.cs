@@ -54,11 +54,13 @@ public sealed class ReviewPageTests : ComponentTestBase
 
         page.WaitForAssertion(() => Assert.Contains("You reviewed 1 word.", page.Find(".summary").TextContent));
         Assert.Contains("Next review tomorrow.", page.Find(".summary").TextContent);
+        Assert.Empty(page.FindAll("button.practise.forgotten"));
+        Assert.NotNull(page.Find("button.practise.random"));
         Assert.Equal(0, (await Reviews.GetStatusAsync(Ct)).ToReviewCount);
     }
 
     [Fact]
-    public async Task A_forgotten_word_comes_back_at_the_end_but_is_recorded_once()
+    public async Task A_forgotten_word_is_not_repeated_in_the_scored_pass()
     {
         Dictionary.Define("ennui", "Listlessness.");
         Dictionary.Define("petrichor", "The smell of rain.");
@@ -70,19 +72,85 @@ public sealed class ReviewPageTests : ComponentTestBase
         page.Find("button.reveal").Click();
         page.Find("button.forgot").Click();
         page.WaitForAssertion(() => Assert.Equal("petrichor", page.Find(".term").TextContent));
+        Assert.Contains("2 of 2", page.Find(".progress").TextContent);
         page.Find("button.reveal").Click();
-        page.Find("button.knew").Click();
-
-        page.WaitForAssertion(() => Assert.Equal("ennui", page.Find(".term").TextContent));
-        Assert.Contains("3 of 3", page.Find(".progress").TextContent);
-        Assert.Empty(page.FindAll(".front .badge"));
-        page.Find("button.reveal").Click();
-        Assert.Empty(page.FindAll(".grade .hint"));
         page.Find("button.knew").Click();
 
         page.WaitForAssertion(() => Assert.Contains(
             "You reviewed 2 words; 1 word will come back tomorrow.",
             page.Find(".summary").TextContent));
+        Assert.Contains("Forgotten today (1)", page.Find("button.practise.forgotten").TextContent);
+    }
+
+    [Fact]
+    public async Task Practice_round_repeats_forgotten_words_without_recording()
+    {
+        Dictionary.Define("ennui", "Listlessness.");
+        await AddWordAsync("ennui");
+        var page = Render<ReviewPage>();
+        page.WaitForAssertion(() => page.Find("button.reveal"));
+        page.Find("button.reveal").Click();
+        page.Find("button.forgot").Click();
+        page.WaitForAssertion(() => page.Find("button.practise.forgotten"));
+        var before = await Reviews.GetStatusAsync(Ct);
+
+        page.Find("button.practise.forgotten").Click();
+
+        page.WaitForAssertion(() => Assert.Equal("ennui", page.Find(".term").TextContent));
+        Assert.Contains("Practice", page.Find(".progress").TextContent);
+        Assert.Contains("don't change your schedule", page.Find(".practice-note").TextContent);
+        Assert.Empty(page.FindAll(".front .badge"));
+        page.Find("button.reveal").Click();
+        Assert.Empty(page.FindAll(".grade .hint"));
+        page.Find("button.forgot").Click();
+        page.WaitForAssertion(() => Assert.Contains(
+            "2 of 2 · 1 added back",
+            page.Find(".progress").TextContent));
+        page.Find("button.reveal").Click();
+        page.Find("button.knew").Click();
+
+        page.WaitForAssertion(() => Assert.Contains("Practice done", page.Find(".summary").TextContent));
+        Assert.Contains("Practise again", page.Find(".practice").TextContent);
+        Assert.Equal(before, await Reviews.GetStatusAsync(Ct));
+    }
+
+    [Fact]
+    public async Task With_nothing_due_practice_can_still_be_chosen()
+    {
+        Dictionary.Define("ennui", "Listlessness.");
+        var word = await AddWordAsync("ennui");
+        Assert.True((await Reviews.RecordReviewAsync(word.Id, knew: true, Ct)).IsSuccess);
+        var page = Render<ReviewPage>();
+        page.WaitForAssertion(() => Assert.Contains("Nothing to review", page.Find(".summary").TextContent));
+
+        page.Find("button.practise.hardest").Click();
+        page.WaitForAssertion(() => Assert.Contains(
+            "None of your words has been forgotten yet.",
+            page.Find(".practice").TextContent));
+
+        page.Find("button.practise.random").Click();
+        page.WaitForAssertion(() => Assert.Equal("ennui", page.Find(".term").TextContent));
+        Assert.Contains("Practice", page.Find(".progress").TextContent);
+    }
+
+    [Fact]
+    public async Task Practice_rounds_are_history_entries_so_back_returns_to_the_review()
+    {
+        Dictionary.Define("ennui", "Listlessness.");
+        var word = await AddWordAsync("ennui");
+        Assert.True((await Reviews.RecordReviewAsync(word.Id, knew: false, Ct)).IsSuccess);
+        var page = Render<ReviewPage>();
+        page.WaitForAssertion(() => page.Find("button.practise.forgotten"));
+
+        page.Find("button.practise.forgotten").Click();
+
+        page.WaitForAssertion(() => Assert.Equal("ennui", page.Find(".term").TextContent));
+        Assert.EndsWith("/words/review?practice=forgotten", Navigation.Uri, StringComparison.Ordinal);
+
+        Navigation.NavigateTo("words/review");
+
+        page.WaitForAssertion(() => Assert.Contains("Nothing to review", page.Find(".summary").TextContent));
+        Assert.Empty(page.FindAll(".progress"));
     }
 
     [Fact]
@@ -118,6 +186,18 @@ public sealed class ReviewPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Vocabulary_page_still_links_to_review_when_nothing_is_due()
+    {
+        Dictionary.Define("ennui", "Listlessness.");
+        var word = await AddWordAsync("ennui");
+        Assert.True((await Reviews.RecordReviewAsync(word.Id, knew: true, Ct)).IsSuccess);
+
+        var page = Render<VocabularyPage>();
+
+        page.WaitForAssertion(() => Assert.Equal("Review", page.Find(".review-link").TextContent.Trim()));
+    }
+
+    [Fact]
     public async Task Home_page_shows_the_review_card_only_with_words_to_review()
     {
         await AddWordAsync("brillig");
@@ -131,5 +211,20 @@ public sealed class ReviewPageTests : ComponentTestBase
 
         page.WaitForAssertion(() => Assert.Contains("1 word to review", page.Find("section.review").TextContent));
         Assert.Equal("words/review", page.Find("section.review a").GetAttribute("href"));
+    }
+
+    [Fact]
+    public async Task Home_page_says_all_done_once_the_review_is_finished()
+    {
+        Dictionary.Define("ennui", "Listlessness.");
+        var word = await AddWordAsync("ennui");
+        Assert.True((await Reviews.RecordReviewAsync(word.Id, knew: true, Ct)).IsSuccess);
+
+        var page = Render<HomePage>();
+
+        page.WaitForAssertion(() => Assert.Contains(
+            "All done · next review tomorrow",
+            page.Find("section.review").TextContent));
+        Assert.Equal("Practise", page.Find("section.review a").TextContent);
     }
 }

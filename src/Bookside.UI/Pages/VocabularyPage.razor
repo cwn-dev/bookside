@@ -15,6 +15,10 @@
             Review (@review.ToReviewCount)
         </a>
     }
+    else if (_review is { ReviewableCount: > 0 })
+    {
+        <a class="btn review-link" href="words/review">Review</a>
+    }
 </div>
 
 <div class="quick-add card">

@@ -22,6 +22,11 @@ public static class ReviewScheduler
     public const int NewWordsPerDay = 10;
 
     /// <summary>
+    /// Cards in a random or most-forgotten practice round.
+    /// </summary>
+    public const int PracticeRoundSize = 20;
+
+    /// <summary>
     /// The state after one review graded <paramref name="knew"/>.
     /// </summary>
     public static ReviewState Next(ReviewState state, bool knew)

@@ -278,6 +278,10 @@ section h2 {
     margin: 0;
 }
 
+.review-done {
+    margin: 0;
+}
+
 .review-count strong {
     font-family: var(--font-display);
     font-size: 1.6rem;

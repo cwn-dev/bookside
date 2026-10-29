@@ -132,13 +132,25 @@ else
         </div>
 
         <div class="home-side">
-            @if (_home.Review is { ToReviewCount: > 0 } review)
+            @if (_home.Review is { ReviewableCount: > 0 } review)
             {
                 <section class="card review" aria-labelledby="review-heading">
                     <h2 id="review-heading" class="eyebrow">Flash cards</h2>
-                    @{ var noun = review.ToReviewCount == 1 ? "word" : "words"; }
-                    <p class="review-count"><strong>@review.ToReviewCount</strong> @noun to review</p>
-                    <a class="btn btn-primary" href="words/review">Review now</a>
+                    @if (review.ToReviewCount > 0)
+                    {
+                        var noun = review.ToReviewCount == 1 ? "word" : "words";
+                        <p class="review-count"><strong>@review.ToReviewCount</strong> @noun to review</p>
+                        <a class="btn btn-primary" href="words/review">Review now</a>
+                    }
+                    else
+                    {
+                        <p class="review-done">
+                            All done@(review.NextDueOn is DateOnly next
+                                ? $" · next review {ReviewLabels.DueOn(next, _home.Stats.Today)}"
+                                : "")
+                        </p>
+                        <a class="btn" href="words/review">Practise</a>
+                    }
                 </section>
             }
 

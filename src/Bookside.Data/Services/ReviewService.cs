@@ -52,6 +52,61 @@ internal sealed class ReviewService(
         return [.. due.Concat(fresh).Select(ToCard)];
     }
 
+    public async Task<IReadOnlyList<ReviewCard>> GetPracticeCardsAsync(
+        PracticeSet words,
+        CancellationToken cancellationToken = default)
+    {
+        var today = Today();
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        IQueryable<VocabularyWord> query;
+        Guid[]? order = null;
+        switch (words)
+        {
+            case PracticeSet.ForgottenToday:
+                query = ForgottenOn(Reviewable(db), today)
+                    .OrderBy(w => w.Review!.LastReviewedOn)
+                    .ThenBy(w => w.Id)
+                    .Take(MaxQueueSize);
+                break;
+            case PracticeSet.MostForgotten:
+                // Every "Forgot" lowers the ease, also for words not yet
+                // learnt (which don't count as lapses).
+                query = Reviewable(db)
+                    .Where(w => w.Review != null
+                        && (w.Review.Lapses > 0 || w.Review.Ease < ReviewScheduler.InitialEase))
+                    .OrderByDescending(w => w.Review!.Lapses)
+                    .ThenBy(w => w.Review!.Ease)
+                    .ThenBy(w => w.Id)
+                    .Take(ReviewScheduler.PracticeRoundSize);
+                break;
+            case PracticeSet.Random:
+                var ids = await Reviewable(db)
+                    .Select(w => w.Id)
+                    .ToArrayAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                Random.Shared.Shuffle(ids);
+                order = ids[..Math.Min(ids.Length, ReviewScheduler.PracticeRoundSize)];
+                query = Reviewable(db).Where(w => order.Contains(w.Id));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(words), words, null);
+        }
+
+        var cards = await query
+            .Include(w => w.Book)
+            .Include(w => w.DictionaryEntry)
+            .Include(w => w.Review)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (order is not null)
+        {
+            cards = [.. cards.OrderBy(w => Array.IndexOf(order, w.Id))];
+        }
+
+        return [.. cards.Select(ToCard)];
+    }
+
     public async Task<Result<ReviewOutcome>> RecordReviewAsync(
         Guid wordId,
         bool knew,
@@ -125,6 +180,12 @@ internal sealed class ReviewService(
             .Select(w => (DateOnly?)w.Review!.DueOn)
             .MinAsync(cancellationToken)
             .ConfigureAwait(false);
+        var reviewableCount = await Reviewable(db)
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var forgottenTodayCount = await ForgottenOn(Reviewable(db), today)
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
 
         return new ReviewStatus
         {
@@ -132,6 +193,8 @@ internal sealed class ReviewService(
             NewCount = newCount,
             NewWaitingCount = newTotal - newCount,
             NextDueOn = nextDueOn,
+            ReviewableCount = reviewableCount,
+            ForgottenTodayCount = forgottenTodayCount,
         };
     }
 
@@ -142,6 +205,17 @@ internal sealed class ReviewService(
         db.VocabularyWords.AsNoTracking()
             .Where(w => w.DictionaryEntry != null
                 && w.DictionaryEntry.Status == DictionaryLookupStatus.Found);
+
+    /// <summary>
+    /// Words graded "Forgot" on <paramref name="day"/>: "Knew it" always
+    /// leaves at least one repetition.
+    /// </summary>
+    private static IQueryable<VocabularyWord> ForgottenOn(
+        IQueryable<VocabularyWord> words,
+        DateOnly day) =>
+            words.Where(w => w.Review != null
+                && w.Review.LastReviewedOn == day
+                && w.Review.Repetitions == 0);
 
     private static async Task<int> NewLeftTodayAsync(
         BooksideDbContext db,
