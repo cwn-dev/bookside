@@ -1,3 +1,11 @@
+/*
+ * Two columns only when each has room for the five stars and a date input,
+ * so the form stacks inside narrow cards (home page) whatever the viewport.
+ */
+.form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
 .form-actions {
     margin-top: 1rem;
 }
