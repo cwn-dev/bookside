@@ -37,6 +37,11 @@ The CI setup is human developed and run (apart from that time Claude updated the
   <a href="./screenshots/Screenshot 2026-10-30 at 20-28-10 Review · Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 20-28-10 Review · Bookside.png" height="230" alt="Add book with metadata lookup"></a>
   <a href="./screenshots/SScreenshot 2026-10-30 at 20-27-35 Review · Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 20-27-35 Review · Bookside.png" height="230" alt="Add book form"></a>
 </p>
+<p align="center">
+  <a href="./screenshots/Screenshot 2026-10-30 at 22-03-11 2026 reading challenge · Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 22-03-11 2026 reading challenge · Bookside.png" height="230" alt="Add book with metadata lookup"></a>
+<p>
+
+</p>
 
 ## Mobile Browser UI
 
@@ -62,6 +67,7 @@ The CI setup is human developed and run (apart from that time Claude updated the
 * Books can be tagged with as many tags as you need - you could tag the genre, wishlist, own, etc. (the read/reading tags are separate to these).
 * Vocabulary flashcards to help learn and remember definitions. You will be given 15 words to review per day. Click 'Forgot' (the word will show up again tomorrow) or 'Knew it' (the word won't show up for a couple of days). The scheduling for words to appear for review is SM-2 like in that 'Forgot' will reduce the ease and so the word is shown more frequently over time and 'Knew it' will increase the ease so the word is shown less frequently over time.
 * Vocabulary flash card practise mode - after your daily review, you can go back into the 'Review' section to practise with one of the three modes: forgotten today, random words, and most forgotten.
+* Set yourself a reading challenge for the year and see your progress on the home page.
 
 ## Layout
 
