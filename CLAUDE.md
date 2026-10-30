@@ -115,3 +115,17 @@ docker compose up -d --build                                         # on the Do
 - bUnit 2: set `[SupplyParameterFromQuery]` values by navigating `BunitNavigationManager` before `Render`; qualify
   `Xunit.TestContext` (bUnit also has a `TestContext`).
 - Tests: underscore sentence names, pass `TestContext.Current.CancellationToken`.
+
+## Performance
+
+The app must feel instant: open it and it's there, no waiting. It is fast today; new features must keep it that way.
+
+- Queries do only what the page needs: project to DTOs (`Select`) instead of loading entities, no BLOBs (covers)
+  in list queries, no N+1 loops, `AsNoTracking` for reads, page or cap anything that can grow.
+- Every filter, join, sort and uniqueness rule a query relies on has an index (in the entity configuration, with a
+  migration). When adding a query, check its SQL (`ToQueryString()` / `migrations script`) and the indexes it uses.
+- Prefer one round trip per page load (like `IHomeService.GetHomeAsync`) over many small service calls.
+- Startup stays fast: no heavy work before the app serves (migrations only; no data backfills, warm-up loops or
+  network calls at startup). Put one-off data fixes in migrations, slow work in the background or on demand.
+- First render stays light: load what's on screen first, defer the rest; no large JS or CSS dependencies.
+- If a change has a performance cost, say so and offer the trade-off rather than accepting it silently.
