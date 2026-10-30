@@ -5,7 +5,21 @@
         <a class="brand" href="">Bookside</a>
         <nav aria-label="Main">
             <NavLink class="nav-link" href="books" Match="NavLinkMatch.Prefix">Library</NavLink>
-            <NavLink class="nav-link" href="words" Match="NavLinkMatch.Prefix">Vocabulary</NavLink>
+            <div class="nav-group">
+                <NavLink class="nav-link" href="words" Match="NavLinkMatch.Prefix">Vocabulary</NavLink>
+                <button type="button"
+                        class="nav-toggle"
+                        aria-label="More vocabulary pages"
+                        aria-expanded="@(_vocabularyOpen ? "true" : "false")"
+                        @onclick="() => _vocabularyOpen = !_vocabularyOpen">▾</button>
+                @if (_vocabularyOpen)
+                {
+                    <div class="nav-backdrop" @onclick="() => _vocabularyOpen = false"></div>
+                }
+                <div class="submenu @(_vocabularyOpen ? "open" : null)">
+                    <NavLink class="nav-link" href="words/review" Match="NavLinkMatch.Prefix">Review</NavLink>
+                </div>
+            </div>
             <NavLink class="nav-link" href="challenge" Match="NavLinkMatch.Prefix">Challenge</NavLink>
         </nav>
     </div>
@@ -33,8 +47,14 @@
 
 @code {
     private ErrorBoundary? _errorBoundary;
+    private bool _vocabularyOpen;
 
-    protected override void OnParametersSet() => _errorBoundary?.Recover();
+    protected override void OnParametersSet()
+    {
+        // Runs on every navigation: close the submenu after a link is followed.
+        _vocabularyOpen = false;
+        _errorBoundary?.Recover();
+    }
 
     private void Recover() => _errorBoundary?.Recover();
 }

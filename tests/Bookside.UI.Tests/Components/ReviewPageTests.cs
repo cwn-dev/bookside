@@ -171,33 +171,6 @@ public sealed class ReviewPageTests : ComponentTestBase
     }
 
     [Fact]
-    public void Vocabulary_page_links_to_review_when_words_are_due()
-    {
-        var page = Render<VocabularyPage>();
-        page.WaitForAssertion(() => Assert.Contains("No words yet.", page.Markup));
-        Assert.Empty(page.FindAll(".review-link"));
-
-        Dictionary.Define("ennui", "Listlessness.");
-        page.Find(".quick-add input").Change("ennui");
-        page.Find(".quick-add form").Submit();
-
-        page.WaitForAssertion(() => Assert.Contains("Review (1)", page.Find(".review-link").TextContent));
-        Assert.Equal("words/review", page.Find(".review-link").GetAttribute("href"));
-    }
-
-    [Fact]
-    public async Task Vocabulary_page_still_links_to_review_when_nothing_is_due()
-    {
-        Dictionary.Define("ennui", "Listlessness.");
-        var word = await AddWordAsync("ennui");
-        Assert.True((await Reviews.RecordReviewAsync(word.Id, knew: true, Ct)).IsSuccess);
-
-        var page = Render<VocabularyPage>();
-
-        page.WaitForAssertion(() => Assert.Equal("Review", page.Find(".review-link").TextContent.Trim()));
-    }
-
-    [Fact]
     public async Task Home_page_shows_the_review_card_only_with_words_to_review()
     {
         await AddWordAsync("brillig");

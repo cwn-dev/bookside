@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 18, 2026-10-30)
+# Bookside: project state (end of session 19, 2026-10-30)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -72,7 +72,7 @@
   most-forgotten`), so Back from a round returns to the review summary. A practice round ("Practice" badge + note) records
   nothing; a word forgotten there goes back to the end ("x of N · M added back"); ends with "Practice done" and
   the choices again. `ReviewStatus` gained `ReviewableCount` and `ForgottenTodayCount`. The entries stay
-  whenever any word has a definition: home card "All done · next review …" + "Practise", `/words` plain "Review".
+  whenever any word has a definition: home card "All done · next review …" + "Practise".
 - Reading challenge (session 17): `Core/Challenge/`: `ReadingGoal` (own table `ReadingGoals`, unique `Year`
   1–9999, `TargetBooks` 1–1000; migration `AddReadingGoals`, new table only), `ReadingPace` (pure: fraction,
   even-pace expected share of the year, ahead/behind, books a week needed, state Future/InProgress/Reached/Ended),
@@ -146,7 +146,7 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 132 tests (session 18: `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
+- `Bookside.UI.Tests`: 131 tests (session 19: `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
   pages); 123 in session 17 ( challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
