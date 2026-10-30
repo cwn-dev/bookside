@@ -79,7 +79,9 @@ public sealed class ReviewPageTests : ComponentTestBase
         page.WaitForAssertion(() => Assert.Contains(
             "You reviewed 2 words; 1 word will come back tomorrow.",
             page.Find(".summary").TextContent));
-        Assert.Contains("Forgotten today (1)", page.Find("button.practise.forgotten").TextContent);
+        Assert.Equal(
+            "Forgotten today (1)",
+            page.Find("button.practise.forgotten").GetAttribute("aria-label"));
     }
 
     [Fact]

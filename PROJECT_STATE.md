@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 19, 2026-10-30)
+# Bookside: project state (end of session 20, 2026-10-30)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -67,7 +67,8 @@
   shared with the word page), book/page/sentence, "Forgot" / "Knew it" with next-interval hints
   (`ReviewLabels`); keys Space, 1, 2. `/words` header "Review (N)" and a home "Flash cards" card (side column,
   second on phones). Session 14: one scored pass (each card once, fixed "x of N"); the summary (also shown when
-  nothing is due) has a "Practise" section: "Forgotten today (N)", "Random words", "Most forgotten"
+  nothing is due) has a "Practise" section: three side-by-side icon tiles (session 20: inline SVG, count
+  badge on "Forgotten today") "Forgotten today", "Random words", "Most forgotten"
   (`IReviewService.GetPracticeCardsAsync(PracticeSet)`), each a history entry (`?practice=forgotten|random|
   most-forgotten`), so Back from a round returns to the review summary. A practice round ("Practice" badge + note) records
   nothing; a word forgotten there goes back to the end ("x of N · M added back"); ends with "Practice done" and
