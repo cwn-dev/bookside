@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 16, 2026-10-30)
+# Bookside: project state (end of session 17, 2026-10-30)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -73,6 +73,21 @@
   nothing; a word forgotten there goes back to the end ("x of N · M added back"); ends with "Practice done" and
   the choices again. `ReviewStatus` gained `ReviewableCount` and `ForgottenTodayCount`. The entries stay
   whenever any word has a definition: home card "All done · next review …" + "Practise", `/words` plain "Review".
+- Reading challenge (session 17): `Core/Challenge/`: `ReadingGoal` (own table `ReadingGoals`, unique `Year`
+  1–9999, `TargetBooks` 1–1000; migration `AddReadingGoals`, new table only), `ReadingPace` (pure: fraction,
+  even-pace expected share of the year, ahead/behind, books a week needed, state Future/InProgress/Reached/Ended),
+  `IChallengeService` (`Data/Services/ChallengeService`): `GetYearAsync(year)` → `ChallengeYear` (goal, the
+  year's reads as `BookRead`s latest first (cap 1000), every year with reads or a goal + the current year as
+  `ChallengeProgress`), `SetGoalAsync` (upsert), `RemoveGoalAsync`. `HomeSummary.Challenge` (shared
+  `GetProgressAsync`); the "Finished in {year}" stat is gone (stats row is 3 columns). UI: home side-column card
+  first (second on phones): count, `ChallengeProgressBar` (fill + even-pace tick, `role="progressbar"`), status
+  and rate text (`ChallengeLabels`), or an inline `ReadingGoalForm` when the year has no goal. `ChallengePage`
+  (`/challenge` = current year, `/challenge/{year}`): prev/next year links + a year `<select>` to jump (years with reads
+  or a goal, the current year and the shown one; user's choice over a fixed range), progress card with edit/remove goal,
+  books grouped by finish month (cover grid), "All years" list with mini bars. "Challenge" nav link.
+  `Celebration` component (CSS-only confetti burst + "Goal reached!" pill, ~2.6 s, then invisible; reduced
+  motion = pill fade only): on the home card when "Finished" on a reading card takes the count to the goal,
+  and on the challenge page's progress card whenever the shown year's goal is reached (every visit).
 - Book series (session 10): `BookInput`/`BookSummary`/`BookDetails` carry `Series` + `SeriesNumber`;
   `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
   + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page
@@ -125,14 +140,14 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 106 tests (session 16: lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- `Bookside.UI.Tests`: 123 tests (session 17: challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
 - `Bookside.Integrations.Tests`: 39 tests (session 16: details/descriptions); 36 in session 12 (`BookLookupClientTests`, both providers + covers);
   26 before through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 116 tests (session 16: parallel/merged book search, details); 112 in session 14 (practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
+- `Bookside.Data.Tests`: 130 tests (session 17: `ReadingPaceTests`, `ChallengeServiceTests`); 116 in session 16 (parallel/merged book search, details); 112 in session 14 (practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
   `ServiceTestBase.Metadata` needs a provider registered in `ConfigureServices`); 90 in session 11 (session 11: `TagServiceTests`; session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
   virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
   `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
@@ -278,6 +293,16 @@
   - Daily new limit counts rows with `FirstReviewedOn` = today; "today" is the server's local date, like sessions.
   - Keyboard: focus moves to "Show answer", then "Knew it", so Space/Enter work natively; the card handles 1 / 2
     (`tabindex="-1"` keeps focus inside after a click). No JS. Key hint hidden on `hover: none` devices.
+- **Reading challenge (session 17, user's choices: every finished read counts, bar + pace tick, cover grid by
+  month, prompt card when no goal, nav link, drop the "Finished in" stat, goals for any year):**
+  - Count = finished sessions with `FinishedOn` in the year, so a re-read counts again and is listed twice.
+    Finished sessions without a date aren't counted (no year to place them in).
+  - Even pace = target × (day of year / days in year) at the end of today, rounded down; "ahead" is the read
+    count minus that, 0 = "On track". Rate = remaining books over the days left including today.
+  - Year queries filter `FinishedOn` as a date range (uses its index). The years list groups by
+    `strftime('%Y')` over all sessions (a scan; fine at personal-library size, no extra index).
+  - The page is one call (`GetYearAsync` includes the years list). The next-year link goes up to current
+    year + 1, so next year's goal can be set in December.
 - **Book series (session 10, user's choices: own table, optional number):**
   - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
     (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.

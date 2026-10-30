@@ -132,6 +132,41 @@ else
         </div>
 
         <div class="home-side">
+            <section class="card challenge" aria-labelledby="challenge-heading">
+                @{ var challenge = _home.Challenge; }
+                <h2 id="challenge-heading" class="eyebrow">
+                    <a href="challenge/@challenge.Year">@challenge.Year reading challenge</a>
+                </h2>
+                @if (challenge.TargetBooks is int target)
+                {
+                    var pace = ReadingPace.For(challenge.Year, challenge.ReadCount, target, _home.Stats.Today);
+                    <p class="challenge-count">
+                        <strong>@challenge.ReadCount</strong> of @ChallengeLabels.Books(target)
+                    </p>
+                    <ChallengeProgressBar Pace="pace" />
+                    <p class="challenge-status">
+                        @ChallengeLabels.Status(pace)@if (ChallengeLabels.Rate(pace) is string rate)
+                        {
+                            <span class="muted"> · @rate</span>
+                        }
+                    </p>
+                    <a class="challenge-link" href="challenge/@challenge.Year">See your @challenge.Year books →</a>
+                    @if (_celebrate)
+                    {
+                        <Celebration />
+                    }
+                }
+                else
+                {
+                    <p class="challenge-count">
+                        <strong>@challenge.ReadCount</strong> @(challenge.ReadCount == 1 ? "book" : "books") read so far.
+                        Set a goal for the year?
+                    </p>
+                    <ReadingGoalForm @key="_goalKey" Year="challenge.Year" Model="_goal" Label="Books to read"
+                                     OnSaved="GoalSetAsync" />
+                }
+            </section>
+
             @if (_home.Review is { ReviewableCount: > 0 } review)
             {
                 <section class="card review" aria-labelledby="review-heading">
@@ -207,7 +242,6 @@ else
 
         <section class="stats" aria-label="Stats">
             <dl>
-                <div><dt>Finished in @_home.Stats.Today.Year</dt><dd>@_home.Stats.BooksFinishedThisYear</dd></div>
                 <div><dt>Words in @_home.Stats.Today.ToString("MMMM", CultureInfo.CurrentCulture)</dt><dd>@_home.Stats.WordsAddedThisMonth</dd></div>
                 <div><dt><a href="books">Books</a></dt><dd>@_home.Stats.BookCount</dd></div>
                 <div><dt><a href="words">Words</a></dt><dd>@_home.Stats.WordCount</dd></div>
@@ -220,6 +254,12 @@ else
     private HomeSummary? _home;
     private WordSummary? _word;
     private bool _pickingWord;
+
+    private ReadingGoalFormModel _goal = new();
+
+    // Set when finishing a book from a reading card reached the year's goal.
+    private bool _celebrate;
+    private int _goalKey;
 
     private WordFormModel _quickAdd = new();
     private int _quickAddKey;
@@ -255,6 +295,13 @@ else
         {
             _pickingWord = false;
         }
+    }
+
+    private async Task GoalSetAsync()
+    {
+        _goal = new();
+        _goalKey++;
+        await ReloadAsync();
     }
 
     private async Task QuickAddedAsync(WordDetails word)
@@ -309,8 +356,12 @@ else
 
     private async Task FinishedAsync()
     {
+        var before = _home!.Challenge.ReadCount;
         ClosePanel();
         await ReloadAsync();
+        _celebrate = _home.Challenge is { TargetBooks: int target } after
+            && before < target
+            && after.ReadCount >= target;
     }
 
     private async Task BookWordAddedAsync(WordDetails word)

@@ -1,0 +1,39 @@
+@* A one-off confetti burst with a message that pops up and fades. CSS only;
+   the parent needs position: relative. *@
+
+<div class="celebration">
+    <div class="burst" aria-hidden="true">
+        @foreach (var piece in Pieces)
+        {
+            <span class="confetti" style="@piece"></span>
+        }
+    </div>
+    <span class="cheer" role="status">@Message</span>
+</div>
+
+@code {
+    private const int PieceCount = 28;
+
+    private static readonly string[] Colors = ["#e0956a", "#8fd19c", "#f2c94c", "#6fa8dc", "#d97ba6"];
+
+    // Fixed pseudo-random spread, so every burst looks the same and renders
+    // identically in tests.
+    private static readonly string[] Pieces =
+    [
+        .. Enumerable.Range(0, PieceCount).Select(i =>
+        {
+            var angle = (i * 360.0 / PieceCount + i * 37 % 13) * Math.PI / 180;
+            var distance = 70 + i * 53 % 50;
+            return string.Create(
+                CultureInfo.InvariantCulture,
+                $"--dx: {Math.Cos(angle) * distance * 1.4:0}px; " +
+                $"--dy: {Math.Sin(angle) * distance - 30:0}px; " +
+                $"--rot: {360 + i * 97 % 360}deg; " +
+                $"--delay: {i % 4 * 40}ms; " +
+                $"background: {Colors[i % Colors.Length]};");
+        }),
+    ];
+
+    [Parameter]
+    public string Message { get; set; } = "Goal reached!";
+}

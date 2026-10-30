@@ -55,11 +55,16 @@ internal sealed class HomeService(IDbContextFactory<BooksideDbContext> dbFactory
             Review = await ReviewService
                 .GetStatusAsync(db, today, cancellationToken)
                 .ConfigureAwait(false),
+            Challenge = await ChallengeService
+                .GetProgressAsync(db, today.Year, cancellationToken)
+                .ConfigureAwait(false),
             Stats = await LoadStatsAsync(db, today, cancellationToken).ConfigureAwait(false),
         };
     }
 
-    private static async Task<List<BookRead>> LoadReadsAsync(IQueryable<ReadingSession> sessions, CancellationToken cancellationToken)
+    internal static async Task<List<BookRead>> LoadReadsAsync(
+        IQueryable<ReadingSession> sessions,
+        CancellationToken cancellationToken)
     {
         var rows = await sessions.AsNoTracking()
             .Select(s => new
@@ -87,8 +92,6 @@ internal sealed class HomeService(IDbContextFactory<BooksideDbContext> dbFactory
 
     private async Task<HomeStats> LoadStatsAsync(BooksideDbContext db, DateOnly today, CancellationToken cancellationToken)
     {
-        var yearStart = new DateOnly(today.Year, 1, 1);
-        var yearEnd = new DateOnly(today.Year, 12, 31);
         var monthStartUtc = LocalMidnightToUtc(new DateTime(today.Year, today.Month, 1), timeProvider.LocalTimeZone);
 
         return new HomeStats
@@ -96,12 +99,6 @@ internal sealed class HomeService(IDbContextFactory<BooksideDbContext> dbFactory
             Today = today,
             BookCount = await db.Books.CountAsync(cancellationToken).ConfigureAwait(false),
             WordCount = await db.VocabularyWords.CountAsync(cancellationToken).ConfigureAwait(false),
-            BooksFinishedThisYear = await db.ReadingSessions
-                .Where(s => s.Status == ReadingStatus.Finished && s.FinishedOn >= yearStart && s.FinishedOn <= yearEnd)
-                .Select(s => s.BookId)
-                .Distinct()
-                .CountAsync(cancellationToken)
-                .ConfigureAwait(false),
             WordsAddedThisMonth = await db.VocabularyWords
                 .CountAsync(w => w.CreatedAtUtc >= monthStartUtc, cancellationToken)
                 .ConfigureAwait(false),

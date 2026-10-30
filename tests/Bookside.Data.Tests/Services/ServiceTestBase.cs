@@ -1,4 +1,5 @@
 using Bookside.Core.Books.Services;
+using Bookside.Core.Challenge.Services;
 using Bookside.Core.Common;
 using Bookside.Core.Home.Services;
 using Bookside.Core.Vocabulary;
@@ -55,6 +56,9 @@ public abstract class ServiceTestBase : IAsyncLifetime
     protected IVocabularyService Vocabulary => _scope.ServiceProvider.GetRequiredService<IVocabularyService>();
 
     protected IReviewService Reviews => _scope.ServiceProvider.GetRequiredService<IReviewService>();
+
+    protected IChallengeService Challenges =>
+        _scope.ServiceProvider.GetRequiredService<IChallengeService>();
 
     protected IHomeService Home => _scope.ServiceProvider.GetRequiredService<IHomeService>();
 

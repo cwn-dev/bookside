@@ -307,6 +307,36 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.ToTable("Tags", (string)null);
                 });
 
+            modelBuilder.Entity("Bookside.Core.Challenge.ReadingGoal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TargetBooks")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Year")
+                        .IsUnique();
+
+                    b.ToTable("ReadingGoals", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ReadingGoals_TargetBooks", "TargetBooks BETWEEN 1 AND 1000");
+
+                            t.HasCheckConstraint("CK_ReadingGoals_Year", "Year BETWEEN 1 AND 9999");
+                        });
+                });
+
             modelBuilder.Entity("Bookside.Core.Vocabulary.DictionaryEntry", b =>
                 {
                     b.Property<Guid>("Id")

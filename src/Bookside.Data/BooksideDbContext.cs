@@ -1,4 +1,5 @@
 using Bookside.Core.Books;
+using Bookside.Core.Challenge;
 using Bookside.Core.Vocabulary;
 using Bookside.Data.Conventions;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,8 @@ public class BooksideDbContext(DbContextOptions<BooksideDbContext> options, Time
     public DbSet<DictionaryEntry> DictionaryEntries => Set<DictionaryEntry>();
 
     public DbSet<WordReview> WordReviews => Set<WordReview>();
+
+    public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {

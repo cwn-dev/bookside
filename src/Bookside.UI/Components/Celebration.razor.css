@@ -1,0 +1,104 @@
+.celebration {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+}
+
+.burst {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+
+.confetti {
+    position: absolute;
+    width: 8px;
+    height: 12px;
+    margin: -6px 0 0 -4px;
+    border-radius: 2px;
+    opacity: 0;
+    animation: confetti 1.5s cubic-bezier(0.2, 0.7, 0.4, 1) var(--delay) forwards;
+}
+
+.confetti:nth-child(3n) {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.cheer {
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    background: var(--success);
+    color: var(--surface);
+    font-weight: 700;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+    opacity: 0;
+    animation: cheer 2.6s ease forwards;
+}
+
+/* Out fast, then drift down as the "gravity" part of the burst. */
+@keyframes confetti {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) rotate(0) scale(0.6);
+    }
+
+    55% {
+        opacity: 1;
+        transform: translate(var(--dx), var(--dy)) rotate(calc(var(--rot) * 0.6)) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(var(--dx), calc(var(--dy) + 70px)) rotate(var(--rot)) scale(1);
+    }
+}
+
+@keyframes cheer {
+    0% {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+
+    12% {
+        opacity: 1;
+        transform: scale(1.12);
+    }
+
+    20%,
+    75% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+@keyframes cheer-fade {
+    0%,
+    100% {
+        opacity: 0;
+    }
+
+    15%,
+    80% {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .burst {
+        display: none;
+    }
+
+    .cheer {
+        animation-name: cheer-fade;
+    }
+}

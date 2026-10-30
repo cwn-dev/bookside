@@ -1,0 +1,85 @@
+@* Set or change a year's reading goal: one number box and a button. *@
+@inject IChallengeService Challenges
+
+<EditForm Model="Model" OnValidSubmit="SaveAsync" class="goal-form">
+    <ServiceErrorValidator @ref="_validator" />
+    <ErrorAlert Messages="_errors" />
+
+    <div class="field">
+        <label for="@_inputId">@Label</label>
+        <div class="goal-row">
+            <InputNumber @ref="_input" id="@_inputId" @bind-Value="Model.TargetBooks" min="@ReadingGoal.MinTarget"
+                         max="@ReadingGoal.MaxTarget" inputmode="numeric" placeholder="e.g. 25" />
+            <span class="muted">books</span>
+            <button type="submit" class="btn btn-primary btn-sm" disabled="@_saving">@SubmitText</button>
+            @if (OnCancel.HasDelegate)
+            {
+                <button type="button" class="btn btn-sm" disabled="@_saving" @onclick="OnCancel">Cancel</button>
+            }
+        </div>
+        <ValidationMessage For="() => Model.TargetBooks" />
+    </div>
+</EditForm>
+
+@code {
+    private readonly string _inputId = $"goal-{Guid.NewGuid():N}"[..13];
+    private ServiceErrorValidator? _validator;
+    private IReadOnlyList<string> _errors = [];
+    private bool _saving;
+    private InputNumber<int?>? _input;
+
+    [Parameter, EditorRequired]
+    public int Year { get; set; }
+
+    [Parameter, EditorRequired]
+    public ReadingGoalFormModel Model { get; set; } = null!;
+
+    [Parameter]
+    public string Label { get; set; } = "Goal";
+
+    [Parameter]
+    public string SubmitText { get; set; } = "Set goal";
+
+    /// <summary>
+    /// Focus the number box when this form first renders.
+    /// </summary>
+    [Parameter]
+    public bool AutoFocus { get; set; }
+
+    [Parameter]
+    public EventCallback OnSaved { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AutoFocus && _input?.Element is { } element)
+        {
+            await element.FocusAsync();
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _errors = [];
+        try
+        {
+            var result = await Challenges.SetGoalAsync(Year, Model.TargetBooks ?? 0);
+
+            if (result.IsSuccess)
+            {
+                await OnSaved.InvokeAsync();
+            }
+            else
+            {
+                _errors = _validator!.Show(result.Error);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

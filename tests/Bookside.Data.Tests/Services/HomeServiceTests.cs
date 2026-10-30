@@ -1,5 +1,6 @@
 using Bookside.Core.Books;
 using Bookside.Core.Books.Services;
+using Bookside.Core.Challenge.Services;
 using Bookside.Core.Home.Services;
 using Bookside.Core.Vocabulary.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +25,7 @@ public sealed class HomeServiceTests : ServiceTestBase
         Assert.Empty(home.RecentWords);
         Assert.Null(home.WordOfTheDay);
         Assert.Equal(new HomeStats { Today = Today }, home.Stats);
+        Assert.Equal(new ChallengeProgress { Year = 2026, ReadCount = 0 }, home.Challenge);
     }
 
     [Fact]
@@ -83,7 +85,7 @@ public sealed class HomeServiceTests : ServiceTestBase
     }
 
     [Fact]
-    public async Task Stats_count_this_years_finished_books_and_this_months_words()
+    public async Task Stats_count_books_words_and_this_months_words()
     {
         var book = await AddBookAsync("Mort");
         await AddSessionAsync(book.Id, ReadingStatus.Finished, finished: new(2026, 1, 1));
@@ -106,9 +108,24 @@ public sealed class HomeServiceTests : ServiceTestBase
             Today = Today,
             BookCount = 3,
             WordCount = 2,
-            BooksFinishedThisYear = 1,
             WordsAddedThisMonth = 1,
         }, stats);
+    }
+
+    [Fact]
+    public async Task Challenge_counts_this_years_finished_reads_with_the_goal()
+    {
+        var book = await AddBookAsync("Mort");
+        await AddSessionAsync(book.Id, ReadingStatus.Finished, finished: new(2026, 1, 1));
+        await AddSessionAsync(book.Id, ReadingStatus.Finished, finished: new(2026, 5, 1));
+        await AddSessionAsync(book.Id, ReadingStatus.Finished, finished: new(2025, 12, 31));
+        Assert.True((await Challenges.SetGoalAsync(2026, 12, Ct)).IsSuccess);
+
+        var home = await Home.GetHomeAsync(Ct);
+
+        Assert.Equal(
+            new ChallengeProgress { Year = 2026, ReadCount = 2, TargetBooks = 12 },
+            home.Challenge);
     }
 
     [Fact]

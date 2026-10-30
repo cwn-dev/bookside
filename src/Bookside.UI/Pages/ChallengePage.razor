@@ -1,0 +1,221 @@
+@page "/challenge"
+@page "/challenge/{Year:int}"
+@inject IChallengeService Challenges
+@inject TimeProvider Clock
+@inject NavigationManager Navigation
+
+<PageTitle>@_year reading challenge · Bookside</PageTitle>
+
+@if (_invalidYear)
+{
+    <h1>No such year</h1>
+    <p>Reading challenges run from year @ReadingGoal.MinYear to @ReadingGoal.MaxYear.</p>
+    <a class="btn" href="challenge">This year’s challenge</a>
+}
+else if (_challenge is null)
+{
+    <h1 class="visually-hidden">@_year reading challenge</h1>
+    <p class="loading" role="status">Loading…</p>
+    <ErrorAlert Messages="_errors" />
+}
+else
+{
+    <header class="challenge-header">
+        <h1>@_year reading challenge</h1>
+        <nav class="year-nav" aria-label="Years">
+            <a href="challenge/@(_year - 1)">← @(_year - 1)</a>
+            <select aria-label="Jump to year" @onchange="JumpToYear">
+                @foreach (var year in _challenge.Years.Select(y => y.Year).Append(_year).Distinct().OrderDescending())
+                {
+                    <option value="@year" selected="@(year == _year)">@year</option>
+                }
+            </select>
+            @if (_year <= _challenge.Today.Year)
+            {
+                <a href="challenge/@(_year + 1)">@(_year + 1) →</a>
+            }
+        </nav>
+    </header>
+
+    <section class="card progress" aria-label="Progress">
+        @if (_goal is not null)
+        {
+            <ReadingGoalForm Year="_year" Model="_goal" Label="@($"Books to read in {_year}")" SubmitText="Save"
+                             AutoFocus OnSaved="GoalSavedAsync" OnCancel="CloseGoal" />
+            @if (_challenge.TargetBooks is not null)
+            {
+                <div class="remove-goal">
+                    <ConfirmButton Text="Remove goal" Prompt="@($"Remove the {_year} goal?")" ConfirmText="Remove"
+                                   Small OnConfirm="RemoveGoalAsync" />
+                </div>
+            }
+        }
+        else if (_pace is not null)
+        {
+            <div class="progress-summary">
+                <p class="progress-count">
+                    <strong>@_pace.ReadCount</strong> of @ChallengeLabels.Books(_pace.TargetBooks)
+                </p>
+                <p class="progress-percent">@Math.Floor(_pace.Fraction * 100)%</p>
+            </div>
+            <ChallengeProgressBar Pace="_pace" Large />
+            <div class="progress-footer">
+                <p class="progress-status">
+                    @ChallengeLabels.Status(_pace)@if (ChallengeLabels.Rate(_pace) is string rate)
+                    {
+                        <span class="muted"> · @rate to finish on time</span>
+                    }
+                </p>
+                <button type="button" class="btn btn-sm btn-ghost" @onclick="EditGoal">Edit goal</button>
+            </div>
+            @if (_pace.State == ChallengeState.Reached)
+            {
+                <Celebration />
+            }
+        }
+        else
+        {
+            <p class="progress-count">
+                <strong>@_challenge.Reads.Count</strong> @(_challenge.Reads.Count == 1 ? "book" : "books")
+                read in @_year.
+            </p>
+            <ReadingGoalForm Year="_year" Model="_newGoal" Label="@($"Set a goal for {_year}")"
+                             OnSaved="GoalSavedAsync" />
+        }
+    </section>
+
+    <section class="books" aria-labelledby="books-heading">
+        <div class="section-header">
+            <h2 id="books-heading">Books read</h2>
+        </div>
+        @if (_challenge.Reads.Count == 0)
+        {
+            <p class="empty muted">
+                No books finished in @_year@(_year >= _challenge.Today.Year ? " yet" : "").
+            </p>
+        }
+        else
+        {
+            @foreach (var month in _challenge.Reads.GroupBy(r => r.Session.FinishedOn!.Value.Month))
+            {
+                var name = new DateOnly(_year, month.Key, 1).ToString("MMMM", CultureInfo.CurrentCulture);
+                <section class="month" aria-label="@name">
+                    <h3>@name <span class="muted">@month.Count()</span></h3>
+                    <ul class="book-grid">
+                        @foreach (var read in month)
+                        {
+                            <li @key="read.Session.Id">
+                                <a class="book-card" href="books/@read.BookId">
+                                    <CoverImage BookId="read.BookId" Title="@read.Title" CoverSha256="@read.CoverSha256" />
+                                    <span class="title">@read.Title</span>
+                                    @if (read.Authors.Count > 0)
+                                    {
+                                        <span class="muted authors">@string.Join(", ", read.Authors)</span>
+                                    }
+                                    <RatingStars Rating="read.Session.Rating" />
+                                    <span class="muted date">
+                                        @read.Session.FinishedOn!.Value.ToString("d MMM", CultureInfo.CurrentCulture)
+                                    </span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+        }
+    </section>
+
+    @if (_challenge.Years.Count > 1)
+    {
+        <section class="years" aria-labelledby="years-heading">
+            <div class="section-header">
+                <h2 id="years-heading">All years</h2>
+            </div>
+            <ul class="year-list">
+                @foreach (var year in _challenge.Years)
+                {
+                    <li @key="year.Year">
+                        <a class="year-row" href="challenge/@year.Year"
+                           aria-current="@(year.Year == _year ? "page" : null)">
+                            <span class="year-name">@year.Year</span>
+                            <span class="year-count">
+                                @(year.TargetBooks is int target
+                                    ? $"{year.ReadCount} of {target}"
+                                    : ChallengeLabels.Books(year.ReadCount))
+                            </span>
+                            @if (year.TargetBooks is int goal)
+                            {
+                                <span class="year-bar">
+                                    <ChallengeProgressBar
+                                        Pace="ReadingPace.For(year.Year, year.ReadCount, goal, _challenge.Today)" />
+                                </span>
+                            }
+                        </a>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+}
+
+@code {
+    private int _year;
+    private bool _invalidYear;
+    private ChallengeYear? _challenge;
+    private ReadingPace? _pace;
+    private IReadOnlyList<string> _errors = [];
+
+    // Editing an existing goal; null when the form is closed.
+    private ReadingGoalFormModel? _goal;
+    private ReadingGoalFormModel _newGoal = new();
+
+    /// <summary>
+    /// The year to show; the current year when the route has none.
+    /// </summary>
+    [Parameter]
+    public int? Year { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _year = Year ?? Clock.GetLocalNow().Year;
+        _goal = null;
+        _newGoal = new();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _errors = [];
+        var result = await Challenges.GetYearAsync(_year);
+        _invalidYear = !result.IsSuccess && result.Error.Type == ErrorType.Validation;
+        _challenge = result.IsSuccess ? result.Value : null;
+        _pace = _challenge?.TargetBooks is int target
+            ? ReadingPace.For(_year, _challenge.Reads.Count, target, _challenge.Today)
+            : null;
+
+        if (!result.IsSuccess && !_invalidYear)
+        {
+            _errors = [result.Error.Message];
+        }
+    }
+
+    private void JumpToYear(ChangeEventArgs e) => Navigation.NavigateTo($"challenge/{e.Value}");
+
+    private void EditGoal() => _goal = new ReadingGoalFormModel { TargetBooks = _challenge?.TargetBooks };
+
+    private void CloseGoal() => _goal = null;
+
+    private async Task GoalSavedAsync()
+    {
+        _goal = null;
+        _newGoal = new();
+        await LoadAsync();
+    }
+
+    private async Task RemoveGoalAsync()
+    {
+        // NotFound means it's already gone, which is what was asked for.
+        await Challenges.RemoveGoalAsync(_year);
+        await GoalSavedAsync();
+    }
+}

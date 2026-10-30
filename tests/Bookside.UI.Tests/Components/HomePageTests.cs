@@ -1,6 +1,8 @@
 using Bookside.Core.Books;
 using Bookside.Core.Books.Services;
+using Bookside.Core.Challenge.Services;
 using Bookside.UI.Pages;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookside.UI.Tests.Components;
 
@@ -67,7 +69,7 @@ public sealed class HomePageTests : ComponentTestBase
         var session = Assert.Single((await GetBookAsync(book.Id)).ReadingSessions);
         Assert.Equal(ReadingStatus.Finished, session.Status);
         Assert.Equal(Today, session.FinishedOn);
-        Assert.Equal("1", page.FindAll(".stats dd")[0].TextContent);
+        Assert.Equal("1", page.Find(".challenge-count strong").TextContent);
     }
 
     [Fact]
@@ -159,6 +161,38 @@ public sealed class HomePageTests : ComponentTestBase
         page.WaitForAssertion(() => page.Find(".stats"));
         Assert.Empty(page.FindAll(".word-of-the-day"));
         Assert.Equal("undefined", page.Find(".recent-term").TextContent);
+    }
+
+    [Fact]
+    public async Task Challenge_card_sets_a_goal_inline_then_shows_progress()
+    {
+        await AddBookAsync("Dune");
+        var page = Render<HomePage>();
+        page.WaitForAssertion(() => page.Find(".challenge form"));
+
+        page.Find(".challenge input").Change("12");
+        page.Find(".challenge form").Submit();
+
+        page.WaitForAssertion(() => Assert.Empty(page.FindAll(".challenge form")));
+        Assert.Contains("0 of 12 books", page.Find(".challenge-count").TextContent, StringComparison.Ordinal);
+        Assert.Equal("12", page.Find(".challenge [role=progressbar]").GetAttribute("aria-valuemax"));
+    }
+
+    [Fact]
+    public async Task Finishing_the_book_that_reaches_the_goal_celebrates()
+    {
+        var book = await AddBookAsync("Dune");
+        await AddSessionAsync(book.Id, new ReadingSessionInput { Status = ReadingStatus.Reading, StartedOn = Today });
+        var challenges = Services.GetRequiredService<IChallengeService>();
+        Assert.True((await challenges.SetGoalAsync(Today.Year, 1, Ct)).IsSuccess);
+        var page = Render<HomePage>();
+        page.WaitForAssertion(() => page.Find(".reading-card"));
+        Assert.Empty(page.FindAll(".celebration"));
+
+        page.FindAll(".reading-card button").Single(b => b.TextContent == "Finished").Click();
+        page.Find(".panel form").Submit();
+
+        page.WaitForAssertion(() => Assert.Equal("Goal reached!", page.Find(".challenge .cheer").TextContent));
     }
 
     private async Task AddSessionAsync(Guid bookId, ReadingSessionInput input) =>

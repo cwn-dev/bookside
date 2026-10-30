@@ -1,0 +1,30 @@
+@* Filled bar for a yearly goal, with a tick at where an even pace would be
+   today (current year only). *@
+
+<div class="challenge-bar @(Pace.State == ChallengeState.Reached ? "reached" : null) @(Large ? "large" : null)"
+     role="progressbar"
+     aria-label="@($"{Pace.Year} reading challenge")"
+     aria-valuemin="0"
+     aria-valuemax="@Pace.TargetBooks"
+     aria-valuenow="@Math.Min(Pace.ReadCount, Pace.TargetBooks)"
+     aria-valuetext="@($"{Pace.ReadCount} of {ChallengeLabels.Books(Pace.TargetBooks)}")">
+    <div class="fill" style="width: @Percent(Pace.Fraction)"></div>
+    @if (Pace.State == ChallengeState.InProgress && Pace.ExpectedFraction is double expected)
+    {
+        <div class="pace" style="left: @Percent(expected)" title="Where an even pace would be today"></div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ReadingPace Pace { get; set; } = null!;
+
+    /// <summary>
+    /// Taller bar for the challenge page.
+    /// </summary>
+    [Parameter]
+    public bool Large { get; set; }
+
+    private static string Percent(double fraction) =>
+        (fraction * 100).ToString("0.##", CultureInfo.InvariantCulture) + "%";
+}

@@ -1,4 +1,5 @@
 using Bookside.Core.Books.Services;
+using Bookside.Core.Challenge.Services;
 using Bookside.Core.Vocabulary.Services;
 
 namespace Bookside.Core.Home.Services;
@@ -32,6 +33,11 @@ public sealed record HomeSummary
     /// </summary>
     public required ReviewStatus Review { get; init; }
 
+    /// <summary>
+    /// The reading challenge for <see cref="HomeStats.Today"/>'s year.
+    /// </summary>
+    public required ChallengeProgress Challenge { get; init; }
+
     public required HomeStats Stats { get; init; }
 }
 
@@ -61,11 +67,6 @@ public sealed record HomeStats
     public int BookCount { get; init; }
 
     public int WordCount { get; init; }
-
-    /// <summary>
-    /// Distinct books with a session finished in <see cref="Today"/>'s year.
-    /// </summary>
-    public int BooksFinishedThisYear { get; init; }
 
     /// <summary>
     /// Words added since the start of <see cref="Today"/>'s month (local time).
