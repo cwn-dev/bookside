@@ -18,7 +18,7 @@ The CI setup is human developed and run (apart from that time Claude updated the
 ## Desktop Browser UI
 
 <p align="center">
-  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-22%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-22%20Bookside.png" height="230" alt="Home page"></a>
+  <a href="./screenshots/Screenshot 2026-10-30 at 20-28-30 Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 20-28-30 Bookside.png" height="230" alt="Home page"></a>
   <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png" height="230" alt="Book details and reading log"></a>
   <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png" height="230" alt="Vocabulary list"></a>
 </p>
@@ -31,6 +31,11 @@ The CI setup is human developed and run (apart from that time Claude updated the
 <p align="center">
   <a href="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png" height="230" alt="Add book with metadata lookup"></a>
   <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png" height="230" alt="Add book form"></a>
+</p>
+
+<p align="center">
+  <a href="./screenshots/Screenshot 2026-10-30 at 20-28-10 Review · Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 20-28-10 Review · Bookside.png" height="230" alt="Add book with metadata lookup"></a>
+  <a href="./screenshots/SScreenshot 2026-10-30 at 20-27-35 Review · Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 20-27-35 Review · Bookside.png" height="230" alt="Add book form"></a>
 </p>
 
 ## Mobile Browser UI
@@ -55,6 +60,8 @@ The CI setup is human developed and run (apart from that time Claude updated the
 * Look up book metadata using Open Library or Google Books API (you'll need your own key, which is free).
 * Automatic cover download.
 * Books can be tagged with as many tags as you need - you could tag the genre, wishlist, own, etc. (the read/reading tags are separate to these).
+* Vocabulary flashcards to help learn and remember definitions. You will be given 15 words to review per day. Click 'Forgot' (the word will show up again tomorrow) or 'Knew it' (the word won't show up for a couple of days). The scheduling for words to appear for review is SM-2 like in that 'Forgot' will reduce the ease and so the word is shown more frequently over time and 'Knew it' will increase the ease so the word is shown less frequently over time.
+* Vocabulary flash card practise mode - after your daily review, you can go back into the 'Review' section to practise with one of the three modes: forgotten today, random words, and most forgotten.
 
 ## Layout
 
