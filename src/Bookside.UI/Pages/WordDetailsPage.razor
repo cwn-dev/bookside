@@ -68,24 +68,7 @@ else
                         break;
 
                     case { } found:
-                        @foreach (var meaning in found.Meanings)
-                        {
-                            <div class="meaning">
-                                <h3 class="part-of-speech">@meaning.PartOfSpeech</h3>
-                                <ol>
-                                    @foreach (var definition in meaning.Definitions)
-                                    {
-                                        <li>
-                                            @definition.Text
-                                            @if (definition.Example is { } example)
-                                            {
-                                                <span class="example">“@example”</span>
-                                            }
-                                        </li>
-                                    }
-                                </ol>
-                            </div>
-                        }
+                        <DefinitionView Meanings="found.Meanings" />
                         <p class="muted source">
                             Looked up @FormatDate(found.FetchedAtUtc) · @found.Source ·
                             <button type="button" class="link-button" disabled="@_defining" @onclick="() => DefineAsync(refresh: true)">

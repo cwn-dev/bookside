@@ -54,6 +54,8 @@ public abstract class ServiceTestBase : IAsyncLifetime
 
     protected IVocabularyService Vocabulary => _scope.ServiceProvider.GetRequiredService<IVocabularyService>();
 
+    protected IReviewService Reviews => _scope.ServiceProvider.GetRequiredService<IReviewService>();
+
     protected IHomeService Home => _scope.ServiceProvider.GetRequiredService<IHomeService>();
 
     protected IDefinitionService Definitions => _scope.ServiceProvider.GetRequiredService<IDefinitionService>();

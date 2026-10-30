@@ -306,22 +306,26 @@ internal sealed class VocabularyService(
             .SingleOrDefaultAsync(w => w.Id == wordId, cancellationToken)
             .ConfigureAwait(false);
 
-        return word is null
-            ? null
-            : new WordDetails
-            {
-                Id = word.Id,
-                Term = word.Term,
-                NormalizedTerm = word.NormalizedTerm,
-                Language = word.Language,
-                BookId = word.BookId,
-                BookTitle = word.Book?.Title,
-                Context = word.Context,
-                PageNumber = word.PageNumber,
-                Notes = word.Notes,
-                Definition = word.DictionaryEntry is { } entry ? DefinitionService.ToDto(entry) : null,
-                CreatedAtUtc = word.CreatedAtUtc,
-                UpdatedAtUtc = word.UpdatedAtUtc,
-            };
+        return word is null ? null : ToDetails(word);
     }
+
+    /// <summary>
+    /// Needs <see cref="VocabularyWord.Book"/> and
+    /// <see cref="VocabularyWord.DictionaryEntry"/> loaded.
+    /// </summary>
+    internal static WordDetails ToDetails(VocabularyWord word) => new()
+    {
+        Id = word.Id,
+        Term = word.Term,
+        NormalizedTerm = word.NormalizedTerm,
+        Language = word.Language,
+        BookId = word.BookId,
+        BookTitle = word.Book?.Title,
+        Context = word.Context,
+        PageNumber = word.PageNumber,
+        Notes = word.Notes,
+        Definition = word.DictionaryEntry is { } entry ? DefinitionService.ToDto(entry) : null,
+        CreatedAtUtc = word.CreatedAtUtc,
+        UpdatedAtUtc = word.UpdatedAtUtc,
+    };
 }

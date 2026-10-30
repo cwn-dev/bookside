@@ -27,6 +27,11 @@ public sealed record HomeSummary
     /// </summary>
     public WordSummary? WordOfTheDay { get; init; }
 
+    /// <summary>
+    /// Flash cards to review today.
+    /// </summary>
+    public required ReviewStatus Review { get; init; }
+
     public required HomeStats Stats { get; init; }
 }
 

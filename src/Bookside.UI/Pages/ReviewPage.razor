@@ -1,0 +1,411 @@
+@page "/words/review"
+@inject IReviewService Reviews
+@inject TimeProvider Clock
+@inject NavigationManager Navigation
+
+<PageTitle>Review · Bookside</PageTitle>
+
+<p class="back"><a href="words">← Vocabulary</a></p>
+
+<div class="page-header">
+    <h1>Review</h1>
+    @if (Current is not null)
+    {
+        <span class="muted progress" role="status">
+            @if (_practising)
+            {
+                <span class="badge badge-accent">Practice</span>
+            }
+            @(_index + 1) of @_queue!.Count@AddedBack()
+        </span>
+    }
+</div>
+
+@if (_practising && Current is not null)
+{
+    <p class="muted practice-note">
+        Practice round: answers don't change your schedule. Words you forget go
+        back to the end.
+    </p>
+}
+
+<ErrorAlert Messages="_errors" />
+
+@if (_queue is null)
+{
+    <p class="loading" role="status">Loading…</p>
+}
+else if (Current is { } card)
+{
+    @* tabindex -1: a click inside the card keeps focus there, so the 1 / 2
+       keys keep working. *@
+    <article @key="_index" class="card flashcard" tabindex="-1" @onkeydown="KeyDown">
+        <div class="front">
+            @if (card.IsNew && !_practising)
+            {
+                <span class="badge badge-accent">New</span>
+            }
+            <p class="term" lang="@card.Word.Language">@card.Word.Term</p>
+            @if (card.Word.Definition?.Phonetic is { } phonetic)
+            {
+                <p class="phonetic">@phonetic</p>
+            }
+            @if (card.Word.Definition?.AudioUrl is { } audioUrl)
+            {
+                <audio class="pronunciation" controls preload="none" src="@audioUrl"
+                       aria-label="Pronunciation"></audio>
+            }
+        </div>
+
+        @if (!_revealed)
+        {
+            <div class="answer-actions">
+                <button type="button" class="btn btn-primary reveal" @ref="_focusTarget"
+                        @onclick="Reveal">
+                    Show answer
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="answer">
+                @if (card.Word.Definition is { } definition)
+                {
+                    <DefinitionView Meanings="definition.Meanings" />
+                }
+                @if (card.Word.BookTitle is not null || card.Word.Context is not null)
+                {
+                    <div class="found">
+                        @if (card.Word.BookTitle is not null)
+                        {
+                            <p class="found-in muted">
+                                From <a href="books/@card.Word.BookId">@card.Word.BookTitle</a>@PageSuffix(card.Word)
+                            </p>
+                        }
+                        @if (card.Word.Context is not null)
+                        {
+                            <blockquote class="context">@card.Word.Context</blockquote>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="answer-actions grades">
+                <button type="button" class="btn grade forgot" disabled="@_saving"
+                        @onclick="() => GradeAsync(knew: false)">
+                    <span>Forgot</span>
+                    @if (!_practising)
+                    {
+                        <span class="hint">@ReviewLabels.Interval(ReviewScheduler.FirstIntervalDays)</span>
+                    }
+                </button>
+                <button type="button" class="btn btn-primary grade knew" disabled="@_saving"
+                        @ref="_focusTarget" @onclick="() => GradeAsync(knew: true)">
+                    <span>Knew it</span>
+                    @if (!_practising)
+                    {
+                        <span class="hint">@ReviewLabels.Interval(card.KnownIntervalDays)</span>
+                    }
+                </button>
+            </div>
+        }
+    </article>
+    <p class="muted keys">Keys: Space shows the answer, then 1 = Forgot, 2 = Knew it.</p>
+}
+else
+{
+    <div class="card summary" role="status">
+        @if (_practising)
+        {
+            <h2>Practice done</h2>
+            <p>Your schedule is unchanged.</p>
+        }
+        else if (_reviewedCount > 0)
+        {
+            <h2>Done</h2>
+            <p>
+                You reviewed @Words(_reviewedCount)@(_forgottenCount > 0
+                    ? $"; {Words(_forgottenCount)} will come back tomorrow"
+                    : "").
+            </p>
+        }
+        else if (_status is { ReviewableCount: 0 })
+        {
+            <h2>No flash cards yet</h2>
+            <p>Words become flash cards once they have a definition.</p>
+        }
+        else
+        {
+            <h2>Nothing to review</h2>
+        }
+
+        @if (_status is { } status)
+        {
+            @if (status.ToReviewCount > 0)
+            {
+                <p>@Words(status.ToReviewCount) still to review today.</p>
+            }
+            else if (status.NextDueOn is DateOnly next)
+            {
+                <p class="muted">Next review @ReviewLabels.DueOn(next, Today()).</p>
+            }
+            @if (status.NewWaitingCount > 0)
+            {
+                <p class="muted">
+                    @Words(status.NewWaitingCount, "new word") waiting: up to
+                    @ReviewScheduler.NewWordsPerDay new words start each day.
+                </p>
+            }
+        }
+
+        @{ var keepGoing = _status?.ToReviewCount > 0; }
+        @if (_status is { ReviewableCount: > 0 } practice)
+        {
+            <section class="practice" aria-labelledby="practice-heading">
+                <h3 id="practice-heading">@(_practising ? "Practise again" : "Practise")</h3>
+                <p class="muted">Extra rounds don't change your schedule.</p>
+                @if (_noPracticeCards)
+                {
+                    <p>None of your words has been forgotten yet.</p>
+                }
+                <div class="actions">
+                    @if (practice.ForgottenTodayCount > 0)
+                    {
+                        <button type="button"
+                                class="btn @(keepGoing ? "" : "btn-primary") practise forgotten"
+                                @onclick="@(() => PractiseAsync("forgotten"))">
+                            Forgotten today (@practice.ForgottenTodayCount)
+                        </button>
+                    }
+                    <button type="button" class="btn practise random"
+                            @onclick="@(() => PractiseAsync("random"))">
+                        Random words
+                    </button>
+                    <button type="button" class="btn practise hardest"
+                            @onclick="@(() => PractiseAsync("most-forgotten"))">
+                        Most forgotten
+                    </button>
+                </div>
+            </section>
+        }
+
+        @if (keepGoing)
+        {
+            <div class="actions">
+                <button type="button" class="btn btn-primary" @onclick="KeepGoingAsync">Keep going</button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<ReviewCard>? _queue;
+    private int _index;
+    private bool _revealed;
+    private bool _saving;
+    private bool _focusPending;
+    private ElementReference _focusTarget;
+    private ReviewStatus? _status;
+    private int _reviewedCount;
+    private int _forgottenCount;
+    private IReadOnlyList<string> _errors = [];
+
+    // Practice rounds come from the summary. Their answers aren't recorded; a
+    // word forgotten there goes back to the end of the queue.
+    private bool _practising;
+    private int _addedBack;
+    private bool _noPracticeCards;
+
+    private ReviewCard? Current => _queue is not null && _index < _queue.Count ? _queue[_index] : null;
+
+    /// <summary>
+    /// The practice round shown, if any, so each round is a history entry and
+    /// Back returns to the review.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "practice")]
+    public string? PracticeValue { get; set; }
+
+    private bool _loaded;
+    private string? _loadedPractice;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loaded && PracticeValue == _loadedPractice)
+        {
+            return;
+        }
+
+        _loaded = true;
+        _loadedPractice = PracticeValue;
+        if (ParsePractice(PracticeValue) is { } words)
+        {
+            await StartPracticeAsync(words);
+        }
+        else
+        {
+            await LoadAsync();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusPending && Current is not null)
+        {
+            _focusPending = false;
+            await _focusTarget.FocusAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _errors = [];
+        _status = null;
+        _queue = [.. await Reviews.GetQueueAsync()];
+        _practising = false;
+        _noPracticeCards = false;
+        _addedBack = 0;
+        _index = 0;
+        _revealed = false;
+        _focusPending = true;
+        if (_queue.Count == 0)
+        {
+            _status = await Reviews.GetStatusAsync();
+        }
+    }
+
+    private Task PractiseAsync(string value)
+    {
+        if (value == PracticeValue && ParsePractice(value) is { } words)
+        {
+            // Same URL: navigating wouldn't change anything.
+            return StartPracticeAsync(words);
+        }
+
+        Navigation.NavigateTo($"words/review?practice={value}");
+        return Task.CompletedTask;
+    }
+
+    private Task KeepGoingAsync()
+    {
+        if (PracticeValue is null)
+        {
+            return LoadAsync();
+        }
+
+        Navigation.NavigateTo("words/review");
+        return Task.CompletedTask;
+    }
+
+    private async Task StartPracticeAsync(PracticeSet words)
+    {
+        _errors = [];
+        var cards = await Reviews.GetPracticeCardsAsync(words);
+        _noPracticeCards = cards.Count == 0;
+        if (_noPracticeCards)
+        {
+            // Opened from a link: show the summary instead of the loading text.
+            _queue ??= [];
+            _status ??= await Reviews.GetStatusAsync();
+            return;
+        }
+
+        _queue = [.. cards];
+        _practising = true;
+        _addedBack = 0;
+        _index = 0;
+        _revealed = false;
+        _focusPending = true;
+    }
+
+    private void Reveal()
+    {
+        _revealed = true;
+        _focusPending = true;
+    }
+
+    private async Task KeyDown(KeyboardEventArgs e)
+    {
+        if (!_revealed)
+        {
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case "1":
+                await GradeAsync(knew: false);
+                break;
+            case "2":
+                await GradeAsync(knew: true);
+                break;
+        }
+    }
+
+    private async Task GradeAsync(bool knew)
+    {
+        if (_saving || !_revealed || Current is not { } card)
+        {
+            return;
+        }
+
+        if (_practising)
+        {
+            if (!knew)
+            {
+                _queue!.Add(card);
+                _addedBack++;
+            }
+        }
+        else
+        {
+            _saving = true;
+            _errors = [];
+            try
+            {
+                var result = await Reviews.RecordReviewAsync(card.Word.Id, knew);
+                if (!result.IsSuccess && result.Error.Type != ErrorType.NotFound)
+                {
+                    _errors = [result.Error.Message];
+                    return;
+                }
+
+                // NotFound: deleted meanwhile, just move on.
+                if (result.IsSuccess)
+                {
+                    _reviewedCount++;
+                    _forgottenCount += knew ? 0 : 1;
+                }
+            }
+            finally
+            {
+                _saving = false;
+            }
+        }
+
+        _index++;
+        _revealed = false;
+        _focusPending = true;
+        if (Current is null)
+        {
+            _status = await Reviews.GetStatusAsync();
+        }
+    }
+
+    private static PracticeSet? ParsePractice(string? value) => value switch
+    {
+        "forgotten" => PracticeSet.ForgottenToday,
+        "random" => PracticeSet.Random,
+        "most-forgotten" => PracticeSet.MostForgotten,
+        _ => null,
+    };
+
+    private string AddedBack() => _addedBack > 0 ? $" · {_addedBack} added back" : "";
+
+    private static string PageSuffix(WordDetails word) =>
+        word.PageNumber is int page ? $", page {page}" : "";
+
+    private DateOnly Today() => DateOnly.FromDateTime(Clock.GetLocalNow().DateTime);
+
+    private static string Words(int count, string noun = "word") =>
+        count == 1 ? $"1 {noun}" : $"{count} {noun}s";
+}

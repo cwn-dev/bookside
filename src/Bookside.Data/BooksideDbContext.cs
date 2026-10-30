@@ -37,6 +37,8 @@ public class BooksideDbContext(DbContextOptions<BooksideDbContext> options, Time
 
     public DbSet<DictionaryEntry> DictionaryEntries => Set<DictionaryEntry>();
 
+    public DbSet<WordReview> WordReviews => Set<WordReview>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         ApplySaveRules();

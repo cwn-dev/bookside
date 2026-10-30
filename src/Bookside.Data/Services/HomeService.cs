@@ -52,6 +52,9 @@ internal sealed class HomeService(IDbContextFactory<BooksideDbContext> dbFactory
             RecentlyFinished = [.. finished.DistinctBy(r => r.BookId).Take(RecentlyFinishedCount)],
             RecentWords = [.. recentWords.Select(VocabularyService.ToSummary)],
             WordOfTheDay = wordOfTheDay,
+            Review = await ReviewService
+                .GetStatusAsync(db, today, cancellationToken)
+                .ConfigureAwait(false),
             Stats = await LoadStatsAsync(db, today, cancellationToken).ConfigureAwait(false),
         };
     }
