@@ -1,6 +1,7 @@
 using Bookside.Core.Books;
 using Bookside.Core.Books.Services;
 using Bookside.UI.Pages;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace Bookside.UI.Tests.Components;
 
@@ -198,6 +199,23 @@ public sealed class BookDetailsPageTests : ComponentTestBase
         Assert.Equal("", page.Find(".add-comment textarea").GetAttribute("value") ?? "");
         Assert.Empty(page.FindAll(".comment .edited"));
         Assert.Equal("Spice must flow.\nSecond line.", Assert.Single((await GetBookAsync(book.Id)).Comments).Text);
+    }
+
+    [Fact]
+    public async Task Ctrl_Enter_posts_the_typed_comment()
+    {
+        var book = await AddBookAsync("Dune");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        // No change event: the text box still has focus.
+        var box = page.Find(".add-comment textarea");
+        box.Input("Spice must flow.");
+        box.KeyDown(new KeyboardEventArgs { Key = "Enter", CtrlKey = true });
+
+        page.WaitForAssertion(() => Assert.Equal(
+            "Spice must flow.",
+            page.Find(".comment .comment-text").TextContent));
     }
 
     [Fact]
