@@ -3,6 +3,7 @@
 @inject ILibraryService Library
 @inject ITagService TagService
 @inject NavigationManager Navigation
+@inject LibraryListState ListState
 
 <PageTitle>Library · Bookside</PageTitle>
 
@@ -78,7 +79,7 @@ else
         @foreach (var book in _books)
         {
             <li @key="book.Id">
-                <a class="book-card" href="books/@book.Id">
+                <a class="book-card" href="books/@book.Id" @ref="_cards[book.Id]">
                     <CoverImage BookId="book.Id" Title="@book.Title" CoverSha256="@book.CoverSha256" />
                     <span class="title">@book.Title</span>
                     @if (book.Authors.Count > 0)
@@ -126,6 +127,9 @@ else
     private bool _loading;
     private string? _searchText;
     private string? _lastQ;
+    private bool _loadedOnce;
+    private Guid? _focusBookId;
+    private readonly Dictionary<Guid, ElementReference> _cards = [];
     private CancellationTokenSource? _loadCts;
     private CancellationTokenSource? _searchCts;
 
@@ -151,6 +155,13 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        // The query parameters also update while navigating to a book, just
+        // before this page goes away.
+        if (LibraryListState.IsBookPage(ListUrl()))
+        {
+            return;
+        }
+
         // Only overwrite the box when the query changed from outside (Back, a link), not from our own typing.
         if (Q != _lastQ)
         {
@@ -158,12 +169,44 @@ else
             _lastQ = Q;
         }
 
-        await LoadAsync(append: false);
+        // Coming back from a book: the same books as before, with that one
+        // focused.
+        var returning = _loadedOnce ? null : ListState.ReturnTo(ListUrl());
+        _loadedOnce = true;
+        await LoadAsync(append: false, returning?.LoadedCount ?? 0);
+        _focusBookId = returning?.BookId;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusBookId is not { } bookId)
+        {
+            return;
+        }
+
+        if (firstRender)
+        {
+            // FocusOnNavigate focuses the heading after this render; focus the
+            // card on the next one so it wins.
+            StateHasChanged();
+            return;
+        }
+
+        _focusBookId = null;
+        if (_cards.TryGetValue(bookId, out var card))
+        {
+            // Scrolls the card into view.
+            await card.FocusAsync();
+        }
     }
 
     private async Task LoadMoreAsync() => await LoadAsync(append: true);
 
-    private async Task LoadAsync(bool append)
+    /// <param name="minCount">
+    /// Load at least this many books (to restore a list that had "Show more"
+    /// pages).
+    /// </param>
+    private async Task LoadAsync(bool append, int minCount = 0)
     {
         _loadCts?.Cancel();
         _loadCts?.Dispose();
@@ -172,20 +215,35 @@ else
         _loading = true;
         try
         {
-            var page = await Library.ListBooksAsync(
-                new BookQuery
-                {
-                    Search = Q,
-                    Filter = Filter,
-                    Tag = Tag,
-                    Sort = Sort,
-                    Skip = append ? _books?.Count ?? 0 : 0,
-                    Take = PageSize,
-                },
-                cts.Token);
+            List<BookSummary> books = append && _books is not null ? [.. _books] : [];
+            var wanted = Math.Max(minCount, books.Count + PageSize);
+            int totalCount;
+            do
+            {
+                var page = await Library.ListBooksAsync(
+                    new BookQuery
+                    {
+                        Search = Q,
+                        Filter = Filter,
+                        Tag = Tag,
+                        Sort = Sort,
+                        Skip = books.Count,
+                        Take = Math.Min(wanted - books.Count, Paging.MaxTake),
+                    },
+                    cts.Token);
 
-            _books = append && _books is not null ? [.. _books, .. page.Items] : [.. page.Items];
-            _totalCount = page.TotalCount;
+                books.AddRange(page.Items);
+                totalCount = page.TotalCount;
+                if (page.Items.Count == 0)
+                {
+                    break;
+                }
+            }
+            while (books.Count < Math.Min(wanted, totalCount));
+
+            _books = books;
+            _totalCount = totalCount;
+            ListState.Showing(ListUrl(), books.Count);
         }
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
@@ -221,6 +279,8 @@ else
 
     private void SortChanged(ChangeEventArgs e) =>
         Navigation.NavigateTo(UrlFor(Filter, Enum.Parse<BookSort>((string)e.Value!), Q, Tag), replace: true);
+
+    private string ListUrl() => Navigation.ToBaseRelativePath(Navigation.Uri);
 
     /// <summary>The list URL for these settings; defaults are left out to keep URLs short.</summary>
     private string UrlFor(BookFilter filter, BookSort sort, string? q, string? tag) =>

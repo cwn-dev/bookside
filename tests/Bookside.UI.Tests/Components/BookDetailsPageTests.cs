@@ -35,6 +35,33 @@ public sealed class BookDetailsPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Back_link_returns_to_the_list_the_book_was_opened_from()
+    {
+        var book = await AddBookAsync("Dune");
+        Navigation.NavigateTo("books?q=du&sort=recentlyadded");
+        var list = Render<LibraryPage>();
+        list.WaitForAssertion(() => list.Find(".book-card"));
+
+        Navigation.NavigateTo($"books/{book.Id}");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+
+        page.WaitForAssertion(() => Assert.Equal(
+            "books?q=du&sort=recentlyadded",
+            page.Find(".back a").GetAttribute("href")));
+    }
+
+    [Fact]
+    public async Task Back_link_goes_to_the_whole_library_when_not_opened_from_it()
+    {
+        var book = await AddBookAsync("Dune");
+
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+
+        page.WaitForAssertion(() =>
+            Assert.Equal("books", page.Find(".back a").GetAttribute("href")));
+    }
+
+    [Fact]
     public void Unknown_book_shows_not_found()
     {
         var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, Guid.NewGuid()));

@@ -1,6 +1,7 @@
 using Bookside.Data;
 using Bookside.Data.Sqlite;
 using Bookside.Integrations;
+using Bookside.UI;
 using Bookside.Web;
 using Bookside.Web.Components;
 using Microsoft.AspNetCore.DataProtection;
@@ -40,7 +41,8 @@ builder.Services
     .AddBooksideSqlite(Path.Combine(
         builder.Environment.ContentRootPath,
         databasePath))
-    .AddBooksideServices();
+    .AddBooksideServices()
+    .AddBooksideUi();
 
 // Dictionary providers, tried in this order when a word is looked up.
 builder.Services.AddFreeDictionaryApiClient();

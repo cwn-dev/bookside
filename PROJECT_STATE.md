@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 21, 2026-10-30)
+# Bookside: project state (end of session 22, 2026-10-30)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -95,6 +95,14 @@
   `FinishedLabels.Summary` ("Finished 30 Oct 2026 · read in 28 days"). Closes after 3.5 s (fade out), on its
   close button or a backdrop click. No JS, no sound. The home goal-reached confetti still plays on the
   challenge card behind it.
+- Library return (session 22): `Bookside.UI/LibraryListState` (scoped = per circuit, registered by
+  `AddBooksideUi()`; the host and `ComponentTestBase` call it) remembers the list URL and loaded count the library
+  reports after each load, and the book opened from it (tracked from `LocationChanged`). Coming back to that same
+  URL (browser Back or the book page's "← Library", which uses `BackUrlFor(bookId)`) reloads as many books as were
+  shown ("Show more" pages, in ≤ 200 chunks) and focuses the opened card (`FocusAsync`, which scrolls it into
+  view; `scroll-margin` clears the sticky header). Kept through the book's own pages (`books/{id}/…`); any other
+  navigation forgets it. Checked in Firefox at 1280 and 390 px: same scroll position, no focus ring after a mouse
+  click.
 - Book series (session 10): `BookInput`/`BookSummary`/`BookDetails` carry `Series` + `SeriesNumber`;
   `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
   + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page
@@ -148,7 +156,7 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 132 tests (session 21: Ctrl+Enter comment); 131 in session 19 ( `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
+- `Bookside.UI.Tests`: 142 tests (session 22: `LibraryListStateTests`, library return, book back link); 132 in session 21 (Ctrl+Enter comment); 131 in session 19 ( `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
   pages); 123 in session 17 ( challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
@@ -211,6 +219,11 @@
     Cost: blank page until the circuit connects (fast on a LAN).
   - Library list state (search, filter, sort) lives in the query string (`?q=&filter=&sort=`), so Back from a book
     restores the list. Search is debounced 300 ms and uses `replace: true` navigation.
+  - Session 22 (user's choice: no JS): returning from a book focuses its card instead of saving `scrollY`, so the
+    UI stays JS-free; the position is "card in view", not pixel-exact (in practice Firefox landed on the same
+    spot). Focus waits one render after the first, so `FocusOnNavigate`'s heading focus doesn't win. Nothing
+    survives a reload (circuit state only). The library ignores query updates for `books/…` URLs (they arrive
+    just before the page is disposed).
   - Forms validate only through the services: `ServiceErrorValidator` maps `FieldErrors` onto the `EditForm` by
     property name (no DataAnnotations duplication). Unmatched field errors and non-validation errors show in `ErrorAlert`.
   - Cover URLs carry the hash (`?v=`): matching `v` → `private, max-age=1y, immutable`; missing/stale `v` →

@@ -1,6 +1,7 @@
 @page "/books/{Id:guid}"
 @inject ILibraryService Library
 @inject NavigationManager Navigation
+@inject LibraryListState ListState
 @inject TimeProvider Clock
 
 <PageTitle>@(_book?.Title ?? "Book") · Bookside</PageTitle>
@@ -9,7 +10,7 @@
 {
     <h1>Book not found</h1>
     <p>It may have been deleted.</p>
-    <a class="btn" href="books">Back to the library</a>
+    <a class="btn" href="@ListState.BackUrlFor(Id)">Back to the library</a>
 }
 else if (_book is null)
 {
@@ -17,7 +18,7 @@ else if (_book is null)
 }
 else
 {
-    <p class="back"><a href="books">← Library</a></p>
+    <p class="back"><a href="@ListState.BackUrlFor(Id)">← Library</a></p>
 
     <article class="book">
         <div class="book-cover">
@@ -408,7 +409,7 @@ else
         var result = await Library.DeleteBookAsync(Id);
         if (result.IsSuccess || result.Error.Type == ErrorType.NotFound)
         {
-            Navigation.NavigateTo("books");
+            Navigation.NavigateTo(ListState.BackUrlFor(Id));
         }
         else
         {

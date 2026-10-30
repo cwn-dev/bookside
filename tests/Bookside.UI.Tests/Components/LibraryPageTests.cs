@@ -143,4 +143,61 @@ public sealed class LibraryPageTests : ComponentTestBase
         page.WaitForAssertion(() => Assert.Equal(LibraryPage.PageSize + 2, page.FindAll(".book-card").Count));
         Assert.Empty(page.FindAll(".more button"));
     }
+
+    [Fact]
+    public async Task Coming_back_from_a_book_restores_the_list_and_focuses_the_book()
+    {
+        await AddBooksAsync(LibraryPage.PageSize + 2);
+        Navigation.NavigateTo("books?sort=recentlyadded");
+        var list = Render<LibraryPage>();
+        WaitForCards(list, LibraryPage.PageSize);
+        list.Find(".more button").Click();
+        WaitForCards(list, LibraryPage.PageSize + 2);
+        var opened = list.FindAll(".book-card")[^1].GetAttribute("href")!;
+
+        Navigation.NavigateTo(opened);
+        Navigation.NavigateTo(opened + "/edit");
+        Navigation.NavigateTo(opened);
+        await DisposeComponentsAsync();
+        Navigation.NavigateTo("books?sort=recentlyadded");
+        var back = Render<LibraryPage>();
+
+        WaitForCards(back, LibraryPage.PageSize + 2);
+
+        // Which card is LibraryListStateTests' job: bUnit's markup doesn't
+        // show the reference ids.
+        back.WaitForAssertion(() => JSInterop.VerifyFocusAsyncInvoke());
+    }
+
+    [Fact]
+    public async Task Going_elsewhere_after_a_book_forgets_the_list()
+    {
+        await AddBooksAsync(LibraryPage.PageSize + 2);
+        var list = Render<LibraryPage>();
+        WaitForCards(list, LibraryPage.PageSize);
+        list.Find(".more button").Click();
+        WaitForCards(list, LibraryPage.PageSize + 2);
+
+        Navigation.NavigateTo(list.Find(".book-card").GetAttribute("href")!);
+        Navigation.NavigateTo("words");
+        await DisposeComponentsAsync();
+        Navigation.NavigateTo("books");
+        var back = Render<LibraryPage>();
+
+        WaitForCards(back, LibraryPage.PageSize);
+        Assert.DoesNotContain(
+            JSInterop.Invocations,
+            i => i.Identifier.Contains("focus", StringComparison.Ordinal));
+    }
+
+    private async Task AddBooksAsync(int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            await AddBookAsync($"Book {i:D3}");
+        }
+    }
+
+    private static void WaitForCards(IRenderedComponent<LibraryPage> page, int count) =>
+        page.WaitForAssertion(() => Assert.Equal(count, page.FindAll(".book-card").Count));
 }

@@ -30,7 +30,9 @@ dotnet run --project src/Bookside.Web                                # http://lo
                                                                      #  "web-scratch" uses App_Data/scratch.db, use it for UI checks)
 # UI screenshots: no prerendering, so `firefox --screenshot` is blank. Drive headless Firefox over Marionette instead
 # (firefox --headless --marionette -remote-allow-system-access --no-remote --profile <tmp>; TCP 2828, length-prefixed
-#  JSON; chrome-context pref layout.css.prefers-color-scheme.content-override = 0 for dark mode).
+#  JSON; chrome-context pref layout.css.prefers-color-scheme.content-override = 0 for dark mode). The user's own
+#  Firefox may be running: stop only the headless one by PID, and never `pkill -f` a pattern that also matches
+#  your own shell command.
 dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web   # optional Google Books fallback
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
@@ -60,13 +62,14 @@ docker compose up -d --build                                         # on the Do
   `TestClock` as the `TimeProvider`).
 - `src/Bookside.UI`: Razor class library with pages (`Pages/`), layout, shared `Components/`, form models (`Forms/`) and
   `wwwroot/bookside.css`; display logic with no markup as plain classes (e.g. `BookTimeline`, `ReviewLabels`,
-  unit-tested without bUnit). References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
+  unit-tested without bUnit); per-circuit UI state as scoped services registered by `AddBooksideUi()` (e.g.
+  `LibraryListState`). References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
   MAUI can reuse it. Components inject Core service interfaces.
 - `src/Bookside.Web`: Blazor Web App host (Interactive Server, no prerendering): `Program.cs`, `App.razor`, `Routes.razor`,
   error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`, `Bookside:DataProtectionKeysPath`.
 - `Dockerfile` / `docker-compose.yaml` / `.dockerignore` at the root: the image copies only the root build files
   (`global.json`, `Directory.*.props`, `.editorconfig`) and `src/`; add any new root-level build file to the `COPY`.
-- `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations on temp SQLite,
+- `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations incl. `AddBooksideUi()` on temp SQLite,
   controllable `FakeDictionaryLookup` via `Dictionary`, `FakeBookLookup` via `BookLookup`) and
   `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`).
 - Planned: `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).

@@ -25,6 +25,7 @@ public abstract class ComponentTestBase : BunitContext, IAsyncLifetime
         Services
             .AddBooksideSqlite(Path.Combine(_directory, "bookside.db"))
             .AddBooksideServices()
+            .AddBooksideUi()
             .AddSingleton<IDictionaryLookupService>(Dictionary)
             .AddSingleton<IBookLookupService>(BookLookup);
     }

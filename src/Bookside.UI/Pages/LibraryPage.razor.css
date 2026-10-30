@@ -68,3 +68,8 @@
     font-size: 0.85rem;
     white-space: nowrap;
 }
+
+/* Focused on return from a book: keep it clear of the sticky header. */
+.book-card {
+    scroll-margin: calc(56px + 1rem) 0 1rem;
+}
