@@ -67,6 +67,39 @@ public sealed class BookEditPageTests : ComponentTestBase
     }
 
     [Fact]
+    public void Saving_shows_that_the_cover_is_downloading()
+    {
+        BookLookup.Results =
+        [
+            new BookMetadata
+            {
+                Source = "openlibrary",
+                SourceId = "/books/OL1M",
+                Title = "Mort",
+                CoverImageUrl = new Uri("https://covers.openlibrary.org/b/id/1-L.jpg"),
+            },
+        ];
+        var gate = new TaskCompletionSource();
+        BookLookup.CoverDownloadGate = gate.Task;
+        var page = Render<BookEditPage>();
+        page.Find("#lookup-query").Input("mort");
+        page.Find(".lookup-row button").Click();
+        page.WaitForElement(".lookup-results button").Click();
+
+        page.Find("form").Submit();
+
+        page.WaitForAssertion(() => Assert.Contains(
+            "Downloading cover",
+            page.Find(".form-actions [role=status]").TextContent,
+            StringComparison.Ordinal));
+        Assert.True(page.Find("button[type=submit]").HasAttribute("disabled"));
+
+        gate.SetResult();
+
+        page.WaitForAssertion(() => Assert.Matches("/books/[0-9a-f-]{36}$", Navigation.Uri));
+    }
+
+    [Fact]
     public void A_lookup_with_no_results_says_so()
     {
         var page = Render<BookEditPage>();

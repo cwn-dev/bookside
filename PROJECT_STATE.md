@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 14, 2026-10-29)
+# Bookside: project state (end of session 15, 2026-10-30)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -53,7 +53,8 @@
   `Bookside:GoogleBooks:ApiKey` is set (compose: `GOOGLE_BOOKS_API_KEY` in `.env`; dev: user secrets, Web has a
   `UserSecretsId`). UI: `BookLookup` card above the book form (add and edit; not a `<form>`, Enter or "Look up"),
   result list (thumb, title, authors, year, "Results from …"); picking calls `BookFormModel.FillEmpty` and, if the
-  book has no cover, the cover is downloaded after the book saves (failure = no cover, silently).
+  book has no cover, the cover is downloaded after the book saves (failure = no cover, silently); session 15:
+  a "Downloading cover…" status with a spinner (shared `.busy` + `.spinner` in `bookside.css`) shows meanwhile.
 - Flash cards (session 13): `WordReview` (own table `WordReviews`, keyed by `WordId`, cascade from the word;
   `DueOn`/`FirstReviewedOn`/`LastReviewedOn` local `DateOnly`s, `IntervalDays`, `Ease` ≥ 1.3, `Repetitions`,
   `Lapses`; migration `AddWordReviews`, new table only). No row = new card. `Core/Vocabulary/ReviewScheduler`
@@ -123,7 +124,7 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 103 tests (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- `Bookside.UI.Tests`: 104 tests (session 15: cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).

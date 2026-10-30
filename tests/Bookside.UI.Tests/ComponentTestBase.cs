@@ -109,6 +109,12 @@ public sealed class FakeBookLookup : IBookLookupService
 
     public IReadOnlyList<BookMetadata> Results { get; set; } = [];
 
+    /// <summary>
+    /// When set, cover downloads wait for this task, so a test can see the
+    /// page while the download runs.
+    /// </summary>
+    public Task? CoverDownloadGate { get; set; }
+
     public Task<BookMetadata?> FindByIsbnAsync(
         string isbn13,
         CancellationToken cancellationToken = default) =>
@@ -120,13 +126,20 @@ public sealed class FakeBookLookup : IBookLookupService
         CancellationToken cancellationToken = default) =>
             Task.FromResult(Results);
 
-    public Task<CoverInput> DownloadCoverAsync(
+    public async Task<CoverInput> DownloadCoverAsync(
         Uri url,
-        CancellationToken cancellationToken = default) =>
-            Task.FromResult(new CoverInput
-            {
-                Content = new byte[] { 0x89, 0x50, 0x4E, 0x47 },
-                ContentType = "image/png",
-                SourceUrl = url.AbsoluteUri,
-            });
+        CancellationToken cancellationToken = default)
+    {
+        if (CoverDownloadGate is not null)
+        {
+            await CoverDownloadGate.WaitAsync(cancellationToken);
+        }
+
+        return new CoverInput
+        {
+            Content = new byte[] { 0x89, 0x50, 0x4E, 0x47 },
+            ContentType = "image/png",
+            SourceUrl = url.AbsoluteUri,
+        };
+    }
 }

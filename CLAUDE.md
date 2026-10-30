@@ -109,7 +109,7 @@ docker compose up -d --build                                         # on the Do
 - External APIs sit behind Core interfaces; implementations go in `Bookside.Integrations`.
 - UI must work equally well on desktop and mobile; neither is the priority (not "mobile-first"). Check both widths
   (and dark mode). Plain CSS: tokens in `bookside.css`, component styles in scoped `.razor.css`; no component library.
-- Shared page/list styles (toolbar, chips, empty, more, back, section-header) live in `bookside.css`; page-specific ones stay scoped.
+- Shared page/list styles (toolbar, chips, empty, more, back, section-header, busy + spinner) live in `bookside.css`; page-specific ones stay scoped.
 - Component/page code: no `ConfigureAwait(false)` (CA2007 is off in UI/Web/UI.Tests). Pages are `*Page.razor` to avoid
   clashing with service/entity names. Forms validate via the services and `ServiceErrorValidator`, not DataAnnotations.
 - bUnit 2: set `[SupplyParameterFromQuery]` values by navigating `BunitNavigationManager` before `Render`; qualify
