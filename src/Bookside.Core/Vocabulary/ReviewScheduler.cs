@@ -13,7 +13,7 @@ public static class ReviewScheduler
     public const double LapseEasePenalty = 0.2;
     public const int FirstIntervalDays = 1;
     public const int SecondIntervalDays = 6;
-    public const int MaxIntervalDays = 3650;
+    public const int MaxIntervalDays = 365;
 
     /// <summary>
     /// New words that can be started per day, so a backlog doesn't arrive all
