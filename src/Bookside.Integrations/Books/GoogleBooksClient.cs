@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Bookside.Core.Books.Lookup;
 using Bookside.Core.Books.Services;
 using Microsoft.Extensions.Options;
@@ -63,6 +64,27 @@ internal sealed class GoogleBooksClient : IBookLookupService
         return QueryAsync(query, maxResults, cancellationToken);
     }
 
+    public async Task<BookMetadata> GetDetailsAsync(
+        BookMetadata book,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+
+        var path = new Uri(
+            $"volumes/{Uri.EscapeDataString(book.SourceId)}",
+            UriKind.Relative);
+
+        var volume = await GetAsync(
+                path,
+                GoogleBooksJsonContext.Default.GbVolume,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return BookText.FromHtml(volume.VolumeInfo?.Description) is { } description
+            ? book with { Description = description }
+            : book;
+    }
+
     public Task<CoverInput> DownloadCoverAsync(
         Uri url,
         CancellationToken cancellationToken = default) =>
@@ -79,23 +101,13 @@ internal sealed class GoogleBooksClient : IBookLookupService
                 $"volumes?q={Uri.EscapeDataString(q)}&maxResults={maxResults}&printType=books"),
             UriKind.Relative);
 
-        var body = await BookHttp
-            .GetJsonAsync(_http, path, SourceId, cancellationToken)
+        var response = await GetAsync(
+                path,
+                GoogleBooksJsonContext.Default.GbResponse,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        GbResponse? response;
-        try
-        {
-            response = JsonSerializer.Deserialize(
-                body,
-                GoogleBooksJsonContext.Default.GbResponse);
-        }
-        catch (JsonException ex)
-        {
-            throw BookHttp.Unexpected(SourceId, ex);
-        }
-
-        if (response?.Kind != "books#volumes")
+        if (response.Kind != "books#volumes")
         {
             throw BookHttp.Unexpected(SourceId);
         }
@@ -106,6 +118,26 @@ internal sealed class GoogleBooksClient : IBookLookupService
                 .Where(v => v.Id is not null && v.VolumeInfo?.Title is not null)
                 .Select(v => Map(v.Id!, v.VolumeInfo!)),
         ];
+    }
+
+    private async Task<T> GetAsync<T>(
+        Uri path,
+        JsonTypeInfo<T> type,
+        CancellationToken cancellationToken)
+    {
+        var body = await BookHttp
+            .GetJsonAsync(_http, path, SourceId, cancellationToken)
+            .ConfigureAwait(false);
+
+        try
+        {
+            return JsonSerializer.Deserialize(body, type)
+                ?? throw BookHttp.Unexpected(SourceId);
+        }
+        catch (JsonException ex)
+        {
+            throw BookHttp.Unexpected(SourceId, ex);
+        }
     }
 
     private static BookMetadata Map(string id, GbVolumeInfo info) => new()

@@ -211,6 +211,79 @@ public sealed class BookLookupClientTests : IDisposable
         await Assert.ThrowsAsync<BookLookupException>(() => Google.SearchAsync("x", 10, Ct));
     }
 
+    [Fact]
+    public async Task Google_details_turn_the_volume_html_into_paragraphs()
+    {
+        _google.Reply(HttpStatusCode.OK, """
+            {"id": "abc123", "volumeInfo": {"title": "The Dispossessed", "description":
+              "<p>Centuries ago, the moon&nbsp;Anarres was settled.</p> <p><i>The Dispossessed</i> is a<br>penetrating examination &amp; more.</p><ul><li>One</li><li>Two</li></ul>"}}
+            """);
+        var book = new BookMetadata
+        {
+            Source = "googlebooks",
+            SourceId = "abc 123",
+            Title = "The Dispossessed",
+            Description = "Flattened.",
+        };
+
+        var details = await Google.GetDetailsAsync(book, Ct);
+
+        Assert.Equal(
+            "Centuries ago, the moon Anarres was settled.\n\n"
+            + "The Dispossessed is a\npenetrating examination & more.\n\n• One\n• Two",
+            details.Description);
+        Assert.Equal(
+            "https://www.googleapis.com/books/v1/volumes/abc%20123",
+            Assert.Single(_google.Requests).AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task Open_Library_details_fall_back_from_the_edition_to_its_work()
+    {
+        _openLibrary
+            .Reply(HttpStatusCode.OK, """{"works": [{"key": "/works/OL59863W"}]}""")
+            .Reply(HttpStatusCode.OK, """
+                {"description": {"type": "/type/text", "value":
+                  "**From the *Times* author.**\r\n\r\nSee [the site](https://x.test) or [this][1].\r\n\r\n[1]: https://y.test\r\n\r\n----------\r\nAlso contained in:\r\n- Omnibus"}}
+                """);
+        var book = new BookMetadata
+        {
+            Source = "openlibrary",
+            SourceId = "/books/OL28477029M",
+            Title = "The Dispossessed",
+        };
+
+        var details = await OpenLibrary.GetDetailsAsync(book, Ct);
+
+        Assert.Equal(
+            "From the Times author.\n\nSee the site or this.",
+            details.Description);
+        Assert.Equal(
+            [
+                "https://openlibrary.org/books/OL28477029M.json",
+                "https://openlibrary.org/works/OL59863W.json",
+            ],
+            _openLibrary.Requests.Select(u => u.AbsoluteUri));
+    }
+
+    [Fact]
+    public async Task Open_Library_details_use_a_plain_string_and_ignore_foreign_keys()
+    {
+        _openLibrary.Reply(HttpStatusCode.OK, """{"description": "One.\r\n\r\nTwo."}""");
+        var book = new BookMetadata
+        {
+            Source = "openlibrary",
+            SourceId = "/works/OL1W",
+            Title = "T",
+        };
+
+        Assert.Equal("One.\n\nTwo.", (await OpenLibrary.GetDetailsAsync(book, Ct)).Description);
+
+        var foreign = book with { SourceId = "/../admin" };
+        Assert.Same(foreign, await OpenLibrary.GetDetailsAsync(foreign, Ct));
+        Assert.Single(_openLibrary.Requests);
+    }
+
     private IBookLookupService Provider(string source) =>
         _services.GetServices<IBookLookupService>().Single(s => s.Source == source);
 }

@@ -4,8 +4,8 @@ namespace Bookside.Core.Books.Lookup;
 
 /// <summary>
 /// One book metadata provider (Open Library, Google Books). Several can be
-/// registered; <see cref="IBookMetadataService"/> tries them in registration
-/// order. Failures throw <see cref="BookLookupException"/>.
+/// registered; <see cref="IBookMetadataService"/> searches them all at once.
+/// Failures throw <see cref="BookLookupException"/>.
 /// </summary>
 public interface IBookLookupService
 {
@@ -28,6 +28,16 @@ public interface IBookLookupService
     Task<IReadOnlyList<BookMetadata>> SearchAsync(
         string query,
         int maxResults,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetches the full record of a result this provider returned and returns
+    /// <paramref name="book"/> with its description from there (as plain text,
+    /// paragraphs separated by a blank line); searches leave it out or
+    /// flatten it. Unchanged when the record has no description.
+    /// </summary>
+    Task<BookMetadata> GetDetailsAsync(
+        BookMetadata book,
         CancellationToken cancellationToken = default);
 
     /// <summary>

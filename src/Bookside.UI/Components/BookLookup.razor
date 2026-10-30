@@ -1,6 +1,6 @@
 @* Search box for book metadata (ISBN, or title and/or author); picking a
-   result raises OnPick. Not a <form>, so it can sit next to the book's
-   EditForm. *@
+   result loads its details (the full description), then raises OnPick. Not
+   a <form>, so it can sit next to the book's EditForm. *@
 @inject IBookMetadataService Metadata
 
 <section class="book-lookup card" aria-labelledby="lookup-heading">
@@ -15,7 +15,10 @@
                placeholder="ISBN, title or author"
                autocomplete="off"
                enterkeyhint="search" />
-        <button type="button" class="btn" disabled="@_searching" @onclick="SearchAsync">
+        <button type="button"
+                class="btn"
+                disabled="@(_searching || _loadingDetails)"
+                @onclick="SearchAsync">
             @(_searching ? "Searching…" : "Look up")
         </button>
     </div>
@@ -36,11 +39,13 @@
     }
     else if (_results is not null)
     {
-        <ul class="lookup-results" aria-label="Results from @SourceName(_results[0].Source)">
+        <ul class="lookup-results" aria-label="Results">
             @foreach (var result in _results)
             {
                 <li>
-                    <button type="button" @onclick="() => PickAsync(result)">
+                    <button type="button"
+                            disabled="@_loadingDetails"
+                            @onclick="() => PickAsync(result)">
                         <span class="thumb">
                             @if (result.CoverImageUrl is { } cover)
                             {
@@ -55,17 +60,25 @@
                             <span class="result-title">@result.Title</span>
                             <span class="muted">@Byline(result)</span>
                         </span>
+                        <span class="badge source-label">@SourceName(result.Source)</span>
                     </button>
                 </li>
             }
         </ul>
-        <p class="muted source">Results from @SourceName(_results[0].Source).</p>
+        @if (_loadingDetails)
+        {
+            <p class="busy" role="status">
+                <span class="spinner" aria-hidden="true"></span>
+                Getting details…
+            </p>
+        }
     }
 </section>
 
 @code {
     private string _query = "";
     private bool _searching;
+    private bool _loadingDetails;
     private IReadOnlyList<BookMetadata>? _results;
     private BookMetadata? _picked;
     private IReadOnlyList<string> _errors = [];
@@ -97,7 +110,7 @@
 
     private async Task SearchAsync()
     {
-        if (_searching || string.IsNullOrWhiteSpace(_query))
+        if (_searching || _loadingDetails || string.IsNullOrWhiteSpace(_query))
         {
             return;
         }
@@ -122,10 +135,28 @@
             ? "Book search is unavailable right now. Try again later."
             : error.Message;
 
+    /// <summary>
+    /// If the details can't be loaded, the search result fills the form.
+    /// </summary>
     private async Task PickAsync(BookMetadata book)
     {
-        _picked = book;
+        if (_loadingDetails)
+        {
+            return;
+        }
+
+        _loadingDetails = true;
+        try
+        {
+            var details = await Metadata.GetDetailsAsync(book);
+            _picked = details.IsSuccess ? details.Value : book;
+        }
+        finally
+        {
+            _loadingDetails = false;
+        }
+
         _results = null;
-        await OnPick.InvokeAsync(book);
+        await OnPick.InvokeAsync(_picked);
     }
 }

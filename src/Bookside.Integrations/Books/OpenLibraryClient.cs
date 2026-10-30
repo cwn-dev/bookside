@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.RegularExpressions;
 using Bookside.Core.Books.Lookup;
 using Bookside.Core.Books.Services;
 
@@ -8,10 +9,12 @@ namespace Bookside.Integrations.Books;
 
 /// <summary>
 /// openlibrary.org client (no key). ISBN lookups return an edition (with ISBNs
-/// and publisher); text searches return works, which have no ISBN, publisher or
-/// description (an edition can't be told apart from a work's list).
+/// and publisher); text searches return works, which have no ISBN or
+/// publisher (an edition can't be told apart from a work's list). Neither has
+/// a description: <see cref="GetDetailsAsync"/> reads it from the edition or
+/// its work.
 /// </summary>
-internal sealed class OpenLibraryClient(HttpClient http, BookCoverDownloader covers)
+internal sealed partial class OpenLibraryClient(HttpClient http, BookCoverDownloader covers)
     : IBookLookupService
 {
     public const string SourceId = "openlibrary";
@@ -107,6 +110,36 @@ internal sealed class OpenLibraryClient(HttpClient http, BookCoverDownloader cov
         ];
     }
 
+    public async Task<BookMetadata> GetDetailsAsync(
+        BookMetadata book,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+
+        // Only keys this client returned ("/books/OL…M", "/works/OL…W"),
+        // so the id can't point the request anywhere else.
+        if (!RecordKey().IsMatch(book.SourceId))
+        {
+            return book;
+        }
+
+        var record = await GetRecordAsync(book.SourceId, cancellationToken)
+            .ConfigureAwait(false);
+
+        // An edition rarely has its own description; its work usually does.
+        if (Description(record) is null
+            && record.Works is [{ Key: { } work }, ..]
+            && RecordKey().IsMatch(work))
+        {
+            record = await GetRecordAsync(work, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return Description(record) is { } description
+            ? book with { Description = description }
+            : book;
+    }
+
     public Task<CoverInput> DownloadCoverAsync(
         Uri url,
         CancellationToken cancellationToken = default) =>
@@ -120,6 +153,27 @@ internal sealed class OpenLibraryClient(HttpClient http, BookCoverDownloader cov
         new(string.Create(
             CultureInfo.InvariantCulture,
             $"https://covers.openlibrary.org/b/id/{id}-L.jpg?default=false"));
+
+    private Task<OlRecord> GetRecordAsync(
+        string key,
+        CancellationToken cancellationToken) =>
+            GetAsync(
+                new Uri($"{key.TrimStart('/')}.json", UriKind.Relative),
+                OpenLibraryJsonContext.Default.OlRecord,
+                cancellationToken);
+
+    /// <summary>
+    /// A plain string, or <c>{"type": "/type/text", "value": "…"}</c>.
+    /// </summary>
+    private static string? Description(OlRecord record) =>
+        BookText.FromMarkdown(record.Description switch
+        {
+            { ValueKind: JsonValueKind.String } s => s.GetString(),
+            { ValueKind: JsonValueKind.Object } o
+                when o.TryGetProperty("value", out var v)
+                    && v.ValueKind == JsonValueKind.String => v.GetString(),
+            _ => null,
+        });
 
     private async Task<T> GetAsync<T>(
         Uri path,
@@ -140,6 +194,9 @@ internal sealed class OpenLibraryClient(HttpClient http, BookCoverDownloader cov
             throw BookHttp.Unexpected(SourceId, ex);
         }
     }
+
+    [GeneratedRegex(@"^/(books|works)/OL\d+[MW]$")]
+    private static partial Regex RecordKey();
 
     private static string? First(IReadOnlyList<string>? values) =>
         values is { Count: > 0 } ? values[0] : null;

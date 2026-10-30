@@ -48,8 +48,8 @@ docker compose up -d --build                                         # on the Do
   resilience handler), registered by `Add<Provider>Client()` extensions that return the `IHttpClientBuilder`.
   Dictionary providers: several `IDictionaryLookupService` registrations, tried in registration order by
   `DefinitionService`; new ones go through `AddDictionaryClient<TClient, TOptions>` (own client name) and reuse
-  `DictionaryHttp` + `MeaningListBuilder`. Book providers (`Books/`): several `IBookLookupService` registrations
-  tried in order by `BookMetadataService`; same `AddLookupClient` helper, shared `BookHttp`, covers through the
+  `DictionaryHttp` + `MeaningListBuilder`. Book providers (`Books/`, text cleanup in `BookText`): several `IBookLookupService` registrations
+  searched in parallel by `BookMetadataService` (merged); same `AddLookupClient` helper, shared `BookHttp`, covers through the
   shared `BookCoverDownloader` (`book-covers` client). Both kinds share `LookupHttp` for GETs.
 - `tests/Bookside.Integrations.Tests`: client tests through the real registration, with `StubHttpMessageHandler` as the
   primary handler (retry delay zeroed via the `{clientName}-standard` resilience options; covers use the

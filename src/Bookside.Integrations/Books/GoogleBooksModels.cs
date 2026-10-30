@@ -3,9 +3,10 @@ using System.Text.Json.Serialization;
 
 namespace Bookside.Integrations.Books;
 
-// Wire format of GET googleapis.com/books/v1/volumes?q=… (only the fields
-// Bookside uses). No matches: {"kind":"books#volumes","totalItems":0} without
-// "items".
+// Wire format of googleapis.com/books/v1 (only the fields Bookside uses):
+// GET volumes?q=… → {"kind":"books#volumes","items":[volume, …]}; no matches
+// has no "items". GET volumes/{id} → volume, whose description is HTML (the
+// search's is plain text with the paragraph breaks removed).
 
 internal sealed record GbResponse(string? Kind, IReadOnlyList<GbVolume>? Items);
 
@@ -30,4 +31,5 @@ internal sealed record GbImageLinks(string? Thumbnail);
     JsonSerializerDefaults.Web,
     NumberHandling = JsonNumberHandling.AllowReadingFromString)]
 [JsonSerializable(typeof(GbResponse))]
+[JsonSerializable(typeof(GbVolume))]
 internal sealed partial class GoogleBooksJsonContext : JsonSerializerContext;

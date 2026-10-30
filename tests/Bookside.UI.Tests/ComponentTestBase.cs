@@ -110,6 +110,14 @@ public sealed class FakeBookLookup : IBookLookupService
     public IReadOnlyList<BookMetadata> Results { get; set; } = [];
 
     /// <summary>
+    /// Description returned by <see cref="GetDetailsAsync"/>; null keeps the
+    /// search result's.
+    /// </summary>
+    public string? Description { get; set; }
+
+    public bool DetailsUnavailable { get; set; }
+
+    /// <summary>
     /// When set, cover downloads wait for this task, so a test can see the
     /// page while the download runs.
     /// </summary>
@@ -125,6 +133,14 @@ public sealed class FakeBookLookup : IBookLookupService
         int maxResults,
         CancellationToken cancellationToken = default) =>
             Task.FromResult(Results);
+
+    public Task<BookMetadata> GetDetailsAsync(
+        BookMetadata book,
+        CancellationToken cancellationToken = default) =>
+            DetailsUnavailable
+                ? throw new BookLookupException("Simulated outage.")
+                : Task.FromResult(
+                    Description is null ? book : book with { Description = Description });
 
     public async Task<CoverInput> DownloadCoverAsync(
         Uri url,

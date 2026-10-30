@@ -7,6 +7,7 @@ namespace Bookside.Integrations.Books;
 // GET /api/books?bibkeys=ISBN:{isbn}&jscmd=data&format=json
 //     → {"ISBN:{isbn}": edition}, or {} when unknown.
 // GET /search.json?q=… → {"docs": [work, …]}.
+// GET /books/OL…M.json, /works/OL…W.json → record; an edition lists its works.
 
 internal sealed record OlEdition(
     string? Key,
@@ -38,10 +39,15 @@ internal sealed record OlWork(
     long? CoverI,
     int? NumberOfPagesMedian);
 
+internal sealed record OlRecord(JsonElement? Description, IReadOnlyList<OlKey>? Works);
+
+internal sealed record OlKey(string? Key);
+
 [JsonSourceGenerationOptions(
     JsonSerializerDefaults.Web,
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     NumberHandling = JsonNumberHandling.AllowReadingFromString)]
 [JsonSerializable(typeof(Dictionary<string, OlEdition>))]
 [JsonSerializable(typeof(OlSearchResponse))]
+[JsonSerializable(typeof(OlRecord))]
 internal sealed partial class OpenLibraryJsonContext : JsonSerializerContext;

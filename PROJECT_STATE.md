@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 15, 2026-10-30)
+# Bookside: project state (end of session 16, 2026-10-30)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -41,7 +41,7 @@
   mapping) and `MeaningListBuilder` (merge by part of speech, de-dup, phonetic length). `Program.cs` registers
   freedictionaryapi.com, then dictionaryapi.dev.
 - Book metadata import (session 12): `IBookMetadataService` (`Data/Services/BookMetadataService`) runs the
-  `IBookLookupService` providers in registration order. `SearchAsync(query)`: a valid ISBN-10/13 → `FindByIsbnAsync`
+  `IBookLookupService` providers (session 16: all at once, results merged in turns, up to 10 each). `SearchAsync(query)`: a valid ISBN-10/13 → `FindByIsbnAsync`
   (ISBN-13), else text search (10 results); `DownloadCoverAsync(metadata)` goes through the provider that found it.
   Results are cleaned (over-long values, bad ISBNs, pages ≤ 0 dropped; no title → result dropped). Providers in
   `Integrations/Books`: `OpenLibraryClient` (ISBN: `api/books?jscmd=data` = edition with ISBNs/publisher; text:
@@ -52,7 +52,8 @@
   the provider's own image hosts only). `Program.cs`: Open Library, then Google Books only if
   `Bookside:GoogleBooks:ApiKey` is set (compose: `GOOGLE_BOOKS_API_KEY` in `.env`; dev: user secrets, Web has a
   `UserSecretsId`). UI: `BookLookup` card above the book form (add and edit; not a `<form>`, Enter or "Look up"),
-  result list (thumb, title, authors, year, "Results from …"); picking calls `BookFormModel.FillEmpty` and, if the
+  result list (thumb, title, authors, year, a per-row source badge "Open Library" / "Google Books"); picking
+  calls `GetDetailsAsync` first ("Getting details…" spinner; on failure the search result is used); picking calls `BookFormModel.FillEmpty` and, if the
   book has no cover, the cover is downloaded after the book saves (failure = no cover, silently); session 15:
   a "Downloading cover…" status with a spinner (shared `.busy` + `.spinner` in `bookside.css`) shows meanwhile.
 - Flash cards (session 13): `WordReview` (own table `WordReviews`, keyed by `WordId`, cascade from the word;
@@ -124,14 +125,14 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 104 tests (session 15: cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- `Bookside.UI.Tests`: 106 tests (session 16: lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
-- `Bookside.Integrations.Tests`: 36 tests (session 12: `BookLookupClientTests`, both providers + covers);
+- `Bookside.Integrations.Tests`: 39 tests (session 16: details/descriptions); 36 in session 12 (`BookLookupClientTests`, both providers + covers);
   26 before through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 112 tests (session 14: practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
+- `Bookside.Data.Tests`: 116 tests (session 16: parallel/merged book search, details); 112 in session 14 (practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
   `ServiceTestBase.Metadata` needs a provider registered in `ConfigureServices`); 90 in session 11 (session 11: `TagServiceTests`; session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
   virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
   `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
@@ -238,8 +239,18 @@
 
 - **Book metadata import (session 12, user's choices: one box + result list, fill empty fields only, cover only
   if the book has none, Google only with a key, separate cover client):**
-  - Fallback chain like the dictionary one: a failure or no results → next provider; first provider with results
-    wins (no merging across providers); Unavailable only if one failed and none had results. No caching.
+  - Session 16 (user's request): every provider is searched in parallel (`Task.WhenAll`) and the lists are
+    interleaved in registration order (1st of each, then 2nd of each, …), each row labelled with its source.
+    No de-duplication across providers (an ISBN search usually shows the book once per provider). A failing
+    provider is skipped; Unavailable only if one failed and none had results. No caching. Latency = slowest
+    provider (≤ 8 s), no longer the sum.
+  - Descriptions (session 16, user's choice: fetch on pick and wait): searches flatten (Google `volumes?q=`
+    drops the `<p>` breaks) or omit (Open Library) them, so `IBookLookupService.GetDetailsAsync` fetches the
+    picked result's full record: Google `volumes/{id}` (HTML → text via `BookText.FromHtml`), Open Library
+    `/books/OL…M.json` then its work's `/works/OL…W.json` if the edition has none (`BookText.FromMarkdown`:
+    CRLF, emphasis, links, cut at a `----` rule). Only the description is taken from it. Plain text with blank
+    lines between paragraphs; the book page already uses `white-space: pre-line`. Open Library keys are
+    checked against `^/(books|works)/OL\d+[MW]$` before building a URL. A too-long detail keeps the search one.
   - An ISBN search always shows the list too (usually one row), so one UI covers ISBN, title and author searches.
   - Fill rules: only empty fields; authors only when every author box is blank; `MetadataSource(Id)` only if
     unset. Open Library ids are the key path (`/books/OL…M` from ISBN, `/works/OL…W` from text search).
@@ -321,8 +332,8 @@
 3. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
-- Book import: subjects → tags, series from metadata, descriptions for Open Library text results (needs a works
-  call) and merging providers were skipped. Open Library text results have no ISBN; an ISBN search fills it.
+- Book import: subjects → tags, series from metadata and merging providers were skipped. Google descriptions can
+  hold publisher text such as literal `**PRE-ORDER NOW…**` or `____` rules; kept as is. Open Library text results have no ISBN; an ISBN search fills it.
 - Deployment is the user's: they will test the image on the Docker host and set up a GitHub build that pushes it to
   Docker Hub. Fix image problems if they report any; don't plan deploy work otherwise.
 - A word links to one book. If re-meeting words across books matters, consider a word↔book occurrences table

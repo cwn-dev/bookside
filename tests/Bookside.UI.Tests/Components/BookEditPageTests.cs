@@ -47,7 +47,9 @@ public sealed class BookEditPageTests : ComponentTestBase
 
         page.Find("#lookup-query").Input("mort");
         page.Find(".lookup-row button").Click();
-        page.WaitForElement(".lookup-results button").Click();
+        var result = page.WaitForElement(".lookup-results button");
+        Assert.Equal("Open Library", result.QuerySelector(".source-label")?.TextContent);
+        result.Click();
 
         Assert.Equal("My title", page.Find("#title").GetAttribute("value"));
         Assert.Equal("Terry Pratchett", page.Find("#author-0").GetAttribute("value"));
@@ -64,6 +66,31 @@ public sealed class BookEditPageTests : ComponentTestBase
         Assert.Equal(("My title", 288), (book.Title, book.PageCount));
         Assert.Equal(("openlibrary", "/books/OL1M"), (book.MetadataSource, book.MetadataSourceId));
         Assert.NotNull(book.CoverSha256);
+    }
+
+    [Fact]
+    public void Picking_a_result_fills_the_description_from_its_details()
+    {
+        BookLookup.Results = [LookupResult("Mort") with { Description = "One. Two." }];
+        BookLookup.Description = "One.\n\nTwo.";
+        var page = Render<BookEditPage>();
+
+        PickFirstResult(page, "mort");
+
+        Assert.Equal("One.\n\nTwo.", page.Find("#description").GetAttribute("value"));
+    }
+
+    [Fact]
+    public void Picking_a_result_whose_details_fail_fills_from_the_search_result()
+    {
+        BookLookup.Results = [LookupResult("Mort") with { Description = "One. Two." }];
+        BookLookup.DetailsUnavailable = true;
+        var page = Render<BookEditPage>();
+
+        PickFirstResult(page, "mort");
+
+        Assert.Equal("One. Two.", page.Find("#description").GetAttribute("value"));
+        Assert.Equal("Mort", page.Find("#title").GetAttribute("value"));
     }
 
     [Fact]
@@ -189,5 +216,16 @@ public sealed class BookEditPageTests : ComponentTestBase
         var page = Render<BookEditPage>(p => p.Add(x => x.Id, Guid.NewGuid()));
 
         page.WaitForAssertion(() => Assert.Contains("This book no longer exists.", page.Markup));
+    }
+
+    private static BookMetadata LookupResult(string title) =>
+        new() { Source = "openlibrary", SourceId = "/works/OL1W", Title = title };
+
+    private static void PickFirstResult(IRenderedComponent<BookEditPage> page, string query)
+    {
+        page.Find("#lookup-query").Input(query);
+        page.Find(".lookup-row button").Click();
+        page.WaitForElement(".lookup-results button").Click();
+        page.WaitForElement(".book-lookup .alert-success");
     }
 }
