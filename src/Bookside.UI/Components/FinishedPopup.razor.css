@@ -1,0 +1,167 @@
+.finished-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: var(--gutter);
+    background: rgb(0 0 0 / 0.3);
+    animation:
+        backdrop-in 200ms ease-out,
+        fade-out 250ms ease-in calc(var(--duration) - 250ms) forwards;
+}
+
+.finished-popup {
+    position: relative;
+    width: min(100%, 24rem);
+    padding: 1.25rem 1.25rem 1.4rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 12px 40px rgb(0 0 0 / 0.28);
+    animation: pop-in 450ms cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.close {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: var(--tap);
+    height: var(--tap);
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.close:hover {
+    background: var(--surface-muted);
+    color: var(--text);
+}
+
+.popup-cheer {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0 0 1rem;
+    color: var(--success);
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.tick {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--success);
+    color: var(--surface);
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    animation: tick-in 500ms cubic-bezier(0.2, 1.6, 0.4, 1) 120ms backwards;
+}
+
+.popup-book {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.popup-cover {
+    flex: none;
+    width: 5.5rem;
+    animation: cover-in 500ms cubic-bezier(0.2, 1.2, 0.4, 1) 80ms backwards;
+}
+
+.popup-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.popup-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.popup-stars {
+    font-size: 1.35rem;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.star {
+    display: inline-block;
+    color: var(--border);
+}
+
+/* Lit stars pop in one after another. */
+.star.on {
+    color: var(--accent);
+    animation: star-in 400ms cubic-bezier(0.2, 1.8, 0.4, 1) calc(250ms + var(--i) * 90ms) backwards;
+}
+
+.popup-dates {
+    font-size: 0.9rem;
+}
+
+@keyframes backdrop-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.85);
+    }
+}
+
+@keyframes tick-in {
+    from {
+        transform: scale(0) rotate(-45deg);
+    }
+}
+
+@keyframes cover-in {
+    from {
+        opacity: 0;
+        transform: rotate(-8deg) scale(0.8);
+    }
+}
+
+@keyframes star-in {
+    from {
+        color: var(--border);
+        transform: scale(0.3);
+    }
+
+    60% {
+        transform: scale(1.35);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .finished-popup,
+    .tick,
+    .popup-cover,
+    .star.on {
+        animation: none;
+    }
+}

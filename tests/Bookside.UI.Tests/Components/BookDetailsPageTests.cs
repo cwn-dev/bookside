@@ -112,6 +112,21 @@ public sealed class BookDetailsPageTests : ComponentTestBase
         Assert.NotNull(session.StartedOn);
         Assert.Equal(session.StartedOn, session.FinishedOn);
         Assert.Contains("Finished", page.Find(".session .badge").TextContent);
+        Assert.Contains("Dune", page.Find(".finished-popup").TextContent);
+    }
+
+    [Fact]
+    public async Task Logging_a_past_read_shows_no_finished_popup()
+    {
+        var book = await AddBookAsync("Dune");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        page.FindAll("button").Single(b => b.TextContent == "Log a past read").Click();
+        page.Find(".editor form").Submit();
+
+        page.WaitForAssertion(() => page.Find(".session"));
+        Assert.Empty(page.FindAll(".finished-popup"));
     }
 
     [Fact]

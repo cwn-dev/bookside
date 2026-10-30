@@ -1,0 +1,124 @@
+@* The "Finished!" moment: a popup with the book, rating and dates. Closes
+   itself after Duration, or on the close button or a click outside it.
+   Renders nothing while Read is null. *@
+@implements IDisposable
+
+@if (Read is not null)
+{
+    <div class="finished-backdrop" style="--duration: @DurationMs" @onclick="CloseAsync">
+        <div class="finished-popup" role="status" @onclick:stopPropagation>
+            <button type="button" class="close" aria-label="Close" @onclick="CloseAsync">×</button>
+            <p class="popup-cheer"><span class="tick" aria-hidden="true">✓</span> Finished!</p>
+            <div class="popup-book">
+                <div class="popup-cover">
+                    <CoverImage BookId="Read.BookId"
+                                Title="@Read.Title"
+                                CoverSha256="@Read.CoverSha256" />
+                </div>
+                <div class="popup-info">
+                    <span class="popup-title">@Read.Title</span>
+                    @if (Read.Authors.Count > 0)
+                    {
+                        <span class="muted">@string.Join(", ", Read.Authors)</span>
+                    }
+                    @if (Read.Session.Rating is int rating)
+                    {
+                        <span class="popup-stars"
+                              aria-label="Rated @rating out of @ReadingSession.MaxRating">
+                            @for (var i = 1; i <= ReadingSession.MaxRating; i++)
+                            {
+                                <span class="star @(i <= rating ? "on" : null)"
+                                      style="--i: @i"
+                                      aria-hidden="true">★</span>
+                            }
+                        </span>
+                    }
+                    @if (Summary is string summary)
+                    {
+                        <span class="muted popup-dates">@summary</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private CancellationTokenSource? _timer;
+    private Guid? _shownSessionId;
+
+    /// <summary>
+    /// The book just finished; null hides the popup.
+    /// </summary>
+    [Parameter]
+    public BookRead? Read { get; set; }
+
+    /// <summary>
+    /// Called when the popup should go; the parent sets <see cref="Read"/> to null.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public TimeSpan Duration { get; set; } = TimeSpan.FromSeconds(3.5);
+
+    private string DurationMs =>
+        Duration.TotalMilliseconds.ToString("0", CultureInfo.InvariantCulture) + "ms";
+
+    private string? Summary =>
+        FinishedLabels.Summary(Read?.Session.StartedOn, Read?.Session.FinishedOn);
+
+    protected override void OnParametersSet()
+    {
+        if (Read is null)
+        {
+            CancelTimer();
+            _shownSessionId = null;
+            return;
+        }
+
+        if (Read.Session.Id == _shownSessionId)
+        {
+            return;
+        }
+
+        _shownSessionId = Read.Session.Id;
+        StartTimer();
+    }
+
+    private void StartTimer()
+    {
+        CancelTimer();
+        _timer = new CancellationTokenSource();
+        _ = CloseLaterAsync(_timer.Token);
+    }
+
+    private async Task CloseLaterAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(Duration, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        await InvokeAsync(CloseAsync);
+    }
+
+    private async Task CloseAsync()
+    {
+        CancelTimer();
+        await OnClose.InvokeAsync();
+    }
+
+    private void CancelTimer()
+    {
+        _timer?.Cancel();
+        _timer?.Dispose();
+        _timer = null;
+    }
+
+    public void Dispose() => CancelTimer();
+}

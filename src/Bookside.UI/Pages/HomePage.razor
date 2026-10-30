@@ -250,6 +250,8 @@ else
     </div>
 }
 
+<FinishedPopup Read="_justFinished" OnClose="() => _justFinished = null" />
+
 @code {
     private HomeSummary? _home;
     private WordSummary? _word;
@@ -260,6 +262,9 @@ else
     // Set when finishing a book from a reading card reached the year's goal.
     private bool _celebrate;
     private int _goalKey;
+
+    // The book just finished from a reading card, shown in the popup.
+    private BookRead? _justFinished;
 
     private WordFormModel _quickAdd = new();
     private int _quickAddKey;
@@ -354,9 +359,15 @@ else
         _commentAddedSessionId = read.Session.Id;
     }
 
-    private async Task FinishedAsync()
+    private async Task FinishedAsync(ReadingSessionDto saved)
     {
         var before = _home!.Challenge.ReadCount;
+        var read = _home.Reading.FirstOrDefault(r => r.Session.Id == saved.Id);
+        if (read is not null && saved.Status == ReadingStatus.Finished)
+        {
+            _justFinished = read with { Session = saved };
+        }
+
         ClosePanel();
         await ReloadAsync();
         _celebrate = _home.Challenge is { TargetBooks: int target } after

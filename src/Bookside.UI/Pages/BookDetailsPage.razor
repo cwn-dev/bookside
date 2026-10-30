@@ -213,6 +213,8 @@ else
     </section>
 }
 
+<FinishedPopup Read="_justFinished" OnClose="() => _justFinished = null" />
+
 @code {
     private BookDetails? _book;
 
@@ -225,6 +227,9 @@ else
     private ReadingSessionFormModel? _editing;
     private Guid? _editingId;
     private string _editingTitle = "";
+
+    // The read just finished, shown in the popup.
+    private BookRead? _justFinished;
 
     private IReadOnlyList<TimelineEntry> _timeline = [];
     private CommentFormModel _newComment = new();
@@ -247,6 +252,7 @@ else
     protected override async Task OnParametersSetAsync()
     {
         CancelEdit();
+        _justFinished = null;
         CancelCommentEdit();
         CloseAddWord();
         _newComment = new();
@@ -308,8 +314,23 @@ else
         _editingId = null;
     }
 
-    private async Task SessionSavedAsync()
+    private async Task SessionSavedAsync(ReadingSessionDto saved)
     {
+        // Celebrate a read that has just become finished, not a logged past read.
+        var before = _book!.ReadingSessions.FirstOrDefault(s => s.Id == _editingId);
+        if (before is { Status: not ReadingStatus.Finished }
+            && saved.Status == ReadingStatus.Finished)
+        {
+            _justFinished = new BookRead
+            {
+                BookId = _book.Id,
+                Title = _book.Title,
+                Authors = _book.Authors,
+                CoverSha256 = _book.CoverSha256,
+                Session = saved,
+            };
+        }
+
         CancelEdit();
         await ReloadAsync();
     }

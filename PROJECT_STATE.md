@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 17, 2026-10-30)
+# Bookside: project state (end of session 18, 2026-10-30)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -88,6 +88,12 @@
   `Celebration` component (CSS-only confetti burst + "Goal reached!" pill, ~2.6 s, then invisible; reduced
   motion = pill fade only): on the home card when "Finished" on a reading card takes the count to the goal,
   and on the challenge page's progress card whenever the shown year's goal is reached (every visit).
+- Finished popup (session 18): `FinishedPopup` component: when a read becomes Finished (home reading card's
+  "Finished" form, or the book page saving a session whose status wasn't Finished; not "Log a past read"), a
+  centred card over a dimmed page shows "Finished!", cover, title, authors, stars popping in one by one and
+  `FinishedLabels.Summary` ("Finished 30 Oct 2026 · read in 28 days"). Closes after 3.5 s (fade out), on its
+  close button or a backdrop click. No JS, no sound. The home goal-reached confetti still plays on the
+  challenge card behind it.
 - Book series (session 10): `BookInput`/`BookSummary`/`BookDetails` carry `Series` + `SeriesNumber`;
   `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
   + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page
@@ -140,7 +146,8 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 123 tests (session 17: challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
+- `Bookside.UI.Tests`: 132 tests (session 18: `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
+  pages); 123 in session 17 ( challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
   sets the DB path with `UseSetting`).
@@ -303,6 +310,10 @@
     `strftime('%Y')` over all sessions (a scan; fine at personal-library size, no extra index).
   - The page is one call (`GetYearAsync` includes the years list). The next-year link goes up to current
     year + 1, so next year's goal can be set in December.
+- **Finished popup (session 18, user's choices: small popup with book details rather than confetti, gone after
+  3.5 s with a close button; every read that becomes Finished, not past reads):**
+  - A synthesized chime (Web Audio, the UI's first JS module) was built and then removed at the user's request:
+    no sound, and the UI stays JS-free.
 - **Book series (session 10, user's choices: own table, optional number):**
   - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
     (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.

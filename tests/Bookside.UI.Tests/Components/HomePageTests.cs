@@ -195,6 +195,53 @@ public sealed class HomePageTests : ComponentTestBase
         page.WaitForAssertion(() => Assert.Equal("Goal reached!", page.Find(".challenge .cheer").TextContent));
     }
 
+    [Fact]
+    public async Task Finishing_a_book_shows_the_finished_popup()
+    {
+        var book = await AddBookAsync("Dune", "Frank Herbert");
+        await StartReadingAsync(book.Id);
+        var page = Render<HomePage>();
+        page.WaitForAssertion(() => page.Find(".reading-card"));
+        Assert.Empty(page.FindAll(".finished-popup"));
+
+        page.FindAll(".reading-card button").Single(b => b.TextContent == "Finished").Click();
+        page.FindAll(".panel .rating-input .star")[4].Click();
+        page.Find(".panel form").Submit();
+
+        page.WaitForAssertion(() => page.Find(".finished-popup"));
+        var popup = page.Find(".finished-popup");
+        Assert.Contains("Dune", popup.TextContent);
+        Assert.Contains("Frank Herbert", popup.TextContent);
+        Assert.Equal(
+            "Rated 5 out of 5",
+            popup.QuerySelector(".popup-stars")!.GetAttribute("aria-label"));
+        Assert.Contains("read in a day", popup.TextContent);
+
+        page.Find(".finished-popup .close").Click();
+        Assert.Empty(page.FindAll(".finished-popup"));
+    }
+
+    [Fact]
+    public async Task Saving_the_finish_form_as_still_reading_shows_no_popup()
+    {
+        var book = await AddBookAsync("Dune");
+        await StartReadingAsync(book.Id);
+        var page = Render<HomePage>();
+        page.WaitForAssertion(() => page.Find(".reading-card"));
+
+        page.FindAll(".reading-card button").Single(b => b.TextContent == "Finished").Click();
+        page.Find(".panel select").Change(nameof(ReadingStatus.Abandoned));
+        page.Find(".panel form").Submit();
+
+        page.WaitForAssertion(() => Assert.Empty(page.FindAll(".panel")));
+        Assert.Empty(page.FindAll(".finished-popup"));
+    }
+
+    private Task StartReadingAsync(Guid bookId) =>
+        AddSessionAsync(
+            bookId,
+            new ReadingSessionInput { Status = ReadingStatus.Reading, StartedOn = Today });
+
     private async Task AddSessionAsync(Guid bookId, ReadingSessionInput input) =>
         Success(await Library.AddReadingSessionAsync(bookId, input, Ct));
 }
