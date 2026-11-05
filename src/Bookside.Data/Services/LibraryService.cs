@@ -147,8 +147,14 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             .Select(b => b.SeriesId)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
+        var generalTagIds = await db.BookCommentTags
+            .Where(ct => ct.Comment.BookId == bookId && ct.Tag.BookId == null)
+            .Select(ct => ct.TagId)
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
-        // Sessions, comments, cover, author and tag links cascade in the database; vocabulary words are set to null.
+        // Sessions, comments (and their person tags), cover, author and tag links cascade in the database; vocabulary words are set to null.
         var deleted = await db.Books.Where(b => b.Id == bookId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
         if (deleted == 0)
         {
@@ -157,6 +163,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
 
         await DeleteOrphanedAuthorsAsync(db, authorIds, cancellationToken).ConfigureAwait(false);
         await DeleteOrphanedSeriesAsync(db, seriesId, cancellationToken).ConfigureAwait(false);
+        await DeleteOrphanedCommentTagsAsync(db, generalTagIds, cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }
@@ -322,22 +329,23 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
     {
         ArgumentNullException.ThrowIfNull(input);
         var validator = new InputValidator();
-        var text = validator.Required(nameof(BookCommentInput.Text), input.Text, BookComment.TextMaxLength);
+        var text = ValidateComment(validator, input);
         if (!validator.IsValid)
         {
             return validator.ToError();
         }
 
-        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
-        if (!await db.Books.AnyAsync(b => b.Id == bookId, cancellationToken).ConfigureAwait(false))
+        try
         {
-            return BookNotFound(bookId);
+            return await AddCommentCoreAsync(bookId, text, cancellationToken)
+                .ConfigureAwait(false);
         }
-
-        var comment = new BookComment { BookId = bookId, Text = text };
-        db.BookComments.Add(comment);
-        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        return ToDto(comment);
+        catch (DbUpdateException)
+        {
+            // Another call created one of the new tags first; the retry finds it.
+            return await AddCommentCoreAsync(bookId, text, cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 
     public async Task<Result<BookCommentDto>> UpdateCommentAsync(
@@ -347,10 +355,97 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
     {
         ArgumentNullException.ThrowIfNull(input);
         var validator = new InputValidator();
-        var text = validator.Required(nameof(BookCommentInput.Text), input.Text, BookComment.TextMaxLength);
+        var text = ValidateComment(validator, input);
 
+        try
+        {
+            return await UpdateCommentCoreAsync(
+                commentId,
+                text,
+                validator,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            return await UpdateCommentCoreAsync(
+                commentId,
+                text,
+                validator,
+                cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    public async Task<Result> DeleteCommentAsync(Guid commentId, CancellationToken cancellationToken = default)
+    {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
-        var comment = await db.BookComments.SingleOrDefaultAsync(c => c.Id == commentId, cancellationToken).ConfigureAwait(false);
+        var tagIds = await db.BookCommentTags
+            .Where(ct => ct.CommentId == commentId)
+            .Select(ct => ct.TagId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        // Tag links cascade in the database.
+        var deleted = await db.BookComments.Where(c => c.Id == commentId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
+        if (deleted == 0)
+        {
+            return CommentNotFound(commentId);
+        }
+
+        await DeleteOrphanedCommentTagsAsync(db, tagIds, cancellationToken).ConfigureAwait(false);
+        return Result.Success();
+    }
+
+    public async Task<IReadOnlyList<CommentTagDto>> ListCommentTagsAsync(
+        Guid bookId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await db.CommentTags.AsNoTracking()
+            .Where(t => t.BookId == bookId || t.BookId == null)
+            .OrderBy(t => t.NormalizedName)
+            .Select(t => new CommentTagDto(t.Type, t.Name))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private static string ValidateComment(InputValidator validator, BookCommentInput input)
+    {
+        return validator.Required(
+            nameof(BookCommentInput.Text),
+            input.Text,
+            BookComment.TextMaxLength);
+    }
+
+    private async Task<Result<BookCommentDto>> AddCommentCoreAsync(
+        Guid bookId,
+        string text,
+        CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        if (!await db.Books.AnyAsync(b => b.Id == bookId, cancellationToken).ConfigureAwait(false))
+        {
+            return BookNotFound(bookId);
+        }
+
+        var comment = new BookComment { BookId = bookId, Text = text };
+        db.BookComments.Add(comment);
+        await SetCommentTagsAsync(db, comment, cancellationToken).ConfigureAwait(false);
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return ToDto(comment);
+    }
+
+    private async Task<Result<BookCommentDto>> UpdateCommentCoreAsync(
+        Guid commentId,
+        string text,
+        InputValidator validator,
+        CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var comment = await db.BookComments
+            .Include(c => c.Tags)
+            .ThenInclude(ct => ct.Tag)
+            .SingleOrDefaultAsync(c => c.Id == commentId, cancellationToken)
+            .ConfigureAwait(false);
         if (comment is null)
         {
             return CommentNotFound(commentId);
@@ -361,17 +456,106 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             return validator.ToError();
         }
 
-        // Unchanged text leaves the entity unmodified, so UpdatedAtUtc (and "edited") stays as it was.
+        // Unchanged values leave the entity unmodified, so UpdatedAtUtc (and "edited") stays as it was.
         comment.Text = text;
+        await SetCommentTagsAsync(db, comment, cancellationToken).ConfigureAwait(false);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return ToDto(comment);
     }
 
-    public async Task<Result> DeleteCommentAsync(Guid commentId, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Links the comment to the tags in its text (person and page tags in its
+    /// book, general tags shared), creating missing ones; tags it no longer uses are
+    /// deleted when no other comment has them. Saved by the caller.
+    /// </summary>
+    private static async Task SetCommentTagsAsync(
+        BooksideDbContext db,
+        BookComment comment,
+        CancellationToken cancellationToken)
     {
-        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
-        var deleted = await db.BookComments.Where(c => c.Id == commentId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
-        return deleted == 0 ? CommentNotFound(commentId) : Result.Success();
+        var desired = new Dictionary<(CommentTagType, string), string>(); // → name as typed
+        foreach (var segment in CommentTagSyntax.Parse(comment.Text))
+        {
+            if (segment is { TagType: { } type, TagName: { } name })
+            {
+                desired.TryAdd((type, TermNormalizer.Normalize(name)), name);
+            }
+        }
+
+        var removed = comment.Tags
+            .Where(ct => !desired.ContainsKey((ct.Tag.Type, ct.Tag.NormalizedName)))
+            .ToList();
+        foreach (var link in removed)
+        {
+            comment.Tags.Remove(link);
+            db.BookCommentTags.Remove(link);
+        }
+
+        var removedIds = removed.Select(ct => ct.TagId).ToList();
+        if (removedIds.Count > 0)
+        {
+            db.CommentTags.RemoveRange(await db.CommentTags
+                .Where(t => removedIds.Contains(t.Id)
+                    && !t.Comments.Any(ct => ct.CommentId != comment.Id))
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false));
+        }
+
+        var missing = desired.Keys
+            .Where(k => !comment.Tags.Any(ct => (ct.Tag.Type, ct.Tag.NormalizedName) == k))
+            .ToList();
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        var names = missing.Select(k => k.Item2).ToList();
+        var existing = await db.CommentTags
+            .Where(t => names.Contains(t.NormalizedName)
+                && (t.BookId == comment.BookId || t.BookId == null))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var key in missing)
+        {
+            var (type, normalized) = key;
+            var tag = existing.FirstOrDefault(t => t.Type == type && t.NormalizedName == normalized);
+            if (tag is null)
+            {
+                tag = new CommentTag
+                {
+                    Type = type,
+                    Name = desired[key],
+                    BookId = type == CommentTagType.General ? null : comment.BookId,
+                };
+                db.CommentTags.Add(tag);
+            }
+
+            // Fix-up adds the link to comment.Tags.
+            db.BookCommentTags.Add(new BookCommentTag
+            {
+                Comment = comment,
+                CommentId = comment.Id,
+                Tag = tag,
+                TagId = tag.Id,
+            });
+        }
+    }
+
+    private static async Task DeleteOrphanedCommentTagsAsync(
+        BooksideDbContext db,
+        List<Guid> tagIds,
+        CancellationToken cancellationToken)
+    {
+        if (tagIds.Count == 0)
+        {
+            return;
+        }
+
+        await db.CommentTags
+            .Where(t => tagIds.Contains(t.Id) && !t.Comments.Any())
+            .ExecuteDeleteAsync(cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private static ServiceError BookNotFound(Guid bookId) =>

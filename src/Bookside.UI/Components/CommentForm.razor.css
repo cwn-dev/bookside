@@ -5,3 +5,50 @@
 .form-actions {
     margin-top: 0.6rem;
 }
+
+.field {
+    position: relative;
+}
+
+.tag-picker {
+    /* Under the caret (inline style); this is the fallback, below the field:
+       in a flex column the static position is its top. */
+    position: absolute;
+    z-index: 10;
+    top: 100%;
+    left: 0;
+    width: min(24rem, 100%);
+    margin: 0.2rem 0 0;
+    padding: 0.25rem;
+    list-style: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+}
+
+.tag-picker li {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    min-height: var(--tap);
+    padding: 0 0.6rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.tag-picker li:hover,
+.tag-picker li.active {
+    background: var(--accent-soft);
+}
+
+.tag-picker .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tag-picker .create {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}

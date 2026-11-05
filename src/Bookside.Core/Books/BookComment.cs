@@ -16,5 +16,11 @@ public class BookComment : Entity
 
     public Book Book { get; set; } = null!;
 
+    /// <summary>
+    /// May hold inline tags (<see cref="CommentTagSyntax"/>), linked through
+    /// <see cref="Tags"/>.
+    /// </summary>
     public required string Text { get; set; }
+
+    public ICollection<BookCommentTag> Tags { get; } = [];
 }

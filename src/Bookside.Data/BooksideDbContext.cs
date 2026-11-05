@@ -34,6 +34,10 @@ public class BooksideDbContext(DbContextOptions<BooksideDbContext> options, Time
 
     public DbSet<BookComment> BookComments => Set<BookComment>();
 
+    public DbSet<CommentTag> CommentTags => Set<CommentTag>();
+
+    public DbSet<BookCommentTag> BookCommentTags => Set<BookCommentTag>();
+
     public DbSet<VocabularyWord> VocabularyWords => Set<VocabularyWord>();
 
     public DbSet<DictionaryEntry> DictionaryEntries => Set<DictionaryEntry>();
@@ -89,6 +93,9 @@ public class BooksideDbContext(DbContextOptions<BooksideDbContext> options, Time
                     break;
                 case Tag tag:
                     tag.NormalizedName = TermNormalizer.Normalize(tag.Name);
+                    break;
+                case CommentTag commentTag:
+                    commentTag.NormalizedName = TermNormalizer.Normalize(commentTag.Name);
                     break;
                 case DictionaryEntry dictionaryEntry:
                     dictionaryEntry.NormalizedTerm = TermNormalizer.Normalize(dictionaryEntry.NormalizedTerm);
