@@ -1,0 +1,40 @@
+@* Global search: matching vocabulary words, dictionary style. *@
+@inject NavigationManager Navigation
+
+<section class="search-section" aria-labelledby="gs-words">
+    <h2 id="gs-words">Words</h2>
+    <ul class="search-hits">
+        @foreach (var word in Section.Items)
+        {
+            <li @key="word.Id">
+                <a class="word-hit" href="@SearchLinks.Word(word.Id)">
+                    <span class="hit-term">
+                        <Highlighted Text="@word.Term" Query="@Query" />
+                    </span>
+                    @if (word.ShortDefinition is { } definition)
+                    {
+                        <span class="hit-definition">@definition</span>
+                    }
+                    @if (word.BookTitle is { } bookTitle)
+                    {
+                        <span class="search-meta">from @bookTitle</span>
+                    }
+                </a>
+            </li>
+        }
+    </ul>
+    @if (Section.HasMore)
+    {
+        <a class="search-see-all" href="@SearchLinks.Search(Navigation, "words", Query)">
+            See all in Vocabulary →
+        </a>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public SearchSection<WordSummary> Section { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public string Query { get; set; } = "";
+}

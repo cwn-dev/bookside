@@ -1,0 +1,44 @@
+.tag-hits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0.15rem 0.5rem 0.4rem;
+    list-style: none;
+}
+
+.tag-hit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 100%;
+    min-height: 34px;
+    padding: 0 0.35rem 0 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.tag-hit:hover,
+.tag-hit:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.tag-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tag-count {
+    min-width: 1.6em;
+    padding: 0 0.4em;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-align: center;
+}

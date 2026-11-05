@@ -1,0 +1,52 @@
+@* Global search: matching books, with cover thumbnails. *@
+@inject NavigationManager Navigation
+
+<section class="search-section" aria-labelledby="gs-books">
+    <h2 id="gs-books">Books</h2>
+    <ul class="search-hits">
+        @foreach (var book in Section.Items)
+        {
+            <li @key="book.Id">
+                <a class="book-hit" href="@SearchLinks.Book(book.Id)">
+                    <span class="thumb">
+                        <CoverImage BookId="book.Id"
+                                    Title="@book.Title"
+                                    CoverSha256="@book.CoverSha256" />
+                    </span>
+                    <span class="hit-text">
+                        <span class="hit-title">
+                            <Highlighted Text="@book.Title" Query="@Query" />
+                        </span>
+                        @if (book.Authors.Count > 0)
+                        {
+                            <span class="search-meta">
+                                <Highlighted Text="@string.Join(", ", book.Authors)"
+                                             Query="@Query" />
+                            </span>
+                        }
+                        @if (SeriesLabel.Format(book.Series, book.SeriesNumber) is { } series)
+                        {
+                            <span class="search-meta">
+                                <Highlighted Text="@series" Query="@Query" />
+                            </span>
+                        }
+                    </span>
+                </a>
+            </li>
+        }
+    </ul>
+    @if (Section.HasMore)
+    {
+        <a class="search-see-all" href="@SearchLinks.Search(Navigation, "books", Query)">
+            See all in Library →
+        </a>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public SearchSection<BookSummary> Section { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public string Query { get; set; } = "";
+}

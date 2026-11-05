@@ -1,0 +1,44 @@
+@* Global search: matching comments as quoted snippets under their book. *@
+@inject TimeProvider Clock
+
+<section class="search-section" aria-labelledby="gs-comments">
+    <h2 id="gs-comments">Comments</h2>
+    <ul class="search-hits">
+        @foreach (var comment in Section.Items)
+        {
+            <li @key="comment.CommentId">
+                <a class="comment-hit" href="@SearchLinks.Book(comment.BookId)">
+                    <span class="search-meta">
+                        @comment.BookTitle ·
+                        <time datetime="@IsoTime(comment.CreatedAtUtc)">
+                            @FormatTime(comment.CreatedAtUtc)
+                        </time>
+                    </span>
+                    <span class="hit-snippet">
+                        <Highlighted Text="@comment.Snippet" Query="@Query" />
+                    </span>
+                </a>
+            </li>
+        }
+    </ul>
+    @if (Section.HasMore)
+    {
+        <p class="search-see-all muted">Showing the newest @Section.Items.Count.</p>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public SearchSection<CommentSearchHit> Section { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public string Query { get; set; } = "";
+
+    private static string IsoTime(DateTime utc) =>
+        utc.ToString("O", CultureInfo.InvariantCulture);
+
+    // Same format as the book page's reading log.
+    private string FormatTime(DateTime utc) =>
+        BookTimeline.ToLocal(utc, Clock.LocalTimeZone)
+            .ToString("d MMM yyyy, HH:mm", CultureInfo.CurrentCulture);
+}

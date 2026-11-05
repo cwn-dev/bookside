@@ -2,6 +2,7 @@ using Bookside.Core.Books.Services;
 using Bookside.Core.Challenge.Services;
 using Bookside.Core.Common;
 using Bookside.Core.Home.Services;
+using Bookside.Core.Search.Services;
 using Bookside.Core.Vocabulary;
 using Bookside.Core.Vocabulary.Lookup;
 using Bookside.Core.Vocabulary.Services;
@@ -61,6 +62,8 @@ public abstract class ServiceTestBase : IAsyncLifetime
         _scope.ServiceProvider.GetRequiredService<IChallengeService>();
 
     protected IHomeService Home => _scope.ServiceProvider.GetRequiredService<IHomeService>();
+
+    protected ISearchService Search => _scope.ServiceProvider.GetRequiredService<ISearchService>();
 
     protected IDefinitionService Definitions => _scope.ServiceProvider.GetRequiredService<IDefinitionService>();
 

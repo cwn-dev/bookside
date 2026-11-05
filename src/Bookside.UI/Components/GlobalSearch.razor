@@ -1,0 +1,250 @@
+@*
+    Header search over books, words, tags and comments. Opening and closing
+    is CSS (:focus-within), so the page dims the moment the box is clicked,
+    with no server round trip. The "dismissed" class closes it while the box
+    keeps focus (Escape, after following a result): Blazor can't blur without
+    JS.
+*@
+@implements IDisposable
+@inject ISearchService Search
+@inject NavigationManager Navigation
+@inject ILogger<GlobalSearch> Logger
+
+<div class="@RootClass"
+     role="search"
+     @onfocusin="Reopen">
+    @* Clicking it blurs the box, which closes the overlay at once (CSS);
+       the click then clears the query, like Escape. *@
+    <div class="search-backdrop" aria-hidden="true" @onclick="Clear"></div>
+
+    <div class="search-field">
+        <svg class="search-icon"
+             viewBox="0 0 24 24"
+             aria-hidden="true"
+             focusable="false">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="M15.5 15.5 21 21" />
+        </svg>
+        <input type="search"
+               class="search-input"
+               aria-label="Search books, words, tags and comments"
+               aria-controls="global-search-results"
+               placeholder="Search books, words, tags…"
+               autocomplete="off"
+               spellcheck="false"
+               enterkeyhint="search"
+               @bind="_query"
+               @bind:event="oninput"
+               @bind:after="QueryChangedAsync"
+               @onkeydown="KeyDown"
+               @onclick="Reopen" />
+        @* Shown while open or holding a query (CSS); clears and closes. *@
+        <button type="button"
+                class="search-clear"
+                aria-label="Clear search"
+                @onclick="Clear">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+        </button>
+    </div>
+
+    @* preventDefault keeps focus in the box while a result is clicked;
+       otherwise the panel would close before the click lands. *@
+    <div id="global-search-results" class="search-panel" @onmousedown:preventDefault>
+        @if (_searching)
+        {
+            <p class="busy search-busy" role="status">
+                <span class="spinner" aria-hidden="true"></span>Searching…
+            </p>
+        }
+
+        @if (_failed)
+        {
+            <p class="search-empty search-failed" role="alert">Search failed.</p>
+        }
+        else if (_results is { } results)
+        {
+            @if (results.IsEmpty)
+            {
+                <p class="search-empty">No results for “@results.Query”.</p>
+            }
+            else
+            {
+                @* Two columns: books + comments, words + tags. On phones the
+                   columns dissolve and order-N sets the section order. *@
+                <div class="search-grid">
+                    @if (results.Books.Items.Count + results.Comments.Items.Count > 0)
+                    {
+                        <div class="search-col">
+                            @if (results.Books.Items.Count > 0)
+                            {
+                                <div class="order-1">
+                                    <BookResults Section="results.Books" Query="@results.Query" />
+                                </div>
+                            }
+                            @if (results.Comments.Items.Count > 0)
+                            {
+                                <div class="order-4">
+                                    <CommentResults Section="results.Comments"
+                                                    Query="@results.Query" />
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (results.Words.Items.Count + results.Tags.Items.Count > 0)
+                    {
+                        <div class="search-col">
+                            @if (results.Words.Items.Count > 0)
+                            {
+                                <div class="order-2">
+                                    <WordResults Section="results.Words" Query="@results.Query" />
+                                </div>
+                            }
+                            @if (results.Tags.Items.Count > 0)
+                            {
+                                <div class="order-3">
+                                    <TagResults Section="results.Tags" Query="@results.Query" />
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    <p class="visually-hidden" aria-live="polite">@Announcement</p>
+</div>
+
+@code {
+    internal static readonly TimeSpan SearchDelay = TimeSpan.FromMilliseconds(250);
+
+    private string? _query;
+    private SearchResults? _results;
+    private bool _searching;
+    private bool _dismissed;
+    private bool _failed;
+    private CancellationTokenSource? _searchCts;
+
+    private string RootClass =>
+        string.Join(' ', new[]
+        {
+            "global-search",
+            _dismissed ? "dismissed" : null,
+            HasPanel ? "has-panel" : null,
+            string.IsNullOrEmpty(_query) ? null : "has-query",
+        }.Where(c => c is not null));
+
+    private bool HasPanel =>
+        !string.IsNullOrWhiteSpace(_query) && (_results is not null || _searching || _failed);
+
+    private string? Announcement =>
+        _failed ? "Search failed"
+        : _results is null || string.IsNullOrWhiteSpace(_query) ? null
+        : _results.IsEmpty ? "No results"
+        : $"{ResultCount(_results)} results";
+
+    protected override void OnInitialized() =>
+        Navigation.LocationChanged += OnLocationChanged;
+
+    private async Task QueryChangedAsync()
+    {
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        var cts = _searchCts = new CancellationTokenSource();
+
+        if ((_query?.Trim().Length ?? 0) < SearchResults.MinQueryLength)
+        {
+            // Too short to search. Typing more reopens, but a browser clearing
+            // the box on Escape shouldn't.
+            _results = null;
+            _searching = false;
+            _failed = false;
+            return;
+        }
+
+        _dismissed = false;
+
+        try
+        {
+            await Task.Delay(SearchDelay, cts.Token);
+            _searching = true;
+            StateHasChanged();
+            _results = await Search.SearchAsync(_query!, cts.Token);
+            _failed = false;
+            _searching = false;
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+            // Still typing; the newer search owns _searching.
+        }
+        catch (Exception ex)
+        {
+            // An unhandled exception here would end the circuit, so the box
+            // shows the failure instead.
+            Logger.LogError(ex, "Global search for \"{Query}\" failed.", _query);
+            _results = null;
+            _failed = true;
+            _searching = false;
+        }
+    }
+
+    private void KeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            Clear();
+        }
+        else if (e.Key == "Enter" && FirstResultUrl() is { } url)
+        {
+            Navigation.NavigateTo(url);
+        }
+    }
+
+    private void Reopen() => _dismissed = false;
+
+    private void Clear()
+    {
+        _searchCts?.Cancel();
+        _query = null;
+        _results = null;
+        _searching = false;
+        _failed = false;
+        _dismissed = true;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
+        _ = InvokeAsync(() =>
+        {
+            _searchCts?.Cancel();
+            _query = null;
+            _results = null;
+            _searching = false;
+            _failed = false;
+            _dismissed = true;
+            StateHasChanged();
+        });
+
+    private string? FirstResultUrl() =>
+        _results is not { } r ? null
+        : r.Books.Items.Count > 0 ? SearchLinks.Book(r.Books.Items[0].Id)
+        : r.Words.Items.Count > 0 ? SearchLinks.Word(r.Words.Items[0].Id)
+        : r.Tags.Items.Count > 0 ? SearchLinks.Tag(Navigation, r.Tags.Items[0].Name)
+        : r.Comments.Items.Count > 0 ? SearchLinks.Book(r.Comments.Items[0].BookId)
+        : null;
+
+    private static int ResultCount(SearchResults r) =>
+        r.Books.Items.Count
+        + r.Words.Items.Count
+        + r.Tags.Items.Count
+        + r.Comments.Items.Count;
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
+}

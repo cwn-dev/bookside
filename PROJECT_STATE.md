@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 24, 2026-11-05)
+# Bookside: project state (end of session 25, 2026-11-05)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -95,6 +95,22 @@
   `FinishedLabels.Summary` ("Finished 30 Oct 2026 · read in 28 days"). Closes after 3.5 s (fade out), on its
   close button or a backdrop click. No JS, no sound. The home goal-reached confetti still plays on the
   challenge card behind it.
+- Global search (session 25): `Core/Search/Services/ISearchService.SearchAsync(query)` → `SearchResults` with one
+  `SearchSection<T>(Items, HasMore)` per type: books (`BookSummary`; title/subtitle/series/author via the shared
+  `LibraryService.ApplySearch` + `ToSummaries`), words (`WordSummary`, `NormalizedTerm`), book tags (`TagDto` with
+  counts), comments (`CommentSearchHit`: book, date, `Core/Search/SearchSnippet.Around` = ~160 chars around the
+  match, tags in display form, whitespace collapsed). `Data/Services/SearchService`: one context, one
+  `LIKE '%q%'` query per type, `Take(cap + 1)` for `HasMore` (caps: books 6, words 6, tags 8, comments 5),
+  prefix matches first (`LikePattern.StartsWith`), comments newest first. UI: `Components/GlobalSearch` in the
+  header after the nav: searches only from `SearchResults.MinQueryLength` (3) trimmed characters (the service
+  returns empty sections below it too), 250 ms debounce, an X (clear + close; shown while open or holding a
+  query; replaces the browser's own clear button), results in a fixed panel under the header (two columns: books +
+  comments, words + tags; one column in that order on phones), Enter opens the first result, Escape dismisses,
+  "N results" live region, "See all" links to `books?q=` / `words?q=` / `/tags`. Each type is its own component in
+  `Components/Search/` (`BookResults`, `WordResults`, `TagResults`, `CommentResults`, `Highlighted` for `<mark>`,
+  `SearchLinks`); shared result styles (`.search-section`, `.search-hits`, `.search-meta`, `.search-see-all`) in
+  `bookside.css`. Search errors are caught in the component (it sits outside the layout's `ErrorBoundary`):
+  logged, "Search failed." shown. Checked in Firefox at 1280 and 375 px, light and dark.
 - Library return (session 22): `Bookside.UI/LibraryListState` (scoped = per circuit, registered by
   `AddBooksideUi()`; the host and `ComponentTestBase` call it) remembers the list URL and loaded count the library
   reports after each load, and the book opened from it (tracked from `LocationChanged`). Coming back to that same
@@ -176,7 +192,8 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 150 tests (session 23: comment tags in the log, picker pick/escape/create, page picker, tag filter, `CommentTagFilterTests`;
+- `Bookside.UI.Tests`: 165 tests (session 25: `GlobalSearchTests`, `GlobalSearchFailureTests`,
+  `SearchHighlightTests`, layout search box); 150 in session 23 ( comment tags in the log, picker pick/escape/create, page picker, tag filter, `CommentTagFilterTests`;
   `ComponentTestBase.CommentFormJs` = the comment form's JS module, loose; tests set up `caret`); 142 in session 22 ( `LibraryListStateTests`, library return, book back link); 132 in session 21 (Ctrl+Enter comment); 131 in session 19 ( `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
   pages); 123 in session 17 ( challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
@@ -185,7 +202,7 @@
 - `Bookside.Integrations.Tests`: 39 tests (session 16: details/descriptions); 36 in session 12 (`BookLookupClientTests`, both providers + covers);
   26 before through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 164 tests (session 23: `CommentTagSyntaxTests`, comment tag service tests); 130 in session 17 ( `ReadingPaceTests`, `ChallengeServiceTests`); 116 in session 16 (parallel/merged book search, details); 112 in session 14 (practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
+- `Bookside.Data.Tests`: 187 tests (session 25: `SearchServiceTests`, `SearchSnippetTests`); 164 in session 23 ( `CommentTagSyntaxTests`, comment tag service tests); 130 in session 17 ( `ReadingPaceTests`, `ChallengeServiceTests`); 116 in session 16 (parallel/merged book search, details); 112 in session 14 (practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
   `ServiceTestBase.Metadata` needs a provider registered in `ConfigureServices`); 90 in session 11 (session 11: `TagServiceTests`; session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
   virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
   `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
@@ -368,6 +385,27 @@
   3.5 s with a close button; every read that becomes Finished, not past reads):**
   - A synthesized chime (Web Audio, the UI's first JS module) was built and then removed at the user's request:
     no sound, and the UI stays JS-free.
+- **Global search (session 25, user's choices: in the sticky header right of the nav, no keyboard shortcut (no
+  JS), one service with typed sections rather than pluggable sources, comments included in v1):**
+  - Open/close is CSS `:focus-within`, so the page dims at click time with no round trip. Blazor can't blur
+    without JS, so a `dismissed` class closes it while focused (Escape, any navigation, which also clears the
+    query); `@onmousedown:preventDefault` on the panel keeps focus while a result is clicked (Safari doesn't
+    focus links). The panel itself is `pointer-events: none` (only cards take clicks), so a click in the gaps
+    reaches the backdrop; backdrop click and Escape both clear the query and close. Phones (≤ 500px): a 40px icon that spans the header row when focused; the header's gaps and
+    link padding were tightened so brand + links + icon fit at 375px.
+  - No index helps `%q%`; books and words already searched this way. Comments add a scan of comment text: fine
+    at personal size; FTS5 (+ migration) is the fix if it gets slow. One round trip, ~4 queries, no BLOBs.
+  - Adding a type: one query in `SearchService`, one `SearchResults` property, one `Components/Search/*Results`
+    component, one slot in `GlobalSearch`'s grid (and `FirstResultUrl`).
+  - The query isn't in the URL (per-page `?q=` stays). Comment hits link to the book page, not the comment.
+  - Comment text stores tags bracketed (`@[Fred Test]`), so the comment query also matches
+    `CommentTagSyntax.ToStoredSearch(q)` (`@Fred` → `@[Fred`); a query running past the tag's end
+    (`@Fred Test said`) won't match the bracketed form.
+  - Each trigger has a `CommentTagTrigger(Type, Searchable)` in `CommentTagSyntax.Triggers` (user's request:
+    a per-tag `Searchable` flag); pages are not searchable. Set per tag type in code, no DB column. `LIKE` still
+    finds candidates; `SearchSnippet.Around` returns null when the query only matches inside unsearchable tags,
+    and the service drops those (over-fetches 4× the comment cap, so a flood of page-only matches could hide
+    older real ones).
 - **Book series (session 10, user's choices: own table, optional number):**
   - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
     (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.
@@ -411,18 +449,21 @@
     hanging) is 16 s.
 
 ## Next
-1. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
+1. Global search follow-ups (not chosen yet): authors/series as their own sections, comment `#`/`@` tags as
+   results, comment hits jumping to the comment (`?tag=`-style anchor), a "see all comments" page, recent
+   searches, a `/` shortcut (needs a small JS module).
+2. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
    the choice lives in the query string (`?view=list`, like search/filter/sort) or is remembered per device; whether
    list view adds sortable columns or reuses the existing sort control; same "Show more" paging.
-2. Flash card follow-ups (not chosen yet, from the session 13 ideas): reverse cards (meaning → word), cloze
+3. Flash card follow-ups (not chosen yet, from the session 13 ideas): reverse cards (meaning → word), cloze
    cards from the saved sentence, multiple choice / spelling / matching quizzes, per-book recap, review stats and
    streak (needs a review log), word of the day preferring due words, Anki CSV export.
-3. Comment tag follow-ups: tags across books (e.g. a `#tag` page listing comments from every book), user-defined
+4. Comment tag follow-ups: tags across books (e.g. a `#tag` page listing comments from every book), user-defined
    triggers. The picker can linger over the Post button while a bare tag is followed by more words (`#grim fate`)
    until Escape or a new line; consider closing it once the query has no match and contains a space.
-4. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
+5. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - Book import: subjects → tags, series from metadata and merging providers were skipped. Google descriptions can

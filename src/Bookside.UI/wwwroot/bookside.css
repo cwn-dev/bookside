@@ -373,3 +373,66 @@ a.tag:hover { background: var(--surface-muted); color: var(--text); }
 
 #blazor-error-ui .reload { margin-left: 0.5rem; }
 #blazor-error-ui .dismiss { float: right; cursor: pointer; }
+
+/* ---------- Global search results (GlobalSearch, Components/Search/*) ----------
+   Shared by every result type; each type styles its own rows in its scoped CSS. */
+
+.search-section {
+    min-width: 0;
+    padding: 0.75rem 0.5rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 6px 20px rgb(0 0 0 / 14%);
+}
+
+.search-section h2 {
+    margin: 0 0.5rem 0.4rem;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.search-hits {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.search-hits a {
+    display: block;
+    padding: 0.45rem 0.5rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.search-hits a:hover,
+.search-hits a:focus-visible {
+    background: var(--surface-muted);
+}
+
+.search-meta {
+    display: block;
+    overflow: hidden;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-see-all {
+    display: inline-block;
+    margin: 0.3rem 0.5rem 0.2rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+p.search-see-all { margin-top: 0.4rem; }

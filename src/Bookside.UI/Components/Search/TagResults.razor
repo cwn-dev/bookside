@@ -1,0 +1,36 @@
+@* Global search: matching book tags as pills with book counts. *@
+@inject NavigationManager Navigation
+
+<section class="search-section" aria-labelledby="gs-tags">
+    <h2 id="gs-tags">Tags</h2>
+    <ul class="tag-hits">
+        @foreach (var tag in Section.Items)
+        {
+            <li @key="tag.Id">
+                <a class="tag-hit" href="@SearchLinks.Tag(Navigation, tag.Name)">
+                    <span class="tag-name">
+                        <Highlighted Text="@tag.Name" Query="@Query" />
+                    </span>
+                    <span class="tag-count" aria-label="@BookCountLabel(tag.BookCount)">
+                        @tag.BookCount
+                    </span>
+                </a>
+            </li>
+        }
+    </ul>
+    @if (Section.HasMore)
+    {
+        <a class="search-see-all" href="tags">All tags →</a>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public SearchSection<TagDto> Section { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public string Query { get; set; } = "";
+
+    private static string BookCountLabel(int count) =>
+        count == 1 ? "1 book" : $"{count} books";
+}
