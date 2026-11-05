@@ -145,14 +145,35 @@ else
                          Placeholder="Add a comment…" SubmitText="Post" OnSaved="CommentPostedAsync" />
         </div>
 
+        @if (_tagChips.Count > 0)
+        {
+            <nav class="filters comment-filters" aria-label="Filter comments by tag">
+                @foreach (var chip in _tagChips)
+                {
+                    var selected = SelectedTag is { } tag && CommentTagFilter.Matches(chip, tag);
+                    <a class="chip @(selected ? "selected" : null)"
+                       aria-current="@(selected ? "true" : null)"
+                       title="@(selected ? "Show the whole log" : null)"
+                       href="@TagUrl(selected ? null : chip.Key)">@chip.Display</a>
+                }
+            </nav>
+        }
+
         @if (_timeline.Count == 0)
         {
             <p class="muted">Nothing here yet. Start reading, log a past read or add a comment.</p>
         }
+        else if (VisibleTimeline.Count == 0)
+        {
+            <p class="muted">
+                No comments tagged @SelectedTag!.Display.
+                <a href="@TagUrl(null)">Show the whole log</a>
+            </p>
+        }
         else
         {
             <ol class="timeline">
-                @foreach (var entry in _timeline)
+                @foreach (var entry in VisibleTimeline)
                 {
                     switch (entry)
                     {
@@ -199,7 +220,8 @@ else
                                 }
                                 else
                                 {
-                                    <p class="comment-text">@comment.Text</p>
+                                    @* One line: the paragraph is pre-wrap, so markup whitespace would show. *@
+                                    <p class="comment-text">@foreach (var segment in CommentTagSyntax.Parse(comment.Text)) { if (segment.TagType is CommentTagType type) { <a class="comment-tag @type.ToString().ToLowerInvariant()" href="@TagUrl(CommentTagSyntax.Format(type, segment.TagName!))">@CommentTagSyntax.Display(type, segment.TagName!)</a> } else { @segment.Text } }</p>
                                     <div class="actions entry-actions">
                                         <button type="button" class="btn btn-sm" @onclick="() => EditComment(comment)">Edit</button>
                                         <ConfirmButton Text="Delete" Prompt="Delete this comment?" Small OnConfirm="() => DeleteCommentAsync(comment.Id)" />
@@ -233,6 +255,7 @@ else
     private BookRead? _justFinished;
 
     private IReadOnlyList<TimelineEntry> _timeline = [];
+    private IReadOnlyList<CommentTagChip> _tagChips = [];
     private CommentFormModel _newComment = new();
     private int _newCommentKey;
     private CommentFormModel? _editingComment;
@@ -245,6 +268,22 @@ else
     [Parameter]
     public Guid Id { get; set; }
 
+    /// <summary>
+    /// Shows only the comments with this tag, in its stored form
+    /// (<c>@[Jane Eyre]</c>, <c>#grim</c>, <c>p.42</c>).
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "tag")]
+    public string? Tag { get; set; }
+
+    private CommentTagChip? SelectedTag => CommentTagFilter.Parse(Tag);
+
+    private IReadOnlyList<TimelineEntry> VisibleTimeline =>
+        SelectedTag is { } tag
+            ? _timeline
+                .Where(e => e is CommentTimelineEntry c && CommentTagFilter.Has(c.Comment, tag))
+                .ToList()
+            : _timeline;
+
     private ReadingSessionDto? Current => _book?.ReadingSessions.FirstOrDefault(s => s.Status == ReadingStatus.Reading);
 
     // "Today" in the server's time zone (set TZ in the container).
@@ -252,6 +291,12 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        // Only the tag filter changed: keep the loaded book and open forms.
+        if (_book?.Id == Id)
+        {
+            return;
+        }
+
         CancelEdit();
         _justFinished = null;
         CancelCommentEdit();
@@ -267,6 +312,7 @@ else
         _notFound = !result.IsSuccess && result.Error.Type == ErrorType.NotFound;
         _book = result.IsSuccess ? result.Value : null;
         _timeline = _book is null ? [] : BookTimeline.Build(_book, Clock.LocalTimeZone);
+        _tagChips = _book is null ? [] : CommentTagFilter.Chips(_book.Comments);
         if (!result.IsSuccess && !_notFound)
         {
             _errors = [result.Error.Message];
@@ -342,6 +388,8 @@ else
         _errors = result.IsSuccess ? [] : [result.Error.Message];
         await ReloadAsync();
     }
+
+    private string TagUrl(string? tag) => Navigation.GetUriWithQueryParameter("tag", tag);
 
     private async Task CommentPostedAsync()
     {

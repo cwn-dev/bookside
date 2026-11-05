@@ -1,16 +1,52 @@
-@* Add or edit one book comment. Validation comes from ILibraryService. *@
+@* Add or edit one book comment. Validation comes from ILibraryService.
+   Typing @, # or p. opens a picker of the book's tags (CommentTagSyntax). *@
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
 @inject ILibraryService Library
+@inject IJSRuntime JS
 
 <div class="comment-form">
 <EditForm Model="Model" OnValidSubmit="SaveAsync">
     <ServiceErrorValidator @ref="_validator" />
     <ErrorAlert Messages="_errors" />
 
-    @* Input bubbles here so Ctrl+Enter sees the text before the change event. *@
-    <div class="field" @oninput="e => _typed = (string?)e.Value" @onkeydown="KeyDownAsync">
+    @* Input bubbles here so Ctrl+Enter and the tag picker see the text before
+       the change event. *@
+    <div class="field" @oninput="InputAsync" @onkeydown="KeyDownAsync" @onfocusout="ClosePicker">
         <label for="@_textId" class="@(LabelHidden ? "visually-hidden" : null)">@Label</label>
-        <InputTextArea @ref="_textInput" id="@_textId" @bind-Value="Model.Text" rows="3" maxlength="@BookComment.TextMaxLength"
-                       placeholder="@Placeholder" />
+        <InputTextArea @ref="_textInput"
+                       id="@_textId"
+                       @bind-Value="Model.Text"
+                       rows="3"
+                       maxlength="@BookComment.TextMaxLength"
+                       placeholder="@Placeholder"
+                       role="combobox"
+                       aria-autocomplete="list"
+                       aria-expanded="@(PickerShown ? "true" : "false")"
+                       aria-controls="@(PickerShown ? ListId : null)"
+                       aria-activedescendant="@(_active >= 0 ? OptionId(_active) : null)"
+                       data-picker="@(PickerShown ? (_active >= 0 ? "active" : "open") : null)" />
+        @if (PickerShown)
+        {
+            <ul id="@ListId" class="tag-picker" role="listbox" aria-label="Tags" style="@PickerStyle">
+                @for (var i = 0; i < _options.Count; i++)
+                {
+                    var option = _options[i];
+                    <li id="@OptionId(i)"
+                        role="option"
+                        aria-selected="@(i == _active ? "true" : "false")"
+                        class="@(i == _active ? "active" : null)"
+                        @onmousedown:preventDefault
+                        @onclick="() => Pick(option)">
+                        @if (option.IsNew)
+                        {
+                            <span class="create">Create</span>
+                        }
+                        <span class="name">@CommentTagSyntax.Display(option.Type, option.Name)</span>
+                    </li>
+                }
+            </ul>
+        }
         <ValidationMessage For="() => Model.Text" />
     </div>
 
@@ -25,21 +61,50 @@
 </div>
 
 @code {
+    /// <summary>
+    /// The collocated JS module (caret position and picker keys).
+    /// </summary>
+    public const string ModulePath = "./_content/Bookside.UI/Components/CommentForm.razor.js";
+
+    private const int MaxPickerTags = 8;
+
     private readonly string _textId = $"cm-{Guid.NewGuid():N}"[..11];
     private ServiceErrorValidator? _validator;
     private IReadOnlyList<string> _errors = [];
     private bool _saving;
     private InputTextArea? _textInput;
     private string? _typed;
+    private IJSObjectReference? _module;
 
-    /// <summary>Focus the text box when this form first renders.</summary>
+    private IReadOnlyList<CommentTagDto>? _tags;
+    private OpenCommentTag? _open;
+    private int _caret;
+    private CaretPoint? _caretPoint;
+    private int? _dismissedStart;
+    private List<TagOption> _options = [];
+    private int _active = -1;
+    private int? _pendingCaret;
+
+    // Bumped by every input, pick and blur, so a slow caret/tag lookup from an
+    // earlier keystroke can't reopen or overwrite the picker.
+    private int _pickerVersion;
+
+    // Escape can arrive before the lookup for the last keystroke finishes;
+    // that lookup then dismisses its tag.
+    private bool _dismissPending;
+
+    /// <summary>
+    /// Focus the text box when this form first renders.
+    /// </summary>
     [Parameter]
     public bool AutoFocus { get; set; }
 
     [Parameter, EditorRequired]
     public Guid BookId { get; set; }
 
-    /// <summary>The comment being edited; null to add a new one.</summary>
+    /// <summary>
+    /// The comment being edited; null to add a new one.
+    /// </summary>
     [Parameter]
     public Guid? CommentId { get; set; }
 
@@ -64,16 +129,208 @@
     [Parameter]
     public EventCallback OnCancel { get; set; }
 
+    private string ListId => $"{_textId}-tags";
+
+    private bool PickerShown => _options.Count > 0;
+
+    private string OptionId(int index) => $"{ListId}-{index}";
+
+    // Under the caret, kept inside the field; without a position it falls
+    // back to the stylesheet's place under the box.
+    private string? PickerStyle =>
+        _caretPoint is { } point
+            ? string.Create(
+                CultureInfo.InvariantCulture,
+                $"top: {point.Top:0.#}px; left: clamp(0px, {point.Left:0.#}px, 100% - min(24rem, 100%));")
+            : null;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && AutoFocus && _textInput?.Element is { } element)
+        if (_textInput?.Element is not { } element)
         {
-            await element.FocusAsync();
+            return;
         }
+
+        if (firstRender)
+        {
+            if (AutoFocus)
+            {
+                await element.FocusAsync();
+            }
+
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath);
+            await _module.InvokeVoidAsync("attach", element);
+        }
+
+        if (_pendingCaret is int caret && _module is not null)
+        {
+            _pendingCaret = null;
+            await _module.InvokeVoidAsync("setCaret", element, caret);
+        }
+    }
+
+    private async Task InputAsync(ChangeEventArgs e)
+    {
+        _typed = (string?)e.Value;
+        var text = _typed ?? "";
+        var version = ++_pickerVersion;
+
+        // Only ask for the caret when a tag could be open.
+        if (_module is null
+            || _textInput?.Element is not { } element
+            || !CommentTagSyntax.Triggers.Keys.Any(t => text.Contains(t, StringComparison.Ordinal)))
+        {
+            ClosePicker();
+            return;
+        }
+
+        var caret = await _module.InvokeAsync<CaretPoint?>("caret", element);
+        if (version != _pickerVersion || caret is null)
+        {
+            return;
+        }
+
+        _caret = caret.Position;
+        _caretPoint = caret;
+        _open = CommentTagSyntax.FindOpen(text, _caret);
+
+        if (_dismissPending)
+        {
+            _dismissPending = false;
+            _dismissedStart = _open?.Start;
+        }
+
+        if (_open is null || _open.Start == _dismissedStart)
+        {
+            CloseOptions();
+            return;
+        }
+
+        _dismissedStart = null;
+        _tags ??= await Library.ListCommentTagsAsync(BookId);
+        if (version != _pickerVersion)
+        {
+            return;
+        }
+
+        _options = BuildOptions(_open);
+        _active = _options.Count > 0 && !_options[0].IsNew ? 0 : -1;
+    }
+
+    private List<TagOption> BuildOptions(OpenCommentTag open)
+    {
+        if (open.Type == CommentTagType.Page)
+        {
+            return BuildPageOptions(open.Query);
+        }
+
+        var name = string.Join(' ', open.Query.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        var query = TermNormalizer.Normalize(name);
+        var options = _tags!
+            .Where(t => t.Type == open.Type
+                && TermNormalizer.Normalize(t.Name).Contains(query, StringComparison.Ordinal))
+            .Take(MaxPickerTags)
+            .Select(t => new TagOption(t.Type, t.Name, IsNew: false))
+            .ToList();
+
+        if (name.Length is > 0 and <= CommentTag.NameMaxLength
+            && !options.Any(o => TermNormalizer.Normalize(o.Name) == query))
+        {
+            options.Add(new TagOption(open.Type, name, IsNew: true));
+        }
+
+        return options;
+    }
+
+    // Pages match by prefix ("p.4" offers 4, 42, 410) in page order.
+    private List<TagOption> BuildPageOptions(string digits)
+    {
+        var prefix = digits.TrimStart('0');
+        var options = _tags!
+            .Where(t => t.Type == CommentTagType.Page
+                && t.Name.StartsWith(prefix, StringComparison.Ordinal))
+            .OrderBy(t => int.Parse(t.Name, CultureInfo.InvariantCulture))
+            .Take(MaxPickerTags)
+            .Select(t => new TagOption(t.Type, t.Name, IsNew: false))
+            .ToList();
+
+        if (int.TryParse(digits, CultureInfo.InvariantCulture, out var page)
+            && page > 0
+            && !options.Any(o => o.Name == prefix))
+        {
+            options.Add(new TagOption(
+                CommentTagType.Page,
+                page.ToString(CultureInfo.InvariantCulture),
+                IsNew: true));
+        }
+
+        return options;
+    }
+
+    private void Pick(TagOption option)
+    {
+        if (_open is null)
+        {
+            return;
+        }
+
+        var text = _typed ?? Model.Text ?? "";
+        var rest = text[Math.Min(_caret, text.Length)..];
+        var tag = CommentTagSyntax.Format(option.Type, option.Name);
+        var insert = rest.Length > 0 && char.IsWhiteSpace(rest[0]) ? tag : tag + " ";
+
+        Model.Text = _typed = text[.._open.Start] + insert + rest;
+        _pendingCaret = _open.Start + insert.Length;
+
+        // A new tag joins the list now, so it's offered again before saving.
+        if (option.IsNew && _tags is not null)
+        {
+            _tags = [.. _tags, new CommentTagDto(option.Type, option.Name)];
+        }
+
+        ClosePicker();
+    }
+
+    private void CloseOptions()
+    {
+        _options = [];
+        _active = -1;
+    }
+
+    private void ClosePicker()
+    {
+        _pickerVersion++;
+        _open = null;
+        CloseOptions();
     }
 
     private async Task KeyDownAsync(KeyboardEventArgs e)
     {
+        if (e.Key == "Escape")
+        {
+            _dismissPending = !PickerShown;
+            _dismissedStart = PickerShown ? _open?.Start : _dismissedStart;
+            _open = null;
+            CloseOptions();
+            return;
+        }
+
+        if (PickerShown && !e.CtrlKey && !e.MetaKey && !e.AltKey)
+        {
+            switch (e.Key)
+            {
+                case "ArrowDown":
+                    _active = (_active + 1) % _options.Count;
+                    return;
+                case "ArrowUp":
+                    _active = _active <= 0 ? _options.Count - 1 : _active - 1;
+                    return;
+                case "Enter" or "Tab" when _active >= 0:
+                    Pick(_options[_active]);
+                    return;
+            }
+        }
+
         if (e.Key == "Enter" && (e.CtrlKey || e.MetaKey) && !_saving)
         {
             Model.Text = _typed ?? Model.Text;
@@ -106,4 +363,27 @@
             _saving = false;
         }
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is gone; nothing to release.
+            }
+        }
+    }
+
+    private sealed record TagOption(CommentTagType Type, string Name, bool IsNew);
+
+    /// <summary>
+    /// The JS module's <c>caret</c> result: the caret index and the point
+    /// under its line, in px from the field's top left.
+    /// </summary>
+    public sealed record CaretPoint(int Position, double Top, double Left);
 }

@@ -159,6 +159,21 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.ToTable("BookComments", (string)null);
                 });
 
+            modelBuilder.Entity("Bookside.Core.Books.BookCommentTag", b =>
+                {
+                    b.Property<Guid>("CommentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TagId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("CommentId", "TagId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("BookCommentTags", (string)null);
+                });
+
             modelBuilder.Entity("Bookside.Core.Books.BookCover", b =>
                 {
                     b.Property<Guid>("BookId")
@@ -207,6 +222,51 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.HasIndex("TagId");
 
                     b.ToTable("BookTags", (string)null);
+                });
+
+            modelBuilder.Entity("Bookside.Core.Books.CommentTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("BookId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasFilter("BookId IS NULL");
+
+                    b.HasIndex("BookId", "Type", "NormalizedName")
+                        .IsUnique()
+                        .HasFilter("BookId IS NOT NULL");
+
+                    b.ToTable("CommentTags", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CommentTags_BookId", "(Type = 'General') = (BookId IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Bookside.Core.Books.ReadingSession", b =>
@@ -555,6 +615,25 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.Navigation("Book");
                 });
 
+            modelBuilder.Entity("Bookside.Core.Books.BookCommentTag", b =>
+                {
+                    b.HasOne("Bookside.Core.Books.BookComment", "Comment")
+                        .WithMany("Tags")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Bookside.Core.Books.CommentTag", "Tag")
+                        .WithMany("Comments")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("Tag");
+                });
+
             modelBuilder.Entity("Bookside.Core.Books.BookCover", b =>
                 {
                     b.HasOne("Bookside.Core.Books.Book", "Book")
@@ -583,6 +662,16 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.Navigation("Book");
 
                     b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("Bookside.Core.Books.CommentTag", b =>
+                {
+                    b.HasOne("Bookside.Core.Books.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Book");
                 });
 
             modelBuilder.Entity("Bookside.Core.Books.ReadingSession", b =>
@@ -640,6 +729,16 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.Navigation("ReadingSessions");
 
                     b.Navigation("Tags");
+                });
+
+            modelBuilder.Entity("Bookside.Core.Books.BookComment", b =>
+                {
+                    b.Navigation("Tags");
+                });
+
+            modelBuilder.Entity("Bookside.Core.Books.CommentTag", b =>
+                {
+                    b.Navigation("Comments");
                 });
 
             modelBuilder.Entity("Bookside.Core.Books.Series", b =>

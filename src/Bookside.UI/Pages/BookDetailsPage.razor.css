@@ -191,3 +191,26 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
+
+.comment-filters {
+    margin-bottom: 0.75rem;
+}
+
+/* Inline tag in comment text; a link that filters the log to it. */
+.comment-tag {
+    padding: 0 0.3rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-muted);
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.comment-tag:hover {
+    text-decoration: underline;
+}
+
+.comment-tag.person {
+    background: var(--accent-soft);
+    color: var(--accent-hover);
+}

@@ -86,4 +86,12 @@ public interface ILibraryService
     Task<Result> DeleteCommentAsync(
         Guid commentId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tags the comment picker offers for a book: its person and page tags and
+    /// every general tag, by name.
+    /// </summary>
+    Task<IReadOnlyList<CommentTagDto>> ListCommentTagsAsync(
+        Guid bookId,
+        CancellationToken cancellationToken = default);
 }

@@ -1,5 +1,6 @@
 using Bookside.Core.Books;
 using Bookside.Core.Books.Services;
+using Bookside.UI.Components;
 using Bookside.UI.Pages;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -243,6 +244,138 @@ public sealed class BookDetailsPageTests : ComponentTestBase
         page.WaitForAssertion(() => Assert.Equal(
             "Spice must flow.",
             page.Find(".comment .comment-text").TextContent));
+    }
+
+    [Fact]
+    public async Task Comment_tags_show_as_pills_in_the_log()
+    {
+        var book = await AddBookAsync("Jane Eyre");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        page.Find(".add-comment textarea").Change("Met @[Mr Rochester] #gothic p.112");
+        page.Find(".add-comment form").Submit();
+
+        page.WaitForAssertion(() => Assert.Equal(
+            "Met @Mr Rochester #gothic p. 112",
+            page.Find(".comment-text").TextContent));
+        Assert.Equal("@Mr Rochester", page.Find(".comment-tag.person").TextContent);
+        Assert.Equal("#gothic", page.Find(".comment-tag.general").TextContent);
+        Assert.Equal("p. 112", page.Find(".comment-tag.page").TextContent);
+    }
+
+    [Fact]
+    public async Task Tag_filter_shows_only_matching_comments_and_chips_toggle_it()
+    {
+        var book = await AddBookAsync("Jane Eyre");
+        Success(await Library.AddReadingSessionAsync(
+            book.Id,
+            new ReadingSessionInput { Status = ReadingStatus.Reading, StartedOn = new DateOnly(2026, 10, 1) },
+            Ct));
+        Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "@Rochester broods. p.42" }, Ct));
+        Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "#gothic mood" }, Ct));
+
+        Navigation.NavigateTo($"books/{book.Id}?tag={Uri.EscapeDataString("@[rochester]")}");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        Assert.Equal(
+            ["@Rochester", "#gothic", "p. 42"],
+            page.FindAll(".comment-filters .chip").Select(c => c.TextContent));
+        var selected = page.Find(".comment-filters .chip.selected");
+        Assert.Equal("@Rochester", selected.TextContent);
+        Assert.DoesNotContain("tag=", selected.GetAttribute("href"), StringComparison.Ordinal);
+        Assert.EndsWith("?tag=%23%5Bgothic%5D", page.FindAll(".comment-filters .chip")[1].GetAttribute("href"), StringComparison.Ordinal);
+
+        var entry = Assert.Single(page.FindAll(".timeline > li"));
+        Assert.Contains("broods", entry.TextContent, StringComparison.Ordinal);
+        Assert.Contains("tag=p.42", entry.QuerySelector(".comment-tag.page")!.GetAttribute("href"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Tag_filter_with_no_matches_offers_the_whole_log()
+    {
+        var book = await AddBookAsync("Jane Eyre");
+        Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "#gothic" }, Ct));
+
+        Navigation.NavigateTo($"books/{book.Id}?tag=p.7");
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+
+        page.WaitForAssertion(() => Assert.Contains("No comments tagged p. 7.", page.Markup, StringComparison.Ordinal));
+        Assert.Empty(page.FindAll(".timeline"));
+    }
+
+    [Fact]
+    public async Task Tag_picker_offers_existing_tags_and_inserts_the_pick()
+    {
+        var book = await AddBookAsync("Jane Eyre");
+        Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "@[Jane Eyre] #gothic" }, Ct));
+        CommentFormJs.Setup<CommentForm.CaretPoint?>("caret", _ => true).SetResult(new("Met @Ja".Length, 40, 30));
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        var box = page.Find(".add-comment textarea");
+        box.Input("Met @Ja");
+        page.WaitForAssertion(() => Assert.Equal(
+            ["@Jane Eyre", "Create@Ja"],
+            page.FindAll(".tag-picker li").Select(li => li.TextContent)));
+        Assert.Equal("active", page.Find(".add-comment textarea").GetAttribute("data-picker"));
+        Assert.StartsWith(
+            "top: 40px; left: clamp(0px, 30px,",
+            page.Find(".tag-picker").GetAttribute("style"),
+            StringComparison.Ordinal);
+
+        page.Find(".add-comment textarea").KeyDown(new KeyboardEventArgs { Key = "Enter" });
+
+        Assert.Empty(page.FindAll(".tag-picker"));
+        Assert.Equal("Met @[Jane Eyre] ", page.Find(".add-comment textarea").GetAttribute("value"));
+        CommentFormJs.VerifyInvoke("setCaret");
+
+        page.Find(".add-comment textarea").Input("Met @Ja");
+        page.WaitForAssertion(() => page.Find(".tag-picker"));
+        page.Find(".add-comment textarea").KeyDown(new KeyboardEventArgs { Key = "Escape" });
+        Assert.Empty(page.FindAll(".tag-picker"));
+    }
+
+    [Fact]
+    public async Task Page_picker_offers_the_book_s_pages_by_prefix_in_page_order()
+    {
+        var book = await AddBookAsync("Middlemarch");
+        Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "p.410 p.42 p.4 p.7" }, Ct));
+        CommentFormJs.Setup<CommentForm.CaretPoint?>("caret", _ => true).SetResult(new("See p.4".Length, 40, 30));
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        page.Find(".add-comment textarea").Input("See p.4");
+        page.WaitForAssertion(() => Assert.Equal(
+            ["p. 4", "p. 42", "p. 410"],
+            page.FindAll(".tag-picker li").Select(li => li.TextContent)));
+
+        page.Find(".add-comment textarea").KeyDown(new KeyboardEventArgs { Key = "ArrowDown" });
+        page.Find(".add-comment textarea").KeyDown(new KeyboardEventArgs { Key = "Tab" });
+
+        Assert.Equal("See p.42 ", page.Find(".add-comment textarea").GetAttribute("value"));
+    }
+
+    [Fact]
+    public async Task Tag_picker_creates_a_new_multi_word_tag()
+    {
+        var book = await AddBookAsync("Middlemarch");
+        CommentFormJs.Setup<CommentForm.CaretPoint?>("caret", _ => true).SetResult(new("#slow  burn".Length, 40, 30));
+        var page = Render<BookDetailsPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => page.Find("h1"));
+
+        page.Find(".add-comment textarea").Input("#slow  burn");
+        page.WaitForAssertion(() => Assert.Equal("Create#slow burn", page.Find(".tag-picker li").TextContent));
+        Assert.Equal("open", page.Find(".add-comment textarea").GetAttribute("data-picker"));
+
+        page.Find(".tag-picker li").Click();
+        page.Find(".add-comment form").Submit();
+
+        page.WaitForAssertion(() => Assert.Equal("#slow burn", page.Find(".comment-tag").TextContent));
+        Assert.Equal(
+            [new CommentTagDto(CommentTagType.General, "slow burn")],
+            await Library.ListCommentTagsAsync(book.Id, Ct));
     }
 
     [Fact]

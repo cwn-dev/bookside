@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 22, 2026-10-30)
+# Bookside: project state (end of session 24, 2026-11-05)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -103,6 +103,26 @@
   view; `scroll-margin` clears the sticky header). Kept through the book's own pages (`books/{id}/…`); any other
   navigation forgets it. Checked in Firefox at 1280 and 390 px: same scroll position, no focus ring after a mouse
   click.
+- Inline comment tags (session 23): tags typed in comment text (`Core/Books/CommentTagSyntax`, string triggers:
+  `@` = `CommentTagType.Person`, `#` = `General`, `p.` = `Page`). `@[Any Name]` or a bare `@Word` (starts with a letter);
+  pages `p.42` / `p. 42` (digits, ≤ 6, leading zeros dropped, shown as "p. 42"). A trigger counts only at the start
+  or after a non-letter/digit (`me@x.com`, `chap.5` aren't tags). `CommentTag` (own table: Type, Name ≤ 100,
+  `NormalizedName`; `BookId` set for Person/Page = scoped to the book and cascading from it, null for General =
+  shared across books; filtered unique indexes (BookId, Type, NormalizedName) and NormalizedName where BookId is
+  null) + `BookCommentTag` join; migration `AddCommentTags` (new tables only). `LibraryService` syncs a comment's
+  links from its text on add/update (find or create, retry once on a unique race) and deletes tags no comment uses
+  (edit, comment delete, book delete), so "comments on page 42" is a join, not a text search.
+  `ListCommentTagsAsync(bookId)` feeds the picker. UI: `CommentForm` picker for `@`, `#` and `p.` (listbox
+  under the caret, up to 8 matches + "Create …"; names match by contains, pages by prefix in page order; arrows, Enter/Tab, click, Escape; ARIA combobox) inserts `@[Name] `;
+  the log renders tags as pills (person = accent). First JS module: collocated `CommentForm.razor.js` (`attach` =
+  picker key `preventDefault` while `data-picker` is set, `caret` = index + pixel point (`CommentForm.CaretPoint`),
+  `setCaret`). Picker updates are versioned so a
+  slow caret lookup can't reopen it; Escape during one dismisses that tag.
+  Tag filter on the book page: a chip row between the add box and the reading log lists every tag in the book's
+  comments once (`CommentTagFilter.Chips`: people, `#` tags, then pages in page order); a chip or a tag pill in a
+  comment links to `books/{id}?tag={stored form}` (e.g. `?tag=%23%5Bgrim%5D` = `#[grim]`); the log then shows only
+  matching comments (sessions hidden); the selected chip clears it; no match → "No comments tagged … Show the whole
+  log". A query-only change doesn't reload the book or close open forms.
 - Book series (session 10): `BookInput`/`BookSummary`/`BookDetails` carry `Series` + `SeriesNumber`;
   `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
   + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page
@@ -156,7 +176,8 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 142 tests (session 22: `LibraryListStateTests`, library return, book back link); 132 in session 21 (Ctrl+Enter comment); 131 in session 19 ( `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
+- `Bookside.UI.Tests`: 150 tests (session 23: comment tags in the log, picker pick/escape/create, page picker, tag filter, `CommentTagFilterTests`;
+  `ComponentTestBase.CommentFormJs` = the comment form's JS module, loose; tests set up `caret`); 142 in session 22 ( `LibraryListStateTests`, library return, book back link); 132 in session 21 (Ctrl+Enter comment); 131 in session 19 ( `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
   pages); 123 in session 17 ( challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
   `ComponentTestBase` now has a controllable `FakeDictionaryLookup` (`Define`, `Unavailable`) and `AddWordAsync`). Earlier: 37 tests (incl. `BookTimelineTests`, pure ordering tests). bUnit component tests (`ComponentTestBase`: `BunitContext` + production
   registrations on a temp SQLite file) and `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`
@@ -164,7 +185,7 @@
 - `Bookside.Integrations.Tests`: 39 tests (session 16: details/descriptions); 36 in session 12 (`BookLookupClientTests`, both providers + covers);
   26 before through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 130 tests (session 17: `ReadingPaceTests`, `ChallengeServiceTests`); 116 in session 16 (parallel/merged book search, details); 112 in session 14 (practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
+- `Bookside.Data.Tests`: 164 tests (session 23: `CommentTagSyntaxTests`, comment tag service tests); 130 in session 17 ( `ReadingPaceTests`, `ChallengeServiceTests`); 116 in session 16 (parallel/merged book search, details); 112 in session 14 (practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
   `ServiceTestBase.Metadata` needs a provider registered in `ConfigureServices`); 90 in session 11 (session 11: `TagServiceTests`; session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
   virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
   `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
@@ -219,6 +240,24 @@
     Cost: blank page until the circuit connects (fast on a LAN).
   - Library list state (search, filter, sort) lives in the query string (`?q=&filter=&sort=`), so Back from a book
     restores the list. Search is debounced 300 ms and uses `replace: true` navigation.
+  - Session 23 (user's choices: chip row + clickable pills, one tag at a time, sessions hidden, `?tag=` in the
+    URL): the tag filter runs in memory on the comments `GetBookAsync` already loaded (parsing their text), not
+    via the tag tables: no extra round trip. The tag tables are for queries across books later.
+  - Session 23 (user's choice): a comment's page is a `p.42` tag rather than a form field (a `PageNumber` column
+    was built, then dropped before commit). Pages are stored as text names, so a page-range query would need a
+    cast (no index); fine at this size.
+  - Session 23 (user's choice): the comment tag picker uses a small collocated JS module, because Blazor can't
+    read the caret without JS; the rest of the UI stays JS-free. The caret is only fetched (one round trip per
+    keystroke) while the text contains `@`/`#`. Tags are stored in the text as `@[Name]` (user's choice over plain
+    names matched on save, which is ambiguous); the edit box shows that raw form. `#` tags are global, `@` per book
+    (user's choice). The picker opens under the caret's line: `caret` also measures it (hidden mirror div with
+    the textarea's box and font, same round trip), kept inside the field; the stylesheet's fallback is under the box. Not built yet: search/filter by tag, tag pages,
+    renaming (names live in the text), user-defined triggers (`CommentTagSyntax.Triggers` + the enum are the hook).
+  - Session 24: `CommentTagSyntax.Parse` jumps between candidates with `IndexOfAny` over a `SearchValues<char>` of
+    the triggers' first characters, and `TryReadTag` loops a trigger array (the dictionary's boxed enumerator
+    allocated per candidate). BenchmarkDotNet (scratch, not in the repo): 600-char comment 6.3 → 0.9 µs, 10k
+    chars 74 → 7.5 µs, allocations −80 %+. A fixed stride (longest trigger length) was tried and rejected: it
+    skips 1-char triggers. User-defined triggers must rebuild `TriggerList`/`TriggerStarts`.
   - Session 22 (user's choice: no JS): returning from a book focuses its card instead of saving `scrollY`, so the
     UI stays JS-free; the position is "card in view", not pixel-exact (in practice Firefox landed on the same
     spot). Focus waits one render after the first, so `FocusOnNavigate`'s heading focus doesn't win. Nothing
@@ -380,7 +419,10 @@
 2. Flash card follow-ups (not chosen yet, from the session 13 ideas): reverse cards (meaning → word), cloze
    cards from the saved sentence, multiple choice / spelling / matching quizzes, per-book recap, review stats and
    streak (needs a review log), word of the day preferring due words, Anki CSV export.
-3. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
+3. Comment tag follow-ups: tags across books (e.g. a `#tag` page listing comments from every book), user-defined
+   triggers. The picker can linger over the Post button while a bare tag is followed by more words (`#grim fate`)
+   until Escape or a new line; consider closing it once the query has no match and contains a space.
+4. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
 
 ## Open questions / minor notes
 - Book import: subjects → tags, series from metadata and merging providers were skipped. Google descriptions can

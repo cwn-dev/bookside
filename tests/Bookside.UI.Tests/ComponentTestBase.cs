@@ -6,6 +6,7 @@ using Bookside.Core.Vocabulary.Lookup;
 using Bookside.Core.Vocabulary.Services;
 using Bookside.Data;
 using Bookside.Data.Sqlite;
+using Bookside.UI.Components;
 using Bunit.TestDoubles;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +29,16 @@ public abstract class ComponentTestBase : BunitContext, IAsyncLifetime
             .AddBooksideUi()
             .AddSingleton<IDictionaryLookupService>(Dictionary)
             .AddSingleton<IBookLookupService>(BookLookup);
+
+        CommentFormJs = JSInterop.SetupModule(CommentForm.ModulePath);
+        CommentFormJs.Mode = JSRuntimeMode.Loose;
     }
+
+    /// <summary>
+    /// The comment form's JS module, loose (caret 0) unless a test sets up
+    /// <c>caret</c>.
+    /// </summary>
+    protected BunitJSModuleInterop CommentFormJs { get; }
 
     protected static CancellationToken Ct => Xunit.TestContext.Current.CancellationToken;
 

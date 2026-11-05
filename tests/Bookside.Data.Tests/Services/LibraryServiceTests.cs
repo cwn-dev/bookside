@@ -281,6 +281,90 @@ public sealed class LibraryServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task Page_tags_are_per_book()
+    {
+        var mort = await AddBookAsync("Mort");
+        var other = await AddBookAsync("Reaper Man");
+
+        await AddCommentAsync(mort.Id, "p.42 and p. 042");
+        await AddCommentAsync(other.Id, "See p.42");
+
+        await using var db = Database.CreateContext();
+        var pages = await db.CommentTags
+            .Where(t => t.Type == CommentTagType.Page)
+            .Select(t => new { t.Name, t.BookId })
+            .ToListAsync(Ct);
+        Assert.Equivalent(new[] { new { Name = "42", BookId = (Guid?)mort.Id }, new { Name = "42", BookId = (Guid?)other.Id } }, pages);
+        Assert.Equal(
+            [new CommentTagDto(CommentTagType.Page, "42")],
+            await Library.ListCommentTagsAsync(mort.Id, Ct));
+    }
+
+    [Fact]
+    public async Task Comment_tags_are_created_once_person_per_book_and_general_shared()
+    {
+        var jane = await AddBookAsync("Jane Eyre");
+        var other = await AddBookAsync("Wide Sargasso Sea");
+
+        await AddCommentAsync(jane.Id, "@[Jane Eyre] arrives. #gothic");
+        await AddCommentAsync(jane.Id, "@[jane eyre] again, @Rochester #Gothic");
+        await AddCommentAsync(other.Id, "@[Jane Eyre] here too. #gothic");
+
+        await using var db = Database.CreateContext();
+        var tags = await db.CommentTags.ToListAsync(Ct);
+        Assert.Equivalent(
+            new[]
+            {
+                ("Jane Eyre", (Guid?)jane.Id),
+                ("Jane Eyre", other.Id),
+                ("Rochester", jane.Id),
+                ("gothic", null),
+            },
+            tags.Select(t => (t.Name, t.BookId)));
+        Assert.Equal(7, await db.BookCommentTags.CountAsync(Ct));
+
+        Assert.Equal(
+            [
+                new CommentTagDto(CommentTagType.General, "gothic"),
+                new CommentTagDto(CommentTagType.Person, "Jane Eyre"),
+                new CommentTagDto(CommentTagType.Person, "Rochester"),
+            ],
+            await Library.ListCommentTagsAsync(jane.Id, Ct));
+    }
+
+    [Fact]
+    public async Task Tags_no_comment_uses_are_deleted_on_edit_comment_delete_and_book_delete()
+    {
+        var book = await AddBookAsync("Mort");
+        var first = await AddCommentAsync(book.Id, "@Mort #death");
+        var second = await AddCommentAsync(book.Id, "#death");
+
+        Success(await Library.UpdateCommentAsync(first.Id, new BookCommentInput { Text = "@Ysabell" }, Ct));
+        Assert.Equal(["death", "Ysabell"], await TagNamesAsync());
+
+        Assert.True((await Library.DeleteCommentAsync(second.Id, Ct)).IsSuccess);
+        Assert.Equal(["Ysabell"], await TagNamesAsync());
+
+        var other = await AddBookAsync("Reaper Man");
+        await AddCommentAsync(book.Id, "#death");
+        await AddCommentAsync(other.Id, "#death #farm");
+        Assert.True((await Library.DeleteBookAsync(other.Id, Ct)).IsSuccess);
+        Assert.Equal(["death", "Ysabell"], await TagNamesAsync());
+
+        Assert.True((await Library.DeleteBookAsync(book.Id, Ct)).IsSuccess);
+        Assert.Empty(await TagNamesAsync());
+    }
+
+    private async Task<BookCommentDto> AddCommentAsync(Guid bookId, string text) =>
+        Success(await Library.AddCommentAsync(bookId, new BookCommentInput { Text = text }, Ct));
+
+    private async Task<List<string>> TagNamesAsync()
+    {
+        await using var db = Database.CreateContext();
+        return await db.CommentTags.OrderBy(t => t.NormalizedName).Select(t => t.Name).ToListAsync(Ct);
+    }
+
+    [Fact]
     public async Task Deleting_a_comment_removes_it_from_the_book()
     {
         var book = await AddBookAsync("Mort");

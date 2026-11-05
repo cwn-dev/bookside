@@ -260,7 +260,8 @@ public sealed record CoverContent
 public sealed record BookCommentInput
 {
     /// <summary>
-    /// Required; trimmed. Plain text, line breaks kept.
+    /// Required; trimmed. Plain text, line breaks kept; inline tags
+    /// (<see cref="CommentTagSyntax"/>) are created or reused on save.
     /// </summary>
     public required string Text { get; init; }
 }
@@ -282,3 +283,8 @@ public sealed record BookCommentDto
     /// </summary>
     public bool IsEdited => UpdatedAtUtc > CreatedAtUtc;
 }
+
+/// <summary>
+/// A tag offered by the comment tag picker.
+/// </summary>
+public sealed record CommentTagDto(CommentTagType Type, string Name);
