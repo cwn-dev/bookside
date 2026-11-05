@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 23, 2026-10-31)
+# Bookside: project state (end of session 24, 2026-11-05)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -253,6 +253,11 @@
     (user's choice). The picker opens under the caret's line: `caret` also measures it (hidden mirror div with
     the textarea's box and font, same round trip), kept inside the field; the stylesheet's fallback is under the box. Not built yet: search/filter by tag, tag pages,
     renaming (names live in the text), user-defined triggers (`CommentTagSyntax.Triggers` + the enum are the hook).
+  - Session 24: `CommentTagSyntax.Parse` jumps between candidates with `IndexOfAny` over a `SearchValues<char>` of
+    the triggers' first characters, and `TryReadTag` loops a trigger array (the dictionary's boxed enumerator
+    allocated per candidate). BenchmarkDotNet (scratch, not in the repo): 600-char comment 6.3 → 0.9 µs, 10k
+    chars 74 → 7.5 µs, allocations −80 %+. A fixed stride (longest trigger length) was tried and rejected: it
+    skips 1-char triggers. User-defined triggers must rebuild `TriggerList`/`TriggerStarts`.
   - Session 22 (user's choice: no JS): returning from a book focuses its card instead of saving `scrollY`, so the
     UI stays JS-free; the position is "card in view", not pixel-exact (in practice Firefox landed on the same
     spot). Focus waits one render after the first, so `FocusOnNavigate`'s heading focus doesn't win. Nothing

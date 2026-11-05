@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 
 namespace Bookside.Core.Books;
@@ -45,6 +46,17 @@ public static class CommentTagSyntax
             ["p."] = CommentTagType.Page,
         };
 
+    // Triggers as an array: a foreach over the IReadOnlyDictionary boxes its
+    // enumerator on every candidate character. Declared after Triggers, which
+    // it reads during static initialization.
+    private static readonly KeyValuePair<string, CommentTagType>[] TriggerList =
+        [.. Triggers];
+
+    // First character of each trigger, so Parse can jump straight to the next
+    // place a tag could start.
+    private static readonly SearchValues<char> TriggerStarts =
+        SearchValues.Create([.. TriggerList.Select(t => t.Key[0]).Distinct()]);
+
     public static string TriggerFor(CommentTagType type) =>
         Triggers.First(t => t.Value == type).Key;
 
@@ -80,6 +92,17 @@ public static class CommentTagSyntax
 
         while (i < text.Length)
         {
+            // Vectorised search for the next trigger's first character;
+            // everything before it is plain text.
+            var next = text.AsSpan(i).IndexOfAny(TriggerStarts);
+
+            if (next < 0)
+            {
+                break;
+            }
+
+            i += next;
+
             if (!TryReadTag(text, i, out var type, out var name, out var length))
             {
                 i++;
@@ -184,7 +207,7 @@ public static class CommentTagSyntax
             return false;
         }
 
-        foreach (var (trigger, triggerType) in Triggers)
+        foreach (var (trigger, triggerType) in TriggerList)
         {
             if (!text.AsSpan(start).StartsWith(trigger, StringComparison.Ordinal))
             {
