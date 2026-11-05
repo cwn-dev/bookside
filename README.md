@@ -17,40 +17,87 @@ The CI setup is human developed and run (apart from that time Claude updated the
 
 ## Desktop Browser UI
 
-<p align="center">
-  <a href="./screenshots/Screenshot 2026-10-30 at 20-28-30 Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 20-28-30 Bookside.png" height="230" alt="Home page"></a>
-  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png" height="230" alt="Book details and reading log"></a>
-  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png" height="230" alt="Vocabulary list"></a>
-</p>
-
-<p align="center">
-  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png" height="230" alt="Vocabulary quick-add"></a>
-  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png" height="230" alt="Word details"></a>
-</p>
-
-<p align="center">
-  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png" height="230" alt="Add book with metadata lookup"></a>
-  <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png" height="230" alt="Add book form"></a>
-</p>
-
-<p align="center">
-  <a href="./screenshots/Screenshot 2026-10-30 at 20-28-10 Review · Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 20-28-10 Review · Bookside.png" height="230" alt="Add book with metadata lookup"></a>
-  <a href="./screenshots/SScreenshot 2026-10-30 at 20-27-35 Review · Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 20-27-35 Review · Bookside.png" height="230" alt="Add book form"></a>
-</p>
-<p align="center">
-  <a href="./screenshots/Screenshot 2026-10-30 at 22-03-11 2026 reading challenge · Bookside.png"><img src="./screenshots/Screenshot 2026-10-30 at 22-03-11 2026 reading challenge · Bookside.png" height="230" alt="Add book with metadata lookup"></a>
-<p>
-
-</p>
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-28-30%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-28-30%20Bookside.png" width="100%" alt="Home"></a><br>
+      <sub>Home</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-26%20at%2022-02-31%20Library%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2022-02-31%20Library%20%C2%B7%20Bookside.png" width="100%" alt="Library"></a><br>
+      <sub>Library</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png" width="100%" alt="Book details and reading log"></a><br>
+      <sub>Book details and reading log</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-30%20at%2022-03-11%202026%20reading%20challenge%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2022-03-11%202026%20reading%20challenge%20%C2%B7%20Bookside.png" width="100%" alt="Reading challenge"></a><br>
+      <sub>Reading challenge</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png" width="100%" alt="Add a book: metadata lookup"></a><br>
+      <sub>Add a book: metadata lookup</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png" width="100%" alt="Add a book: details form"></a><br>
+      <sub>Add a book: details form</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png" width="100%" alt="Vocabulary"></a><br>
+      <sub>Vocabulary</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png" width="100%" alt="Vocabulary quick-add"></a><br>
+      <sub>Vocabulary quick-add</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png" width="100%" alt="Word details"></a><br>
+      <sub>Word details</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-28-10%20Review%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-28-10%20Review%20%C2%B7%20Bookside.png" width="100%" alt="Flash card review"></a><br>
+      <sub>Flash card review</sub>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png" width="50%" alt="Review done: practice rounds"></a><br>
+      <sub>Review done: practice rounds</sub>
+    </td>
+  </tr>
+</table>
 
 ## Mobile Browser UI
 
-<p align="center">
-  <a href="./screenshots/mobile/home.png"><img src="./screenshots/mobile/home.png" height="400" alt="Home page on mobile"></a>
-  <a href="./screenshots/mobile/a%20book.png"><img src="./screenshots/mobile/a%20book.png" height="400" alt="Book page on mobile"></a>
-  <a href="./screenshots/mobile/reading%20log.png"><img src="./screenshots/mobile/reading%20log.png" height="400" alt="Reading log on mobile"></a>
-  <a href="./screenshots/mobile/voacbulary%20entry.png"><img src="./screenshots/mobile/voacbulary%20entry.png" height="400" alt="Vocabulary entry on mobile"></a>
-</p>
+<table>
+  <tr>
+    <td width="25%" align="center" valign="top">
+      <a href="./screenshots/mobile/home.png"><img src="./screenshots/mobile/home.png" width="100%" alt="Home"></a><br>
+      <sub>Home</sub>
+    </td>
+    <td width="25%" align="center" valign="top">
+      <a href="./screenshots/mobile/a%20book.png"><img src="./screenshots/mobile/a%20book.png" width="100%" alt="Book"></a><br>
+      <sub>Book</sub>
+    </td>
+    <td width="25%" align="center" valign="top">
+      <a href="./screenshots/mobile/reading%20log.png"><img src="./screenshots/mobile/reading%20log.png" width="100%" alt="Reading log"></a><br>
+      <sub>Reading log</sub>
+    </td>
+    <td width="25%" align="center" valign="top">
+      <a href="./screenshots/mobile/voacbulary%20entry.png"><img src="./screenshots/mobile/voacbulary%20entry.png" width="100%" alt="Word details"></a><br>
+      <sub>Word details</sub>
+    </td>
+  </tr>
+</table>
 
 [More screenshots](./screenshots/)
 
@@ -68,6 +115,7 @@ The CI setup is human developed and run (apart from that time Claude updated the
 * Vocabulary flashcards to help learn and remember definitions. You will be given 15 words to review per day. Click 'Forgot' (the word will show up again tomorrow) or 'Knew it' (the word won't show up for a couple of days). The scheduling for words to appear for review is SM-2 like in that 'Forgot' will reduce the ease and so the word is shown more frequently over time and 'Knew it' will increase the ease so the word is shown less frequently over time.
 * Vocabulary flash card practise mode - after your daily review, you can go back into the 'Review' section to practise with one of the three modes: forgotten today, random words, and most forgotten.
 * Set yourself a reading challenge for the year and see your progress on the home page.
+* Comment tagging system (under prototyping/development).
 
 ## Layout
 
