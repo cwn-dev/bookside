@@ -491,3 +491,5 @@ src/Bookside.Web/App_Data/
 
 # Docker bind mount (compose.yaml)
 /data/
+
+.claude/share

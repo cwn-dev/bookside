@@ -2,9 +2,25 @@
 
 <div class="site">
     <header class="site-header">
-        <div class="site-header-inner">
+        <div class="site-header-inner" @onkeydown="CloseMenuOnEscape">
+            <button type="button"
+                    class="menu-toggle"
+                    aria-label="Menu"
+                    aria-controls="main-nav"
+                    aria-expanded="@(_menuOpen ? "true" : "false")"
+                    @onclick="() => _menuOpen = !_menuOpen">
+                <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <line x1="4" y1="6" x2="20" y2="6" />
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <line x1="4" y1="18" x2="20" y2="18" />
+                </svg>
+            </button>
             <a class="brand" href="">Bookside</a>
-            <nav aria-label="Main">
+            <div class="menu-backdrop @(_menuOpen ? "open" : null)"
+                 @onclick="() => _menuOpen = false"></div>
+            <nav id="main-nav"
+                 class="@(_menuOpen ? "open" : null)"
+                 aria-label="Main">
                 <NavLink class="nav-link" href="books" Match="NavLinkMatch.Prefix">Library</NavLink>
                 <div class="nav-group">
                     <NavLink class="nav-link" href="words" Match="NavLinkMatch.Prefix">Vocabulary</NavLink>
@@ -53,12 +69,22 @@
 @code {
     private ErrorBoundary? _errorBoundary;
     private bool _vocabularyOpen;
+    private bool _menuOpen;
 
     protected override void OnParametersSet()
     {
-        // Runs on every navigation: close the submenu after a link is followed.
+        // Runs on every navigation: close the menus after a link is followed.
         _vocabularyOpen = false;
+        _menuOpen = false;
         _errorBoundary?.Recover();
+    }
+
+    private void CloseMenuOnEscape(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            _menuOpen = false;
+        }
     }
 
     private void Recover() => _errorBoundary?.Recover();

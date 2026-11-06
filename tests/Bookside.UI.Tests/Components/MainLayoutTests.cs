@@ -1,4 +1,5 @@
 using Bookside.UI.Layout;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookside.UI.Tests.Components;
@@ -21,6 +22,24 @@ public sealed class MainLayoutTests : ComponentTestBase
         layout.Find(".nav-backdrop").Click();
         Assert.Equal("false", layout.Find(".nav-toggle").GetAttribute("aria-expanded"));
         Assert.Empty(layout.FindAll(".nav-backdrop"));
+    }
+
+    [Fact]
+    public void Burger_menu_opens_and_closes_on_backdrop_and_escape()
+    {
+        var layout = Render<MainLayout>();
+
+        layout.Find(".menu-toggle").Click();
+        Assert.Equal("true", layout.Find(".menu-toggle").GetAttribute("aria-expanded"));
+        Assert.Contains("open", layout.Find("nav").ClassList);
+
+        layout.Find(".menu-backdrop").Click();
+        Assert.Equal("false", layout.Find(".menu-toggle").GetAttribute("aria-expanded"));
+        Assert.DoesNotContain("open", layout.Find("nav").ClassList);
+
+        layout.Find(".menu-toggle").Click();
+        layout.Find(".site-header-inner").KeyDown(new KeyboardEventArgs { Key = "Escape" });
+        Assert.DoesNotContain("open", layout.Find("nav").ClassList);
     }
 
     [Fact]

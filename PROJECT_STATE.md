@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 29, 2026-11-06)
+# Bookside: project state (end of session 30, 2026-11-06)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -121,6 +121,11 @@
   `Components/SiteFooter` on every page (layout is now a full-height flex column, footer at the bottom of short
   pages): "© 2026 **n7e** · Bookside v1.6.1", Bookside → GitHub repo, version → its release page; "dev" unlinked.
   Checked in Firefox at 1280 and 375 px, light and dark, with a `-p:Version=1.6.1` publish.
+- Mobile menu (session 30): ≤ 500px the header is burger (left, bars fold into an X) + brand + search icon;
+  the `MainLayout` nav becomes a sheet under the header (`clip-path` unroll, dimmed
+  backdrop below the header closes it, Escape in the header row closes it, any navigation closes it). The
+  Vocabulary dropdown shows inline there (Review as an indented row, toggle hidden); on a sub-page only that
+  row is highlighted. No JS. Desktop unchanged. Checked in Firefox at 375 and 1280 px, light and dark.
 - Library return (session 22): `Bookside.UI/LibraryListState` (scoped = per circuit, registered by
   `AddBooksideUi()`; the host and `ComponentTestBase` call it) remembers the list URL and loaded count the library
   reports after each load, and the book opened from it (tracked from `LocationChanged`). Coming back to that same
