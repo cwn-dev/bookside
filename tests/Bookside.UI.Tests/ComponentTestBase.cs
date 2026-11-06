@@ -32,6 +32,8 @@ public abstract class ComponentTestBase : BunitContext, IAsyncLifetime
 
         CommentFormJs = JSInterop.SetupModule(CommentForm.ModulePath);
         CommentFormJs.Mode = JSRuntimeMode.Loose;
+        GlobalSearchJs = JSInterop.SetupModule(GlobalSearch.ModulePath);
+        GlobalSearchJs.SetupVoid("attach", _ => true);
     }
 
     /// <summary>
@@ -39,6 +41,11 @@ public abstract class ComponentTestBase : BunitContext, IAsyncLifetime
     /// <c>caret</c>.
     /// </summary>
     protected BunitJSModuleInterop CommentFormJs { get; }
+
+    /// <summary>
+    /// The header search's JS module (the "/" and Ctrl/⌘+K shortcut).
+    /// </summary>
+    protected BunitJSModuleInterop GlobalSearchJs { get; }
 
     protected static CancellationToken Ct => Xunit.TestContext.Current.CancellationToken;
 

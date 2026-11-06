@@ -1,6 +1,7 @@
 using Bookside.Core.Books.Services;
 using Bookside.Core.Search.Services;
 using Bookside.UI.Components;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookside.UI.Tests.Components;
@@ -126,6 +127,20 @@ public sealed class GlobalSearchTests : ComponentTestBase
         var search = Render<GlobalSearch>();
 
         Assert.Equal("-1", search.Find(".search-clear").GetAttribute("tabindex"));
+    }
+
+    [Fact]
+    public void The_keyboard_shortcut_is_attached_to_the_search_box()
+    {
+        var search = Render<GlobalSearch>();
+
+        var attach = Assert.Single(GlobalSearchJs.VerifyInvoke("attach").Arguments);
+        Assert.Equal(
+            search.Find(".search-input").GetAttribute("blazor:elementreference"),
+            Assert.IsType<ElementReference>(attach).Id);
+        Assert.Equal(
+            "/ Control+K Meta+K",
+            search.Find(".search-input").GetAttribute("aria-keyshortcuts"));
     }
 
     [Fact]

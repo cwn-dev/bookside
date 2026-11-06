@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 26, 2026-11-06)
+# Bookside: project state (end of session 27, 2026-11-06)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -106,7 +106,9 @@
   returns empty sections below it too), 250 ms debounce, an X (clear + close; shown while open or holding a
   query; replaces the browser's own clear button; `tabindex="-1"` (session 26), so Tab goes from the box straight to the first result; a keyboard-selected result shows a `--search-selected` tint (`--accent-soft` mixed 55 % with the surface, lighter than `<mark>`, whose matches get a stronger tint on it) + 3px inset accent bar instead of the global focus outline, tags a tint, "See all" an underline, outline kept under `forced-colors`), results in a fixed panel under the header (two columns: books +
   comments, words + tags; one column in that order on phones), Enter opens the first result, Escape dismisses,
-  "N results" live region, "See all" links to `books?q=` / `words?q=` / `/tags`. Each type is its own component in
+  "N results" live region, `/` (when not typing in a field) or Ctrl/⌘+K focuses the box from anywhere
+  (session 27: collocated `GlobalSearch.razor.js`, one `document` keydown listener, `aria-keyshortcuts`; Up/Down step between the box and
+  the result links in Tab order, stopping at the ends without scrolling the page), "See all" links to `books?q=` / `words?q=` / `/tags`. Each type is its own component in
   `Components/Search/` (`BookResults`, `WordResults`, `TagResults`, `CommentResults`, `Highlighted` for `<mark>`,
   `SearchLinks`); shared result styles (`.search-section`, `.search-hits`, `.search-meta`, `.search-see-all`) in
   `bookside.css`. Search errors are caught in the component (it sits outside the layout's `ErrorBoundary`):
@@ -192,7 +194,7 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 166 tests (session 26: clear button out of the tab order; session 25: `GlobalSearchTests`, `GlobalSearchFailureTests`,
+- `Bookside.UI.Tests`: 167 tests (session 27: search shortcut attached; session 26: clear button out of the tab order; session 25: `GlobalSearchTests`, `GlobalSearchFailureTests`,
   `SearchHighlightTests`, layout search box); 150 in session 23 ( comment tags in the log, picker pick/escape/create, page picker, tag filter, `CommentTagFilterTests`;
   `ComponentTestBase.CommentFormJs` = the comment form's JS module, loose; tests set up `caret`); 142 in session 22 ( `LibraryListStateTests`, library return, book back link); 132 in session 21 (Ctrl+Enter comment); 131 in session 19 ( `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
   pages); 123 in session 17 ( challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
@@ -385,8 +387,7 @@
   3.5 s with a close button; every read that becomes Finished, not past reads):**
   - A synthesized chime (Web Audio, the UI's first JS module) was built and then removed at the user's request:
     no sound, and the UI stays JS-free.
-- **Global search (session 25, user's choices: in the sticky header right of the nav, no keyboard shortcut (no
-  JS), one service with typed sections rather than pluggable sources, comments included in v1):**
+- **Global search (session 25, user's choices: in the sticky header right of the nav, one service with typed sections rather than pluggable sources, comments included in v1):**
   - Open/close is CSS `:focus-within`, so the page dims at click time with no round trip. Blazor can't blur
     without JS, so a `dismissed` class closes it while focused (Escape, any navigation, which also clears the
     query); `@onmousedown:preventDefault` on the panel keeps focus while a result is clicked (Safari doesn't
@@ -406,6 +407,9 @@
     finds candidates; `SearchSnippet.Around` returns null when the query only matches inside unsearchable tags,
     and the service drops those (over-fetches 4× the comment cap, so a flood of page-only matches could hide
     older real ones).
+  - Session 27 (user's choice: both `/` and Ctrl/⌘+K): a shortcut needs JS (Blazor can't listen on `document`),
+    so it is the second JS module. Ctrl+T was asked for first, but browsers never pass it to the page.
+    Ctrl+K overrides Firefox's "focus the browser search bar" on this site.
 - **Book series (session 10, user's choices: own table, optional number):**
   - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
     (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.
@@ -451,7 +455,7 @@
 ## Next
 1. Global search follow-ups (not chosen yet): authors/series as their own sections, comment `#`/`@` tags as
    results, comment hits jumping to the comment (`?tag=`-style anchor), a "see all comments" page, recent
-   searches, a `/` shortcut (needs a small JS module).
+   searches.
 2. **List view on the library page (user's request).** A list alternative to the cover grid on `/books`.
    Decisions to make: columns/fields per row (small cover, title, authors, status, rating, last read/finished
    date?); how it collapses on narrow widths (rows, not a wide table); toggle placement in the toolbar and whether
