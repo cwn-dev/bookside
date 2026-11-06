@@ -7,7 +7,7 @@
   <a href="https://github.com/cwn-dev/bookside/actions/workflows/build-and-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/cwn-dev/bookside/build-and-test.yml?branch=main&label=build%20%26%20tests&logo=githubactions&logoColor=white" alt="Build and tests"></a>
 </p>
 
-Bookside is a self-hosted reading companion. It keeps your library of books, with covers, authors, series and tags, and imports details by ISBN, title or author from Open Library (or Google Books). For each book you log when you started and finished it, rate it and keep running reading notes. Words you meet while reading go into a vocabulary list, linked to the book, page and sentence they came from, with definitions fetched automatically. A home page brings together what you're reading now, recently finished books, recent words, a word of the day and reading stats.
+Bookside is a self-hosted reading companion. It keeps your library of books, with covers, authors, series and tags, and imports details by ISBN, title or author from Open Library (or Google Books). For each book you log when you started and finished it, rate it and keep running reading notes. Words you meet while reading go into a vocabulary list, linked to the book, page and sentence they came from, with definitions fetched automatically. A home page brings together what you're reading now, recently finished books, recent words, a word of the day and reading stats. A search box in the header finds books, words, tags and comments as you type.
 
 I like to think this is not just is not just some heartless AI creation.  All the code is written by Claude, but I like to think I add some human to it. I check everything he does before it's committed and give it, hopefully, a more human touch.  The UX/architecture/tech stack was the outcome of a conversation with Claude about the best way to go - I picked C# & .NET as I've been using that stack for close to 20 years now, and Claude suggested Blazor. I work well with Claude, directing him to an actually good output as I know what's going on!
 
@@ -69,9 +69,13 @@ The CI setup is human developed and run (apart from that time Claude updated the
     </td>
   </tr>
   <tr>
-    <td colspan="2" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png" width="50%" alt="Review done: practice rounds"></a><br>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png" width="100%" alt="Review done: practice rounds"></a><br>
       <sub>Review done: practice rounds</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/Screenshot%20from%202026-11-06%2020-06-24.png"><img src="./screenshots/Screenshot%20from%202026-11-06%2020-06-24.png" width="100%" alt="Global search"></a><br>
+      <sub>Global search</sub>
     </td>
   </tr>
 </table>
@@ -116,6 +120,7 @@ The CI setup is human developed and run (apart from that time Claude updated the
 * Vocabulary flash card practise mode - after your daily review, you can go back into the 'Review' section to practise with one of the three modes: forgotten today, random words, and most forgotten.
 * Set yourself a reading challenge for the year and see your progress on the home page.
 * Comment tagging system (under prototyping/development).
+* Global search in the header: finds books (by title, author or series), words, tags and comments as you type, with the matches highlighted. Use the keyboard to move through the results and "See all" to open the full library or vocabulary results.
 
 ## Layout
 
