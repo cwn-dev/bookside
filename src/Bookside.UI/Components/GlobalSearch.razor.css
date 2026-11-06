@@ -170,7 +170,10 @@
     max-width: var(--content-max);
     max-height: calc(100dvh - var(--header-bottom));
     margin-inline: auto;
-    padding: 0.75rem var(--gutter) 1.5rem;
+    /* viewport-fit=cover: keep the end clear of the iPhone home indicator. */
+    padding:
+        0.75rem var(--gutter)
+        calc(1.5rem + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
     /* Takes touches itself (no pointer-events: none), or iOS can't scroll it
        and scrolls the page behind instead. */
@@ -248,7 +251,10 @@
 }
 
 @media (pointer: coarse) {
-    .search-input { min-height: var(--tap); }
+    .search-input {
+        min-height: var(--tap);
+        font-size: max(1rem, 16px); /* 16px+ stops iOS zooming into fields */
+    }
 }
 
 /* ---------- Phones: an icon until focused, then the whole header row ---------- */

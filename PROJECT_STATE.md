@@ -113,7 +113,7 @@
   `SearchLinks`); shared result styles (`.search-section`, `.search-hits`, `.search-meta`, `.search-see-all`) in
   `bookside.css`. Search errors are caught in the component (it sits outside the layout's `ErrorBoundary`):
   logged, "Search failed." shown. Session 29: while open, `html:has(...)` in `bookside.css` sets `overflow: hidden` and the backdrop is
-  `touch-action: none`, so iOS doesn't scroll the page under the panel at the end of the results. Checked in Firefox at 1280 and 375 px, light and dark.
+  `touch-action: none`, so iOS doesn't scroll the page under the panel at the end of the results. The box is 16px on touch devices (`pointer: coarse`), like other fields, so iOS doesn't zoom in on focus. Checked in Firefox at 1280 and 375 px, light and dark.
 - Version + footer (session 28): `Directory.Build.props` defaults `Version` to `0.0.0-dev` (no `+sha` in the
   informational version); the release workflow passes the tag minus `v` as the Dockerfile `VERSION` build arg →
   `dotnet publish -p:Version=`. `Bookside.UI/AppInfo` (singleton from `AddBooksideUi()`, `TryAdd` so tests can
@@ -401,7 +401,7 @@
     without JS, so a `dismissed` class closes it while focused (Escape, any navigation, which also clears the
     query); `@onmousedown:preventDefault` on the panel keeps focus while a result is clicked (Safari doesn't
     focus links). Session 29: the panel takes pointer events (with `pointer-events: none` iOS WebKit
-    couldn't scroll it and scrolled the page behind), so clicks in its gaps no longer close it; backdrop click and Escape both clear the query and close. Phones (≤ 500px): a 40px icon that spans the header row when focused; the header's gaps and
+    couldn't scroll it and scrolled the page behind), so clicks in its gaps no longer close it; its bottom padding adds `env(safe-area-inset-bottom)` (`viewport-fit=cover`); backdrop click and Escape both clear the query and close. Phones (≤ 500px): a 40px icon that spans the header row when focused; the header's gaps and
     link padding were tightened so brand + links + icon fit at 375px.
   - No index helps `%q%`; books and words already searched this way. Comments add a scan of comment text: fine
     at personal size; FTS5 (+ migration) is the fix if it gets slow. One round trip, ~4 queries, no BLOBs.
