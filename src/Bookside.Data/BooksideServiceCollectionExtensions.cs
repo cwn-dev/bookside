@@ -1,6 +1,7 @@
 using Bookside.Core.Books.Services;
 using Bookside.Core.Challenge.Services;
 using Bookside.Core.Home.Services;
+using Bookside.Core.Search.Services;
 using Bookside.Core.Vocabulary.Services;
 using Bookside.Data.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,7 @@ public static class BooksideServiceCollectionExtensions
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<IVocabularyService, VocabularyService>();
         services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IDefinitionService, DefinitionService>();
         services.AddScoped<IBookMetadataService, BookMetadataService>();
 

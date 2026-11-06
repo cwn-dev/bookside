@@ -13,6 +13,12 @@ public sealed record CommentTextSegment(
     string? TagName = null);
 
 /// <summary>
+/// What a trigger starts: the tag type, and whether global search matches text
+/// inside such tags.
+/// </summary>
+public sealed record CommentTagTrigger(CommentTagType Type, bool Searchable);
+
+/// <summary>
 /// A tag being typed: the trigger at <see cref="Start"/> up to the caret, with
 /// <see cref="Query"/> typed so far (without the trigger or the opening bracket).
 /// </summary>
@@ -35,21 +41,21 @@ public static class CommentTagSyntax
     private const int MaxPageDigits = 6;
 
     /// <summary>
-    /// Triggers and the tag type each one starts. Hard-coded for now;
-    /// user-defined triggers would replace this map.
+    /// Triggers and what each one starts. Hard-coded for now; user-defined
+    /// triggers would replace this map.
     /// </summary>
-    public static IReadOnlyDictionary<string, CommentTagType> Triggers { get; } =
-        new Dictionary<string, CommentTagType>
+    public static IReadOnlyDictionary<string, CommentTagTrigger> Triggers { get; } =
+        new Dictionary<string, CommentTagTrigger>
         {
-            ["@"] = CommentTagType.Person,
-            ["#"] = CommentTagType.General,
-            ["p."] = CommentTagType.Page,
+            ["@"] = new(CommentTagType.Person, Searchable: true),
+            ["#"] = new(CommentTagType.General, Searchable: true),
+            ["p."] = new(CommentTagType.Page, Searchable: false),
         };
 
     // Triggers as an array: a foreach over the IReadOnlyDictionary boxes its
     // enumerator on every candidate character. Declared after Triggers, which
     // it reads during static initialization.
-    private static readonly KeyValuePair<string, CommentTagType>[] TriggerList =
+    private static readonly KeyValuePair<string, CommentTagTrigger>[] TriggerList =
         [.. Triggers];
 
     // First character of each trigger, so Parse can jump straight to the next
@@ -58,7 +64,10 @@ public static class CommentTagSyntax
         SearchValues.Create([.. TriggerList.Select(t => t.Key[0]).Distinct()]);
 
     public static string TriggerFor(CommentTagType type) =>
-        Triggers.First(t => t.Value == type).Key;
+        Triggers.First(t => t.Value.Type == type).Key;
+
+    public static bool IsSearchable(CommentTagType type) =>
+        Triggers.Values.First(t => t.Type == type).Searchable;
 
     /// <summary>
     /// The stored form of a tag: <c>@[Jane Eyre]</c> (always bracketed), or
@@ -158,7 +167,7 @@ public static class CommentTagSyntax
                 continue;
             }
 
-            var type = Triggers[trigger];
+            var type = Triggers[trigger].Type;
             var query = text[(i + trigger.Length)..caret];
 
             if (type == CommentTagType.Page)
@@ -188,6 +197,36 @@ public static class CommentTagSyntax
         return null;
     }
 
+    /// <summary>
+    /// <paramref name="query"/> with tags typed as they display turned into
+    /// their stored, bracketed start (<c>@Fred Test</c> → <c>@[Fred Test</c>),
+    /// so a plain text search of comments finds them. Other text is unchanged.
+    /// </summary>
+    public static string ToStoredSearch(string query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var result = new System.Text.StringBuilder(query.Length + 2);
+
+        for (var i = 0; i < query.Length; i++)
+        {
+            result.Append(query[i]);
+
+            var isNameTrigger = Triggers.TryGetValue(query[i].ToString(), out var trigger)
+                && trigger.Type != CommentTagType.Page;
+
+            if (isNameTrigger
+                && IsBoundary(query, i)
+                && i + 1 < query.Length
+                && char.IsLetter(query[i + 1]))
+            {
+                result.Append('[');
+            }
+        }
+
+        return result.ToString();
+    }
+
     private static bool IsBoundary(string text, int index) =>
         index == 0 || !char.IsLetterOrDigit(text[index - 1]);
 
@@ -207,15 +246,15 @@ public static class CommentTagSyntax
             return false;
         }
 
-        foreach (var (trigger, triggerType) in TriggerList)
+        foreach (var (trigger, definition) in TriggerList)
         {
             if (!text.AsSpan(start).StartsWith(trigger, StringComparison.Ordinal))
             {
                 continue;
             }
 
-            type = triggerType;
-            var end = triggerType == CommentTagType.Page
+            type = definition.Type;
+            var end = type == CommentTagType.Page
                 ? ReadPage(text, start + trigger.Length, out name)
                 : ReadName(text, start + trigger.Length, out name);
             length = end - start;

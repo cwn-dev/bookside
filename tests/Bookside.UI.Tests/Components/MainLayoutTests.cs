@@ -21,4 +21,12 @@ public sealed class MainLayoutTests : ComponentTestBase
         Assert.Equal("false", layout.Find(".nav-toggle").GetAttribute("aria-expanded"));
         Assert.Empty(layout.FindAll(".nav-backdrop"));
     }
+
+    [Fact]
+    public void Header_has_the_global_search_box()
+    {
+        var layout = Render<MainLayout>();
+
+        Assert.Equal("search", layout.Find(".site-header .global-search").GetAttribute("role"));
+    }
 }

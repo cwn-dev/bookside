@@ -63,7 +63,8 @@ docker compose up -d --build                                         # on the Do
 - `src/Bookside.UI`: Razor class library with pages (`Pages/`), layout, shared `Components/`, form models (`Forms/`) and
   `wwwroot/bookside.css`; display logic with no markup as plain classes (e.g. `BookTimeline`, `ReviewLabels`,
   unit-tested without bUnit); per-circuit UI state as scoped services registered by `AddBooksideUi()` (e.g.
-  `LibraryListState`). References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
+  `LibraryListState`). Global search: `Components/GlobalSearch` (header) + one component per result type in
+  `Components/Search/`; shared result styles in `bookside.css`. References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
   MAUI can reuse it. Components inject Core service interfaces.
 - `src/Bookside.Web`: Blazor Web App host (Interactive Server, no prerendering): `Program.cs`, `App.razor`, `Routes.razor`,
   error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`, `Bookside:DataProtectionKeysPath`.

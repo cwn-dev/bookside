@@ -1,0 +1,20 @@
+@* Text with the search query's matches in <mark>. *@
+@foreach (var segment in SearchHighlight.Split(Text, Query))
+{
+    if (segment.IsMatch)
+    {
+        <mark>@segment.Text</mark>
+    }
+    else
+    {
+        <text>@segment.Text</text>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = "";
+
+    [Parameter]
+    public string? Query { get; set; }
+}

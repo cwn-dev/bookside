@@ -1,0 +1,14 @@
+.hit-term {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-style: italic;
+}
+
+.hit-definition {
+    display: block;
+    overflow: hidden;
+    font-size: 0.9rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

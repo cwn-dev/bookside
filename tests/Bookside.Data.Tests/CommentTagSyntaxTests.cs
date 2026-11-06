@@ -5,6 +5,23 @@ namespace Bookside.Data.Tests;
 public sealed class CommentTagSyntaxTests
 {
     [Fact]
+    public void Only_page_tags_are_unsearchable()
+    {
+        Assert.True(CommentTagSyntax.IsSearchable(CommentTagType.Person));
+        Assert.True(CommentTagSyntax.IsSearchable(CommentTagType.General));
+        Assert.False(CommentTagSyntax.IsSearchable(CommentTagType.Page));
+    }
+
+    [Theory]
+    [InlineData("@Fred", "@[Fred")]
+    [InlineData("@Fred Test and #grim", "@[Fred Test and #[grim")]
+    [InlineData("me@x.com", "me@x.com")]
+    [InlineData("@ #1 @[Ann", "@ #1 @[Ann")]
+    [InlineData("p. 42", "p. 42")]
+    public void To_stored_search_brackets_tags_typed_as_shown(string query, string expected) =>
+        Assert.Equal(expected, CommentTagSyntax.ToStoredSearch(query));
+
+    [Fact]
     public void Parse_finds_bracketed_and_bare_tags_and_keeps_all_text()
     {
         const string text = "@[Jane Eyre] meets @Rochester. #gothic! (p. 42)";

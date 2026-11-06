@@ -21,12 +21,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         var books = db.Books.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            var pattern = LikePattern.Contains(query.Search.Trim());
-            books = books.Where(b =>
-                EF.Functions.Like(b.Title, pattern, LikePattern.EscapeCharacter)
-                || (b.Subtitle != null && EF.Functions.Like(b.Subtitle, pattern, LikePattern.EscapeCharacter))
-                || (b.Series != null && EF.Functions.Like(b.Series.Name, pattern, LikePattern.EscapeCharacter))
-                || b.Authors.Any(a => EF.Functions.Like(a.Author.Name, pattern, LikePattern.EscapeCharacter)));
+            books = ApplySearch(books, query.Search.Trim());
         }
 
         if (!string.IsNullOrWhiteSpace(query.Tag))
@@ -45,21 +40,7 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
 
         var total = await books.CountAsync(cancellationToken).ConfigureAwait(false);
 
-        var summaries = books.Select(b => new BookSummary
-        {
-            Id = b.Id,
-            Title = b.Title,
-            Subtitle = b.Subtitle,
-            Authors = b.Authors.OrderBy(a => a.Position).Select(a => a.Author.Name).ToList(),
-            Series = b.Series!.Name,
-            SeriesNumber = b.SeriesNumber,
-            Tags = b.Tags.OrderBy(t => t.Tag.NormalizedName).Select(t => t.Tag.Name).ToList(),
-            CoverSha256 = b.Cover!.Sha256,
-            TimesRead = b.ReadingSessions.Count(s => s.Status == ReadingStatus.Finished),
-            IsReading = b.ReadingSessions.Any(s => s.Status == ReadingStatus.Reading),
-            LastFinishedOn = b.ReadingSessions.Where(s => s.Status == ReadingStatus.Finished).Max(s => s.FinishedOn),
-            CreatedAtUtc = b.CreatedAtUtc,
-        });
+        var summaries = ToSummaries(books);
 
         summaries = query.Sort switch
         {
@@ -71,6 +52,45 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
         var items = await summaries.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
         return new PagedResult<BookSummary>(items, total);
     }
+
+    /// <summary>
+    /// Books whose title, subtitle, series or an author contains
+    /// <paramref name="search"/> (LIKE: ASCII case-insensitive).
+    /// </summary>
+    internal static IQueryable<Book> ApplySearch(IQueryable<Book> books, string search)
+    {
+        var pattern = LikePattern.Contains(search);
+        return books.Where(b =>
+            EF.Functions.Like(b.Title, pattern, LikePattern.EscapeCharacter)
+            || (b.Subtitle != null
+                && EF.Functions.Like(b.Subtitle, pattern, LikePattern.EscapeCharacter))
+            || (b.Series != null
+                && EF.Functions.Like(b.Series.Name, pattern, LikePattern.EscapeCharacter))
+            || b.Authors.Any(a =>
+                EF.Functions.Like(a.Author.Name, pattern, LikePattern.EscapeCharacter)));
+    }
+
+    /// <summary>
+    /// List-view projection: no cover BLOB, only its hash.
+    /// </summary>
+    internal static IQueryable<BookSummary> ToSummaries(IQueryable<Book> books) =>
+        books.Select(b => new BookSummary
+        {
+            Id = b.Id,
+            Title = b.Title,
+            Subtitle = b.Subtitle,
+            Authors = b.Authors.OrderBy(a => a.Position).Select(a => a.Author.Name).ToList(),
+            Series = b.Series!.Name,
+            SeriesNumber = b.SeriesNumber,
+            Tags = b.Tags.OrderBy(t => t.Tag.NormalizedName).Select(t => t.Tag.Name).ToList(),
+            CoverSha256 = b.Cover!.Sha256,
+            TimesRead = b.ReadingSessions.Count(s => s.Status == ReadingStatus.Finished),
+            IsReading = b.ReadingSessions.Any(s => s.Status == ReadingStatus.Reading),
+            LastFinishedOn = b.ReadingSessions
+                .Where(s => s.Status == ReadingStatus.Finished)
+                .Max(s => s.FinishedOn),
+            CreatedAtUtc = b.CreatedAtUtc,
+        });
 
     public async Task<Result<BookDetails>> GetBookAsync(Guid bookId, CancellationToken cancellationToken = default)
     {

@@ -6,7 +6,9 @@
     border-bottom: 1px solid var(--border);
 }
 
+/* Positioned: the open search field spans this row on phones. */
 .site-header-inner {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 1.5rem;
@@ -138,14 +140,14 @@ nav ::deep .nav-link.active {
     z-index: 1;
 }
 
-/* Phones: brand + all links must fit one row down to 375px. */
+/* Phones: brand + all links + the search icon must fit one row down to 375px. */
 @media (max-width: 500px) {
-    .site-header-inner { gap: 0.6rem; }
-    .brand { font-size: 1.1rem; }
+    .site-header-inner { gap: 0.35rem; }
+    .brand { font-size: 1.05rem; }
     nav { gap: 0; font-size: 0.875rem; }
-    nav ::deep .nav-link { padding: 0 0.4rem; }
+    nav ::deep .nav-link { padding: 0 0.3rem; }
     .nav-group > ::deep .nav-link { padding-right: 0.1rem; }
-    .nav-toggle { padding: 0 0.4rem 0 0.2rem; }
+    .nav-toggle { padding: 0 0.3rem 0 0.15rem; }
 }
 
 .site-main {

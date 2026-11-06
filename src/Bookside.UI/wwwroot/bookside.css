@@ -373,3 +373,99 @@ a.tag:hover { background: var(--surface-muted); color: var(--text); }
 
 #blazor-error-ui .reload { margin-left: 0.5rem; }
 #blazor-error-ui .dismiss { float: right; cursor: pointer; }
+
+/* ---------- Global search results (GlobalSearch, Components/Search/*) ----------
+   Shared by every result type; each type styles its own rows in its scoped CSS. */
+
+.search-section {
+    min-width: 0;
+    padding: 0.75rem 0.5rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 6px 20px rgb(0 0 0 / 14%);
+    /* Keyboard-selected result: lighter than the <mark> tint, so matches
+       stay visible on it. */
+    --search-selected: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+}
+
+.search-section h2 {
+    margin: 0 0.5rem 0.4rem;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.search-hits {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.search-hits a {
+    display: block;
+    padding: 0.45rem 0.5rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    text-decoration: none;
+    transition:
+        background-color 120ms ease,
+        box-shadow 120ms ease;
+}
+
+.search-hits a:hover {
+    background: var(--surface-muted);
+}
+
+/* Keyboard selection: a soft accent tint and a slim bar on the left edge
+   instead of the global focus outline. */
+.search-hits a:focus-visible {
+    outline: none;
+    background: var(--search-selected);
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Matches on a selected result get a little more colour. */
+.search-section a:focus-visible mark {
+    background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+}
+
+.search-meta {
+    display: block;
+    overflow: hidden;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-see-all {
+    display: inline-block;
+    margin: 0.3rem 0.5rem 0.2rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+p.search-see-all { margin-top: 0.4rem; }
+
+a.search-see-all:focus-visible {
+    outline: none;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* High-contrast modes drop backgrounds and shadows: keep an outline there. */
+@media (forced-colors: active) {
+    .search-hits a:focus-visible,
+    a.search-see-all:focus-visible {
+        outline: 2px solid CanvasText;
+        outline-offset: -2px;
+    }
+}
