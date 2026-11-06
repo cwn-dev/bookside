@@ -37,6 +37,7 @@ dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
 docker compose up -d --build                                         # on the Docker host (no Docker on the dev Mac); see README "Deploy"
+dotnet publish src/Bookside.Web -p:Version=1.6.1                     # release version (footer); unset = 0.0.0-dev, shown as "dev"
 ```
 
 ## Layout and dependency direction
@@ -101,6 +102,8 @@ docker compose up -d --build                                         # on the Do
   Short `<param>`/`<returns>` may stay on one line. Don't copy the older one-line summaries.
 
 - Package versions live only in `Directory.Packages.props`; common build settings in `Directory.Build.props`.
+- App version: the GitHub release tag. `docker-publish.yml` strips the `v` and passes it as the Dockerfile's
+  `VERSION` build arg → `-p:Version`; never hard-code a version. The UI reads it via `AppInfo` (footer).
 - Entities derive from `Entity` (UUIDv7 `Id`, `CreatedAtUtc`/`UpdatedAtUtc` stamped in `SaveChanges`). All DateTimes are UTC.
 - Enums are stored as strings. Constraints belong in entity configurations (check constraints, indexes, delete behaviour).
 - Every model change needs a migration; a test fails if the model has changes with no migration.

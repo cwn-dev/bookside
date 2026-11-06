@@ -8,5 +8,10 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <IsPackable>false</IsPackable>
+    <!-- Release builds pass the GitHub release tag: -p:Version=1.6.1 (Dockerfile VERSION build arg).
+         Anything else is a dev build; the footer shows "dev". No commit hash in the informational
+         version, so it stays exactly the release number. -->
+    <Version>0.0.0-dev</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 </Project>

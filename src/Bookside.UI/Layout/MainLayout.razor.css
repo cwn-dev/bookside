@@ -150,7 +150,16 @@ nav ::deep .nav-link.active {
     .nav-toggle { padding: 0 0.3rem 0 0.15rem; }
 }
 
+/* Full-height column, so the footer sits at the bottom of short pages. */
+.site {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+}
+
 .site-main {
+    flex: 1;
+    width: 100%;
     max-width: var(--content-max);
     margin: 0 auto;
     padding: 1.25rem var(--gutter) 3rem;

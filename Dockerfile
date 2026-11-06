@@ -4,6 +4,8 @@
 # The SDK matches global.json and runs on the build machine's own architecture; it cross-publishes for the target.
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0.203-noble AS build
 ARG TARGETARCH
+# App version shown in the footer: the release tag without its "v" (set by docker-publish.yml).
+ARG VERSION=0.0.0-dev
 WORKDIR /src
 
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
@@ -13,7 +15,8 @@ COPY src/ src/
 # One cache per target: a multi-platform build runs both publishes in parallel, and a shared cache makes their
 # restores race on the same package files.
 RUN --mount=type=cache,id=nuget-$TARGETARCH,target=/root/.nuget/packages \
-    dotnet publish src/Bookside.Web/Bookside.Web.csproj -c Release -a $TARGETARCH -o /app -p:UseAppHost=false
+    dotnet publish src/Bookside.Web/Bookside.Web.csproj -c Release -a $TARGETARCH -o /app \
+    -p:UseAppHost=false -p:Version=$VERSION
 
 # Empty /data owned by the app user, so the container also starts without a mounted volume.
 RUN mkdir /data

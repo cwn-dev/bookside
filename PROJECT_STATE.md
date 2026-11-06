@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 27, 2026-11-06)
+# Bookside: project state (end of session 28, 2026-11-06)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -113,6 +113,13 @@
   `SearchLinks`); shared result styles (`.search-section`, `.search-hits`, `.search-meta`, `.search-see-all`) in
   `bookside.css`. Search errors are caught in the component (it sits outside the layout's `ErrorBoundary`):
   logged, "Search failed." shown. Checked in Firefox at 1280 and 375 px, light and dark.
+- Version + footer (session 28): `Directory.Build.props` defaults `Version` to `0.0.0-dev` (no `+sha` in the
+  informational version); the release workflow passes the tag minus `v` as the Dockerfile `VERSION` build arg →
+  `dotnet publish -p:Version=`. `Bookside.UI/AppInfo` (singleton from `AddBooksideUi()`, `TryAdd` so tests can
+  replace it): `Version` (null for dev builds), `ReleaseUrl`, `CopyrightYears` (2026, then "2026–N").
+  `Components/SiteFooter` on every page (layout is now a full-height flex column, footer at the bottom of short
+  pages): "© 2026 **n7e** · Bookside v1.6.1", Bookside → GitHub repo, version → its release page; "dev" unlinked.
+  Checked in Firefox at 1280 and 375 px, light and dark, with a `-p:Version=1.6.1` publish.
 - Library return (session 22): `Bookside.UI/LibraryListState` (scoped = per circuit, registered by
   `AddBooksideUi()`; the host and `ComponentTestBase` call it) remembers the list URL and loaded count the library
   reports after each load, and the book opened from it (tracked from `LocationChanged`). Coming back to that same
@@ -194,7 +201,7 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 167 tests (session 27: search shortcut attached; session 26: clear button out of the tab order; session 25: `GlobalSearchTests`, `GlobalSearchFailureTests`,
+- `Bookside.UI.Tests`: 180 tests (session 28: `AppInfoTests`, footer in `MainLayoutTests`); 167 in session 27 (session 27: search shortcut attached; session 26: clear button out of the tab order; session 25: `GlobalSearchTests`, `GlobalSearchFailureTests`,
   `SearchHighlightTests`, layout search box); 150 in session 23 ( comment tags in the log, picker pick/escape/create, page picker, tag filter, `CommentTagFilterTests`;
   `ComponentTestBase.CommentFormJs` = the comment form's JS module, loose; tests set up `caret`); 142 in session 22 ( `LibraryListStateTests`, library return, book back link); 132 in session 21 (Ctrl+Enter comment); 131 in session 19 ( `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
   pages); 123 in session 17 ( challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
@@ -410,6 +417,10 @@
   - Session 27 (user's choice: both `/` and Ctrl/⌘+K): a shortcut needs JS (Blazor can't listen on `document`),
     so it is the second JS module. Ctrl+T was asked for first, but browsers never pass it to the page.
     Ctrl+K overrides Firefox's "focus the browser search bar" on this site.
+- **Versioning (session 28, user's choices: release tag only, footer "© 2026 n7e · Bookside v1.6.1" with links):**
+  - The GitHub release tag is the only source (no MinVer/Nerdbank/release-please): nothing to bump by hand, but
+    local and CI test builds just say "dev". The Docker build has no `.git`, so the tag must come in as a build arg.
+  - Copyright years run from 2026 to the server's current local year.
 - **Book series (session 10, user's choices: own table, optional number):**
   - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
     (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.

@@ -1,4 +1,5 @@
 using Bookside.UI.Layout;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookside.UI.Tests.Components;
 
@@ -28,5 +29,47 @@ public sealed class MainLayoutTests : ComponentTestBase
         var layout = Render<MainLayout>();
 
         Assert.Equal("search", layout.Find(".site-header .global-search").GetAttribute("role"));
+    }
+
+    [Fact]
+    public void Footer_shows_copyright_and_dev_version_without_a_link()
+    {
+        var footer = Render<MainLayout>().Find(".site-footer");
+
+        Assert.Contains(
+            "© " + AppInfo.CopyrightYears(TimeProvider.System.GetLocalNow().Year),
+            footer.TextContent,
+            StringComparison.Ordinal);
+        Assert.Equal("n7e", footer.QuerySelector(".company")!.TextContent);
+        Assert.Equal(
+            "https://github.com/cwn-dev/bookside",
+            footer.QuerySelector("a")!.GetAttribute("href"));
+        Assert.Equal("dev", footer.QuerySelector(".version")!.TextContent);
+        Assert.Null(footer.QuerySelector("a.version"));
+    }
+}
+
+public sealed class MainLayoutReleaseTests : ComponentTestBase
+{
+    public MainLayoutReleaseTests() => Services.AddSingleton(new AppInfo("1.6.1"));
+
+    [Fact]
+    public void Footer_links_a_release_version_to_its_release_page()
+    {
+        var footer = Render<MainLayout>().Find(".site-footer");
+        var version = footer.QuerySelector("a.version")!;
+
+        var text = string.Join(
+            ' ',
+            footer.TextContent.Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries));
+
+        Assert.EndsWith(" n7e · Bookside v1.6.1", text, StringComparison.Ordinal);
+
+        Assert.Equal("v1.6.1", version.TextContent);
+        Assert.Equal(
+            "https://github.com/cwn-dev/bookside/releases/tag/v1.6.1",
+            version.GetAttribute("href"));
     }
 }

@@ -1,44 +1,48 @@
 @inherits LayoutComponentBase
 
-<header class="site-header">
-    <div class="site-header-inner">
-        <a class="brand" href="">Bookside</a>
-        <nav aria-label="Main">
-            <NavLink class="nav-link" href="books" Match="NavLinkMatch.Prefix">Library</NavLink>
-            <div class="nav-group">
-                <NavLink class="nav-link" href="words" Match="NavLinkMatch.Prefix">Vocabulary</NavLink>
-                <button type="button"
-                        class="nav-toggle"
-                        aria-label="More vocabulary pages"
-                        aria-expanded="@(_vocabularyOpen ? "true" : "false")"
-                        @onclick="() => _vocabularyOpen = !_vocabularyOpen">▾</button>
-                @if (_vocabularyOpen)
-                {
-                    <div class="nav-backdrop" @onclick="() => _vocabularyOpen = false"></div>
-                }
-                <div class="submenu @(_vocabularyOpen ? "open" : null)">
-                    <NavLink class="nav-link" href="words/review" Match="NavLinkMatch.Prefix">Review</NavLink>
+<div class="site">
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="brand" href="">Bookside</a>
+            <nav aria-label="Main">
+                <NavLink class="nav-link" href="books" Match="NavLinkMatch.Prefix">Library</NavLink>
+                <div class="nav-group">
+                    <NavLink class="nav-link" href="words" Match="NavLinkMatch.Prefix">Vocabulary</NavLink>
+                    <button type="button"
+                            class="nav-toggle"
+                            aria-label="More vocabulary pages"
+                            aria-expanded="@(_vocabularyOpen ? "true" : "false")"
+                            @onclick="() => _vocabularyOpen = !_vocabularyOpen">▾</button>
+                    @if (_vocabularyOpen)
+                    {
+                        <div class="nav-backdrop" @onclick="() => _vocabularyOpen = false"></div>
+                    }
+                    <div class="submenu @(_vocabularyOpen ? "open" : null)">
+                        <NavLink class="nav-link" href="words/review" Match="NavLinkMatch.Prefix">Review</NavLink>
+                    </div>
                 </div>
-            </div>
-            <NavLink class="nav-link" href="challenge" Match="NavLinkMatch.Prefix">Challenge</NavLink>
-        </nav>
-        <GlobalSearch />
-    </div>
-</header>
+                <NavLink class="nav-link" href="challenge" Match="NavLinkMatch.Prefix">Challenge</NavLink>
+            </nav>
+            <GlobalSearch />
+        </div>
+    </header>
 
-<main class="site-main">
-    <ErrorBoundary @ref="_errorBoundary">
-        <ChildContent>
-            @Body
-        </ChildContent>
-        <ErrorContent>
-            <div class="alert alert-error" role="alert">
-                Something went wrong showing this page.
-                <button type="button" class="btn btn-sm" @onclick="Recover">Try again</button>
-            </div>
-        </ErrorContent>
-    </ErrorBoundary>
-</main>
+    <main class="site-main">
+        <ErrorBoundary @ref="_errorBoundary">
+            <ChildContent>
+                @Body
+            </ChildContent>
+            <ErrorContent>
+                <div class="alert alert-error" role="alert">
+                    Something went wrong showing this page.
+                    <button type="button" class="btn btn-sm" @onclick="Recover">Try again</button>
+                </div>
+            </ErrorContent>
+        </ErrorBoundary>
+    </main>
+
+    <SiteFooter />
+</div>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unexpected error has occurred.

@@ -26,6 +26,7 @@ jobs:
         run: |
           TAG_NAME=${{ github.event.release.tag_name }}
           echo "TAG_NAME=$TAG_NAME"
+          echo "version=${TAG_NAME#v}" >> $GITHUB_OUTPUT
           echo "tags=${{ secrets.DOCKERHUB_USERNAME }}/bookside:$TAG_NAME,${{ secrets.DOCKERHUB_USERNAME }}/bookside:latest" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
@@ -36,3 +37,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.vars.outputs.tags }}
+          build-args: |
+            VERSION=${{ steps.vars.outputs.version }}
