@@ -1,0 +1,230 @@
+@page "/activity"
+@page "/activity/{Year:int}/{Month:int}"
+@inject IActivityService Activity
+@inject TimeProvider Clock
+
+<PageTitle>@Title · Bookside</PageTitle>
+
+@if (_invalid)
+{
+    <h1>No such month</h1>
+    <a class="btn" href="activity">This month</a>
+}
+else if (_month is null)
+{
+    <h1 class="visually-hidden">@Title</h1>
+    <p class="loading" role="status">Loading…</p>
+    <ErrorAlert Messages="_errors" />
+}
+else
+{
+    <header class="activity-header">
+        <h1>@Title</h1>
+        <nav class="month-nav" aria-label="Months">
+            @if (_first > DateOnly.MinValue)
+            {
+                <a href="@MonthUrl(_first.AddMonths(-1))">← @_first.AddMonths(-1).ToString("MMM", CultureInfo.CurrentCulture)</a>
+            }
+            @if (!IsCurrentMonth)
+            {
+                <a href="activity">This month</a>
+            }
+            @if (_first <= ThisMonth)
+            {
+                <a href="@MonthUrl(_first.AddMonths(1))">@_first.AddMonths(1).ToString("MMM", CultureInfo.CurrentCulture) →</a>
+            }
+        </nav>
+    </header>
+
+    <div class="calendar">
+        <div class="weekdays" aria-hidden="true">
+            @foreach (var name in WeekdayNames)
+            {
+                <span>@name</span>
+            }
+        </div>
+        @foreach (var week in _weeks)
+        {
+            <div class="week" style="grid-template-rows: auto repeat(@week.Lanes, var(--bar-height)) 1fr">
+                @for (var i = 0; i < 7; i++)
+                {
+                    var day = week.Days[i];
+                    <div class="cell @(day.InMonth ? null : "outside") @(day.Date == _month.Today ? "today" : null) @(day.Date == _selected ? "selected" : null)"
+                         style="grid-column: @(i + 1)"></div>
+                    @if (day.InMonth)
+                    {
+                        <button type="button"
+                                class="day-number"
+                                style="grid-column: @(i + 1)"
+                                aria-label="@DayLabel(day)"
+                                aria-pressed="@(day.Date == _selected ? "true" : "false")"
+                                @onclick="() => _selected = day.Date">
+                            @day.Date.Day
+                            @if (day.Events.Count > 0)
+                            {
+                                <span class="day-icons">
+                                    @foreach (var item in day.Events.Take(MaxPills).Select(ActivityCalendar.Item))
+                                    {
+                                        <ActivityIcon Name="@item.Icon" />
+                                    }
+                                </span>
+                            }
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="day-number outside" style="grid-column: @(i + 1)">@day.Date.Day</span>
+                    }
+                    <div class="pills" style="grid-column: @(i + 1); grid-row: @(week.Lanes + 2)">
+                        @foreach (var item in day.Events.Take(MaxPills).Select(ActivityCalendar.Item))
+                        {
+                            <a class="pill" href="@item.Href" title="@item.Label: @item.Text">
+                                <ActivityIcon Name="@item.Icon" />
+                                <span class="visually-hidden">@item.Label: </span>
+                                <span class="pill-text">@item.Text</span>
+                            </a>
+                        }
+                        @if (day.Events.Count > MaxPills)
+                        {
+                            <button type="button" class="more-pill" @onclick="() => _selected = day.Date">
+                                +@(day.Events.Count - MaxPills) more
+                            </button>
+                        }
+                    </div>
+                }
+                @foreach (var bar in week.Bars)
+                {
+                    <a class="bar @bar.Read.Status.ToString().ToLowerInvariant() @(bar.ContinuesBefore ? "from-before" : null) @(bar.ContinuesAfter ? "to-after" : null)"
+                       href="books/@bar.Read.BookId"
+                       style="grid-column: @bar.Column / span @bar.Span; grid-row: @(bar.Lane + 2)"
+                       aria-label="@BarLabel(bar.Read)"
+                       title="@BarLabel(bar.Read)">@bar.Read.Title</a>
+                }
+            </div>
+        }
+    </div>
+
+    <ul class="legend" aria-label="Key">
+        <li><span class="swatch reading"></span><ActivityIcon Name="started" />Reading</li>
+        <li><span class="swatch finished"></span><ActivityIcon Name="finished" />Finished</li>
+        <li><span class="swatch abandoned"></span><ActivityIcon Name="stopped" />Stopped</li>
+        @foreach (var (icon, label) in LegendIcons)
+        {
+            <li><ActivityIcon Name="@icon" />@label</li>
+        }
+    </ul>
+
+    @if (_selected is DateOnly selected)
+    {
+        var items = ActivityCalendar.ItemsOn(_month, selected);
+        <section class="day card" aria-labelledby="day-heading">
+            <h2 id="day-heading">@selected.ToString("dddd d MMMM", CultureInfo.CurrentCulture)</h2>
+            @if (items.Count == 0)
+            {
+                <p class="muted">Nothing on this day.</p>
+            }
+            else
+            {
+                <ul class="day-items">
+                    @foreach (var item in items)
+                    {
+                        <li>
+                            <span class="day-label muted"><ActivityIcon Name="@item.Icon" />@item.Label</span>
+                            <a href="@item.Href">@item.Text</a>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+}
+
+@code {
+    private const int MaxPills = 3;
+
+    private static readonly (string Icon, string Label)[] LegendIcons =
+    [
+        ("added", "Book added"),
+        ("word", "Word"),
+        ("comment", "Comment"),
+        ("cards", "Flash cards"),
+        ("goal", "Goal reached"),
+    ];
+
+    private static readonly string[] WeekdayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+    private DateOnly _first;
+    private bool _invalid;
+    private ActivityMonth? _month;
+    private IReadOnlyList<CalendarWeek> _weeks = [];
+    private DateOnly? _selected;
+    private IReadOnlyList<string> _errors = [];
+
+    [Parameter]
+    public int? Year { get; set; }
+
+    [Parameter]
+    public int? Month { get; set; }
+
+    private DateOnly ThisMonth
+    {
+        get
+        {
+            var now = Clock.GetLocalNow();
+            return new DateOnly(now.Year, now.Month, 1);
+        }
+    }
+
+    private bool IsCurrentMonth => _first == ThisMonth;
+
+    private string Title => _invalid ? "Activity" : _first.ToString("MMMM yyyy", CultureInfo.CurrentCulture);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _errors = [];
+        var year = Year ?? ThisMonth.Year;
+        var month = Month ?? ThisMonth.Month;
+        // The service validates; this only keeps the title's date in range.
+        _first = year is >= 1 and <= 9999 && month is >= 1 and <= 12
+            ? new DateOnly(year, month, 1)
+            : DateOnly.MinValue;
+        var result = await Activity.GetMonthAsync(year, month);
+        _invalid = false;
+        _month = null;
+
+        if (!result.IsSuccess)
+        {
+            _invalid = result.Error.Type == ErrorType.Validation;
+            _errors = _invalid ? [] : [result.Error.Message];
+            return;
+        }
+
+        _month = result.Value;
+
+        _weeks = ActivityCalendar.Build(_month);
+        _selected = _month.Today.Year == year && _month.Today.Month == month ? _month.Today : null;
+    }
+
+    private static string MonthUrl(DateOnly month) =>
+        string.Create(CultureInfo.InvariantCulture, $"activity/{month.Year}/{month.Month}");
+
+    private static string DayLabel(CalendarDay day)
+    {
+        var date = day.Date.ToString("dddd d MMMM", CultureInfo.CurrentCulture);
+        var count = day.Events.Count;
+        return count switch
+        {
+            0 => date,
+            1 => $"{date}, 1 event",
+            _ => $"{date}, {count} events",
+        };
+    }
+
+    private static string BarLabel(ActivityRead read) =>
+        read.Status switch
+        {
+            ReadingStatus.Reading => $"{read.Title}, reading",
+            ReadingStatus.Abandoned => $"{read.Title}, stopped",
+            _ => $"{read.Title}, finished" + (read.Rating is int r ? $", {r} stars" : ""),
+        };
+}

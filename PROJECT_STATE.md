@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 28, 2026-11-06)
+# Bookside: project state (end of session 29, 2026-11-06)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -120,6 +120,24 @@
   `Components/SiteFooter` on every page (layout is now a full-height flex column, footer at the bottom of short
   pages): "© 2026 **n7e** · Bookside v1.6.1", Bookside → GitHub repo, version → its release page; "dev" unlinked.
   Checked in Firefox at 1280 and 375 px, light and dark, with a `-p:Version=1.6.1` publish.
+- Activity calendar (session 29): `Core/Activity/Services/IActivityService.GetMonthAsync(year, month)` →
+  `ActivityMonth` (`Today`, `Reads` = `ActivityRead` per session overlapping the month with its `From`/`To` span,
+  `Events` = `ActivityEvent` of `ActivityKind` BookAdded / WordAdded / Comment (display-form text, 80 chars via
+  `SearchSnippet.Around(text, "")`) / FlashCardsStarted (per-day count of `WordReview.FirstReviewedOn`) /
+  GoalReached (finish date of the Nth finished read of the year)). `Data/Services/ActivityService`: one context,
+  one query per kind, capped at 500 each; created-at times placed on the local date (`HomeService.LocalMidnightToUtc`
+  is now internal and shared). Migration `AddActivityIndexes` (indexes only): `CreatedAtUtc` on Books,
+  VocabularyWords, BookComments. UI: `ActivityCalendar` (pure: Monday-first weeks padded with neighbouring
+  months, per-week bar segments with greedy lanes and continue flags, `ItemsOn(day)` = started / finished /
+  stopped then events, `Item(event)` = label/text/href), `ActivityPage` (`/activity`, `/activity/{y}/{m}`:
+  prev/next month (next up to current + 1), "This month", 7-column grid per week, bars as book links (reading =
+  outlined accent-soft, finished = solid accent, abandoned = dashed muted, square ends where a bar continues),
+  3 event pills + "+N more"; ≤ 500px: pills hidden, up to 3 event icons under the day number; a key under the
+  grid (bar swatches + icons); the selected day (default today in the current month) lists its items below).
+  `Components/ActivityIcon` (inline SVG stroke icons, colour per type, name from `CalendarItem.Icon`) marks
+  each pill, day-list row and key entry, so the type shows without hovering (user's request). "Activity" nav link after Challenge; to fit four links at 375px
+  the phone header shows a serif "B" monogram instead of "Bookside" (`aria-label="Bookside"`). Checked in Firefox
+  at 1280 and 375 px (375 via a 375px iframe: headless windows stop at 500), light and dark.
 - Library return (session 22): `Bookside.UI/LibraryListState` (scoped = per circuit, registered by
   `AddBooksideUi()`; the host and `ComponentTestBase` call it) remembers the list URL and loaded count the library
   reports after each load, and the book opened from it (tracked from `LocationChanged`). Coming back to that same
@@ -201,7 +219,7 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 180 tests (session 28: `AppInfoTests`, footer in `MainLayoutTests`); 167 in session 27 (session 27: search shortcut attached; session 26: clear button out of the tab order; session 25: `GlobalSearchTests`, `GlobalSearchFailureTests`,
+- `Bookside.UI.Tests`: 186 tests (session 29: `ActivityCalendarTests`, `ActivityPageTests`, nav link); 180 in session 28 (`AppInfoTests`, footer in `MainLayoutTests`); 167 in session 27 (session 27: search shortcut attached; session 26: clear button out of the tab order; session 25: `GlobalSearchTests`, `GlobalSearchFailureTests`,
   `SearchHighlightTests`, layout search box); 150 in session 23 ( comment tags in the log, picker pick/escape/create, page picker, tag filter, `CommentTagFilterTests`;
   `ComponentTestBase.CommentFormJs` = the comment form's JS module, loose; tests set up `caret`); 142 in session 22 ( `LibraryListStateTests`, library return, book back link); 132 in session 21 (Ctrl+Enter comment); 131 in session 19 ( `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
   pages); 123 in session 17 ( challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
@@ -211,7 +229,7 @@
 - `Bookside.Integrations.Tests`: 39 tests (session 16: details/descriptions); 36 in session 12 (`BookLookupClientTests`, both providers + covers);
   26 before through the real registration with a stubbed primary handler
   (session 7: `FreeDictionaryApiClientTests`, `DictionaryRegistrationTests`).
-- `Bookside.Data.Tests`: 187 tests (session 25: `SearchServiceTests`, `SearchSnippetTests`); 164 in session 23 ( `CommentTagSyntaxTests`, comment tag service tests); 130 in session 17 ( `ReadingPaceTests`, `ChallengeServiceTests`); 116 in session 16 (parallel/merged book search, details); 112 in session 14 (practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
+- `Bookside.Data.Tests`: 192 tests (session 29: `ActivityServiceTests`; `ServiceTestBase.Activity`); 187 in session 25 ( `SearchServiceTests`, `SearchSnippetTests`); 164 in session 23 ( `CommentTagSyntaxTests`, comment tag service tests); 130 in session 17 ( `ReadingPaceTests`, `ChallengeServiceTests`); 116 in session 16 (parallel/merged book search, details); 112 in session 14 (practice sets); 109 in session 13 (`ReviewSchedulerTests`, `ReviewServiceTests`; `ServiceTestBase.Reviews`); 96 in session 12 (`BookMetadataServiceTests` with `FakeBookLookupService`;
   `ServiceTestBase.Metadata` needs a provider registered in `ConfigureServices`); 90 in session 11 (session 11: `TagServiceTests`; session 10: series tests in `LibraryServiceTests`; session 9: `HomeServiceTests`, random-word tests; `ServiceTestBase` has a
   virtual `ConfigureServices` hook that runs before the production registrations, and `TestClock` is a settable
   `TimeProvider` that advances 1 ms per read). Session 7: `DefinitionFallbackTests`; `ServiceTestBase(params string[] fallbackSources)`
@@ -421,6 +439,13 @@
   - The GitHub release tag is the only source (no MinVer/Nerdbank/release-please): nothing to bump by hand, but
     local and CI test builds just say "dev". The Docker build has no `.git`, so the tag must come in as a build arg.
   - Copyright years run from 2026 to the server's current local year.
+- **Activity calendar (session 29, user's choices: month grid + day list, plus abandoned reads, flash cards
+  started, goal reached; "B" monogram on phones over a second header row or a submenu):**
+  - Starts/finishes aren't events: the UI derives them from `Reads`, so nothing is listed twice. A read's span
+    is start (else finish) to finish, else today while Reading, else its start; a future start shows one day.
+  - The read overlap query has no useful index (sessions are few); events use the new `CreatedAtUtc` indexes,
+    flash cards the existing `FirstReviewedOn` one. Per-day review counts would need a review log.
+  - The selected day isn't in the URL; days of neighbouring months aren't clickable (their events aren't loaded).
 - **Book series (session 10, user's choices: own table, optional number):**
   - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
     (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.

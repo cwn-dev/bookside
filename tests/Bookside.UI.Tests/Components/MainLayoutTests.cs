@@ -24,6 +24,16 @@ public sealed class MainLayoutTests : ComponentTestBase
     }
 
     [Fact]
+    public void Nav_links_to_the_activity_calendar()
+    {
+        var layout = Render<MainLayout>();
+
+        Assert.Contains(
+            layout.FindAll("nav .nav-link"),
+            a => a.GetAttribute("href") == "activity" && a.TextContent == "Activity");
+    }
+
+    [Fact]
     public void Header_has_the_global_search_box()
     {
         var layout = Render<MainLayout>();

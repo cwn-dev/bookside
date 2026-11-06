@@ -63,7 +63,7 @@ dotnet publish src/Bookside.Web -p:Version=1.6.1                     # release v
   `TestClock` as the `TimeProvider`).
 - `src/Bookside.UI`: Razor class library with pages (`Pages/`), layout, shared `Components/`, form models (`Forms/`) and
   `wwwroot/bookside.css`; display logic with no markup as plain classes (e.g. `BookTimeline`, `ReviewLabels`,
-  unit-tested without bUnit); per-circuit UI state as scoped services registered by `AddBooksideUi()` (e.g.
+  unit-tested without bUnit; `ActivityCalendar` lays out the `/activity` month grid); per-circuit UI state as scoped services registered by `AddBooksideUi()` (e.g.
   `LibraryListState`). Global search: `Components/GlobalSearch` (header) + one component per result type in
   `Components/Search/`; shared result styles in `bookside.css`. References only Core + `Microsoft.AspNetCore.Components.Web` (no ASP.NET Core framework), so
   MAUI can reuse it. Components inject Core service interfaces.

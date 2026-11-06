@@ -1,0 +1,38 @@
+@* A small stroke icon per calendar item type (CalendarItem.Icon). *@
+<svg class="activity-icon @Name" viewBox="0 0 24 24" aria-hidden="true">
+    @switch (Name)
+    {
+        case "added":
+            <rect x="4" y="3" width="16" height="18" rx="2" />
+            <path d="M12 8v8M8 12h8" />
+            break;
+        case "word":
+            <path d="M4 20 10 4l6 16M6.5 14h7" />
+            <path d="M18 11v9" />
+            break;
+        case "comment":
+            <path d="M4 5h16v11H10l-6 4z" />
+            break;
+        case "cards":
+            <rect x="3" y="8" width="13" height="13" rx="2" />
+            <path d="M8 4h11a2 2 0 0 1 2 2v11" />
+            break;
+        case "goal":
+            <path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9z" />
+            break;
+        case "started":
+            <path d="M7 4l13 8-13 8z" />
+            break;
+        case "finished":
+            <path d="M4 12l5 5L20 6" />
+            break;
+        case "stopped":
+            <path d="M6 6l12 12M18 6 6 18" />
+            break;
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Name { get; set; } = "";
+}

@@ -101,6 +101,8 @@ namespace Bookside.Data.Sqlite.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAtUtc");
+
                     b.HasIndex("Isbn13");
 
                     b.HasIndex("SeriesId");
@@ -153,6 +155,8 @@ namespace Bookside.Data.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
 
                     b.HasIndex("BookId", "CreatedAtUtc");
 
@@ -520,6 +524,8 @@ namespace Bookside.Data.Sqlite.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BookId");
+
+                    b.HasIndex("CreatedAtUtc");
 
                     b.HasIndex("DictionaryEntryId");
 

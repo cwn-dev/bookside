@@ -3,7 +3,9 @@
 <div class="site">
     <header class="site-header">
         <div class="site-header-inner">
-            <a class="brand" href="">Bookside</a>
+            <a class="brand" href="" aria-label="Bookside">
+                <span class="brand-full">Bookside</span><span class="brand-short" aria-hidden="true">B</span>
+            </a>
             <nav aria-label="Main">
                 <NavLink class="nav-link" href="books" Match="NavLinkMatch.Prefix">Library</NavLink>
                 <div class="nav-group">
@@ -22,6 +24,7 @@
                     </div>
                 </div>
                 <NavLink class="nav-link" href="challenge" Match="NavLinkMatch.Prefix">Challenge</NavLink>
+                <NavLink class="nav-link" href="activity" Match="NavLinkMatch.Prefix">Activity</NavLink>
             </nav>
             <GlobalSearch />
         </div>

@@ -26,6 +26,10 @@
     text-decoration: none;
 }
 
+.brand-short {
+    display: none;
+}
+
 nav {
     display: flex;
     gap: 0.25rem;
@@ -143,7 +147,10 @@ nav ::deep .nav-link.active {
 /* Phones: brand + all links + the search icon must fit one row down to 375px. */
 @media (max-width: 500px) {
     .site-header-inner { gap: 0.35rem; }
-    .brand { font-size: 1.05rem; }
+    /* "B" monogram: the full name doesn't leave room for four links. */
+    .brand { font-size: 1.35rem; }
+    .brand-full { display: none; }
+    .brand-short { display: inline; }
     nav { gap: 0; font-size: 0.875rem; }
     nav ::deep .nav-link { padding: 0 0.3rem; }
     .nav-group > ::deep .nav-link { padding-right: 0.1rem; }
