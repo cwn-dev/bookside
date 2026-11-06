@@ -22,6 +22,8 @@
     position: fixed;
     inset: 0;
     z-index: 1;
+    /* Swipes in the panel's gaps land here: don't let them scroll the page. */
+    touch-action: none;
     background: rgb(20 16 12 / 38%);
     opacity: 0;
     visibility: hidden;

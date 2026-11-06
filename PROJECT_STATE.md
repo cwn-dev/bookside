@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 28, 2026-11-06)
+# Bookside: project state (end of session 29, 2026-11-06)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -112,7 +112,8 @@
   `Components/Search/` (`BookResults`, `WordResults`, `TagResults`, `CommentResults`, `Highlighted` for `<mark>`,
   `SearchLinks`); shared result styles (`.search-section`, `.search-hits`, `.search-meta`, `.search-see-all`) in
   `bookside.css`. Search errors are caught in the component (it sits outside the layout's `ErrorBoundary`):
-  logged, "Search failed." shown. Checked in Firefox at 1280 and 375 px, light and dark.
+  logged, "Search failed." shown. Session 29: while open, `html:has(...)` in `bookside.css` sets `overflow: hidden` and the backdrop is
+  `touch-action: none`, so iOS doesn't scroll the page under the panel at the end of the results. Checked in Firefox at 1280 and 375 px, light and dark.
 - Version + footer (session 28): `Directory.Build.props` defaults `Version` to `0.0.0-dev` (no `+sha` in the
   informational version); the release workflow passes the tag minus `v` as the Dockerfile `VERSION` build arg →
   `dotnet publish -p:Version=`. `Bookside.UI/AppInfo` (singleton from `AddBooksideUi()`, `TryAdd` so tests can

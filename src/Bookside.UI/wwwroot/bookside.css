@@ -56,6 +56,11 @@
 
 html { -webkit-text-size-adjust: 100%; }
 
+/* Open global search: lock the page, so iOS doesn't scroll it (and shift
+   the fixed panel) once the results reach their end. Here, not in
+   GlobalSearch.razor.css: scoping would put the attribute on html. */
+html:has(.global-search:focus-within:not(.dismissed)) { overflow: hidden; }
+
 body {
     margin: 0;
     background: var(--bg);
