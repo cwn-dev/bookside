@@ -27,6 +27,16 @@
     color: var(--accent);
 }
 
+/* Matches the other results: a tint instead of the global focus outline. */
+.tag-hit:focus-visible {
+    outline: none;
+    background: var(--search-selected);
+}
+
+@media (forced-colors: active) {
+    .tag-hit:focus-visible { outline: 2px solid CanvasText; }
+}
+
 .tag-name {
     overflow: hidden;
     text-overflow: ellipsis;

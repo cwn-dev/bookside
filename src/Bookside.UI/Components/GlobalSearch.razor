@@ -38,9 +38,13 @@
                @bind:after="QueryChangedAsync"
                @onkeydown="KeyDown"
                @onclick="Reopen" />
-        @* Shown while open or holding a query (CSS); clears and closes. *@
+        @* Shown while open or holding a query (CSS); clears and closes.
+           Out of the tab order, so Tab goes from the box to the first
+           result (Escape clears from the keyboard), like the browser's
+           own clear button. *@
         <button type="button"
                 class="search-clear"
+                tabindex="-1"
                 aria-label="Clear search"
                 @onclick="Clear">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">

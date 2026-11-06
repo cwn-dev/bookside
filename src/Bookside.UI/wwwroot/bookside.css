@@ -384,6 +384,9 @@ a.tag:hover { background: var(--surface-muted); color: var(--text); }
     border-radius: var(--radius);
     background: var(--surface);
     box-shadow: 0 6px 20px rgb(0 0 0 / 14%);
+    /* Keyboard-selected result: lighter than the <mark> tint, so matches
+       stay visible on it. */
+    --search-selected: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
 }
 
 .search-section h2 {
@@ -411,11 +414,26 @@ a.tag:hover { background: var(--surface-muted); color: var(--text); }
     border-radius: var(--radius-sm);
     color: var(--text);
     text-decoration: none;
+    transition:
+        background-color 120ms ease,
+        box-shadow 120ms ease;
 }
 
-.search-hits a:hover,
-.search-hits a:focus-visible {
+.search-hits a:hover {
     background: var(--surface-muted);
+}
+
+/* Keyboard selection: a soft accent tint and a slim bar on the left edge
+   instead of the global focus outline. */
+.search-hits a:focus-visible {
+    outline: none;
+    background: var(--search-selected);
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Matches on a selected result get a little more colour. */
+.search-section a:focus-visible mark {
+    background: color-mix(in srgb, var(--accent) 22%, var(--surface));
 }
 
 .search-meta {
@@ -436,3 +454,18 @@ a.tag:hover { background: var(--surface-muted); color: var(--text); }
 }
 
 p.search-see-all { margin-top: 0.4rem; }
+
+a.search-see-all:focus-visible {
+    outline: none;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* High-contrast modes drop backgrounds and shadows: keep an outline there. */
+@media (forced-colors: active) {
+    .search-hits a:focus-visible,
+    a.search-see-all:focus-visible {
+        outline: 2px solid CanvasText;
+        outline-offset: -2px;
+    }
+}

@@ -121,6 +121,14 @@ public sealed class GlobalSearchTests : ComponentTestBase
     }
 
     [Fact]
+    public void The_clear_button_is_skipped_by_tab_so_tab_reaches_the_first_result()
+    {
+        var search = Render<GlobalSearch>();
+
+        Assert.Equal("-1", search.Find(".search-clear").GetAttribute("tabindex"));
+    }
+
+    [Fact]
     public async Task Clicking_the_backdrop_clears_the_query()
     {
         await AddBookAsync("Mort");

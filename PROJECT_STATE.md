@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 25, 2026-11-05)
+# Bookside: project state (end of session 26, 2026-11-06)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -104,7 +104,7 @@
   prefix matches first (`LikePattern.StartsWith`), comments newest first. UI: `Components/GlobalSearch` in the
   header after the nav: searches only from `SearchResults.MinQueryLength` (3) trimmed characters (the service
   returns empty sections below it too), 250 ms debounce, an X (clear + close; shown while open or holding a
-  query; replaces the browser's own clear button), results in a fixed panel under the header (two columns: books +
+  query; replaces the browser's own clear button; `tabindex="-1"` (session 26), so Tab goes from the box straight to the first result; a keyboard-selected result shows a `--search-selected` tint (`--accent-soft` mixed 55 % with the surface, lighter than `<mark>`, whose matches get a stronger tint on it) + 3px inset accent bar instead of the global focus outline, tags a tint, "See all" an underline, outline kept under `forced-colors`), results in a fixed panel under the header (two columns: books +
   comments, words + tags; one column in that order on phones), Enter opens the first result, Escape dismisses,
   "N results" live region, "See all" links to `books?q=` / `words?q=` / `/tags`. Each type is its own component in
   `Components/Search/` (`BookResults`, `WordResults`, `TagResults`, `CommentResults`, `Highlighted` for `<mark>`,
@@ -192,7 +192,7 @@
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
-- `Bookside.UI.Tests`: 165 tests (session 25: `GlobalSearchTests`, `GlobalSearchFailureTests`,
+- `Bookside.UI.Tests`: 166 tests (session 26: clear button out of the tab order; session 25: `GlobalSearchTests`, `GlobalSearchFailureTests`,
   `SearchHighlightTests`, layout search box); 150 in session 23 ( comment tags in the log, picker pick/escape/create, page picker, tag filter, `CommentTagFilterTests`;
   `ComponentTestBase.CommentFormJs` = the comment form's JS module, loose; tests set up `caret`); 142 in session 22 ( `LibraryListStateTests`, library return, book back link); 132 in session 21 (Ctrl+Enter comment); 131 in session 19 ( `MainLayoutTests` replaces two `/words` review-button tests); 132 in session 18 ( `FinishedPopupTests`, `FinishedLabelsTests`, finish popup on home/book
   pages); 123 in session 17 ( challenge page incl. year picker and celebration, home card, `ChallengeLabelsTests`); 106 in session 16 (lookup details); 104 in session 15 (cover download status; `FakeBookLookup.CoverDownloadGate`); 103 in session 14 (session 14: practice round, entries when nothing is due); 99 in session 13 (`ReviewPageTests`, `ReviewLabelsTests`); 82 in session 12 (edit page lookup); 80 in session 11 (session 11: tags on library/book/tags pages, home add comment); 70 in session 10 (session 10: series on library/details/edit pages, `SeriesLabelTests`); session 9 had 61 (`HomePageTests`); session 8 had 54 (`DataProtectionTests`); session 6 had 52 (session 6: `VocabularyPageTests`, `WordDetailsPageTests`, book page add-word;
