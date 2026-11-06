@@ -396,11 +396,12 @@
   - A synthesized chime (Web Audio, the UI's first JS module) was built and then removed at the user's request:
     no sound, and the UI stays JS-free.
 - **Global search (session 25, user's choices: in the sticky header right of the nav, one service with typed sections rather than pluggable sources, comments included in v1):**
-  - Open/close is CSS `:focus-within`, so the page dims at click time with no round trip. Blazor can't blur
+  - Open/close is CSS `:focus-within` (session 29: or `has-query`, so the iOS keyboard's Done, which blurs the
+    box, keeps the results up; Tabbing out with a query now leaves it open until Escape/X/backdrop), so the page dims at click time with no round trip. Blazor can't blur
     without JS, so a `dismissed` class closes it while focused (Escape, any navigation, which also clears the
     query); `@onmousedown:preventDefault` on the panel keeps focus while a result is clicked (Safari doesn't
-    focus links). The panel itself is `pointer-events: none` (only cards take clicks), so a click in the gaps
-    reaches the backdrop; backdrop click and Escape both clear the query and close. Phones (≤ 500px): a 40px icon that spans the header row when focused; the header's gaps and
+    focus links). Session 29: the panel takes pointer events (with `pointer-events: none` iOS WebKit
+    couldn't scroll it and scrolled the page behind), so clicks in its gaps no longer close it; backdrop click and Escape both clear the query and close. Phones (≤ 500px): a 40px icon that spans the header row when focused; the header's gaps and
     link padding were tightened so brand + links + icon fit at 375px.
   - No index helps `%q%`; books and words already searched this way. Comments add a scan of comment text: fine
     at personal size; FTS5 (+ migration) is the fix if it gets slow. One round trip, ~4 queries, no BLOBs.

@@ -1,7 +1,9 @@
-/* Open = focus inside and not dismissed. Everything here is CSS, so it reacts
-   at click time; Blazor only fills in the results. The wrapper isn't
-   positioned: the field and panel stack in the header's context above the
-   backdrop, and on phones the open field spans .site-header-inner. */
+/* Open = focus inside or a query held (so the iOS keyboard's Done, which
+   blurs the box, keeps the results up), and not dismissed. Everything here
+   is CSS, so it reacts at click time; Blazor only fills in the results. The
+   wrapper isn't positioned: the field and panel stack in the header's
+   context above the backdrop, and on phones the open field spans
+   .site-header-inner. */
 
 .global-search {
     --search-speed: 160ms;
@@ -12,7 +14,7 @@
     transition: flex-basis var(--search-speed) ease;
 }
 
-.global-search:focus-within:not(.dismissed) {
+.global-search:is(:focus-within, .has-query):not(.dismissed) {
     flex-basis: 440px;
 }
 
@@ -42,7 +44,7 @@
     .search-backdrop { background: rgb(0 0 0 / 55%); }
 }
 
-.global-search:focus-within:not(.dismissed) .search-backdrop {
+.global-search:is(:focus-within, .has-query):not(.dismissed) .search-backdrop {
     opacity: 1;
     visibility: visible;
     transition-delay: 0s;
@@ -122,12 +124,12 @@
     color: var(--text);
 }
 
-.global-search:focus-within:not(.dismissed) .search-clear,
+.global-search:is(:focus-within, .has-query):not(.dismissed) .search-clear,
 .global-search.has-query .search-clear {
     display: grid;
 }
 
-.global-search:focus-within:not(.dismissed) .search-input,
+.global-search:is(:focus-within, .has-query):not(.dismissed) .search-input,
 .global-search.has-query .search-input {
     padding-right: 2.4rem;
 }
@@ -139,7 +141,7 @@
 /* The ring replaces the focus outline. */
 .search-input:focus-visible { outline: none; }
 
-.global-search:focus-within:not(.dismissed) .search-input {
+.global-search:is(:focus-within, .has-query):not(.dismissed) .search-input {
     border-color: var(--accent);
     background: var(--surface);
     box-shadow:
@@ -147,7 +149,9 @@
         0 8px 24px rgb(0 0 0 / 18%);
 }
 
-.global-search:focus-within:not(.dismissed) .search-icon { stroke: var(--accent); }
+.global-search:is(:focus-within, .has-query):not(.dismissed) .search-icon {
+    stroke: var(--accent);
+}
 
 /* Dismissed but still focused: keep a plain focus ring for keyboard users. */
 .global-search.dismissed .search-input:focus-visible {
@@ -168,10 +172,9 @@
     margin-inline: auto;
     padding: 0.75rem var(--gutter) 1.5rem;
     overflow-y: auto;
+    /* Takes touches itself (no pointer-events: none), or iOS can't scroll it
+       and scrolls the page behind instead. */
     overscroll-behavior: contain;
-    /* Only the cards take clicks: the gaps around them belong to the
-       backdrop, so clicking there closes the search. */
-    pointer-events: none;
     opacity: 0;
     visibility: hidden;
     translate: 0 -6px;
@@ -181,17 +184,12 @@
         visibility 0s linear var(--search-speed);
 }
 
-.global-search.has-panel:focus-within:not(.dismissed) .search-panel {
+.global-search.has-panel:is(:focus-within, .has-query):not(.dismissed)
+    .search-panel {
     opacity: 1;
     visibility: visible;
     translate: 0 0;
     transition-delay: 0s;
-}
-
-.search-busy,
-.search-empty,
-.search-panel ::deep .search-section {
-    pointer-events: auto;
 }
 
 /* Shown only when a search is slow; quick ones never flash it. */
@@ -263,7 +261,7 @@
         margin-right: -0.5rem;
     }
 
-    .global-search:focus-within:not(.dismissed) { flex-basis: auto; }
+    .global-search:is(:focus-within, .has-query):not(.dismissed) { flex-basis: auto; }
 
     .search-field { width: 40px; }
 
@@ -278,18 +276,18 @@
     .search-input::placeholder { color: transparent; }
 
     /* Collapsed to an icon: hide any kept query and the clear button. */
-    .global-search:not(:focus-within) .search-input,
+    .global-search:not(:focus-within, .has-query) .search-input,
     .global-search.dismissed .search-input {
         padding: 0;
         color: transparent;
     }
 
-    .global-search:not(:focus-within) .search-clear,
+    .global-search:not(:focus-within, .has-query) .search-clear,
     .global-search.dismissed .search-clear { display: none; }
 
     .search-icon { left: 50%; translate: -50% -50%; }
 
-    .global-search:focus-within:not(.dismissed) .search-field {
+    .global-search:is(:focus-within, .has-query):not(.dismissed) .search-field {
         position: absolute;
         top: 50%;
         inset-inline: var(--gutter);
@@ -297,15 +295,15 @@
         translate: 0 -50%;
     }
 
-    .global-search:focus-within:not(.dismissed) .search-input {
+    .global-search:is(:focus-within, .has-query):not(.dismissed) .search-input {
         cursor: text;
     }
 
-    .global-search:focus-within:not(.dismissed) .search-input::placeholder {
+    .global-search:is(:focus-within, .has-query):not(.dismissed) .search-input::placeholder {
         color: var(--text-muted);
     }
 
-    .global-search:focus-within:not(.dismissed) .search-icon {
+    .global-search:is(:focus-within, .has-query):not(.dismissed) .search-icon {
         left: 0.7rem;
         translate: 0 -50%;
     }
