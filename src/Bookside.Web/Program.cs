@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+using Bookside.Api;
 using Bookside.Data;
 using Bookside.Data.Sqlite;
 using Bookside.Integrations;
@@ -32,6 +34,10 @@ if (!string.IsNullOrWhiteSpace(keysPath))
             builder.Environment.ContentRootPath,
             keysPath)));
 }
+
+// API responses carry enums as strings, as the database stores them.
+builder.Services.ConfigureHttpJsonOptions(o =>
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services
     .AddRazorComponents()
@@ -72,6 +78,9 @@ app.UseStatusCodePagesWithReExecute(
 app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapCoverEndpoint();
+
+// Off unless a token is configured (see README "API").
+app.MapBooksideApi(app.Configuration["Bookside:ApiToken"]);
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
