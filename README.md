@@ -74,16 +74,6 @@ The CI setup is human developed and run (apart from that time Claude updated the
       <sub>Flash card review</sub>
     </td>
   </tr>
-  <tr>
-    <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png" width="100%" alt="Review done: practice rounds"></a><br>
-      <sub>Review done: practice rounds</sub>
-    </td>
-    <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%20from%202026-11-06%2020-06-24.png"><img src="./screenshots/Screenshot%20from%202026-11-06%2020-06-24.png" width="100%" alt="Global search"></a><br>
-      <sub>Global search</sub>
-    </td>
-  </tr>
 </table>
 
 ## Mobile Browser UI
