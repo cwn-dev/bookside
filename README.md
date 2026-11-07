@@ -179,6 +179,53 @@ docker compose up -d --build
 - **No authentication for the web UI yet:** don't expose it beyond your LAN/VPN.
 - **Update:** `git pull && docker compose up -d --build` (migrations run at startup).
 
+## Docker Compose
+
+To run the published image from Docker Hub without cloning the repo, create a folder with this
+`docker-compose.yaml`:
+
+```yaml
+services:
+  bookside:
+    image: cwndev/bookside:latest
+    container_name: bookside
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:8080:8080
+    volumes:
+      - ./bookside_data:/data
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+      # Trust X-Forwarded-For/-Proto from the reverse proxy.
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      # Optional: Google Books as a fallback for book lookups. Empty = not used.
+      Bookside__GoogleBooks__ApiKey: ${GOOGLE_BOOKS_API_KEY:-}
+      # Optional: bearer token for the HTTP API (/api). Empty = API off.
+      Bookside__ApiToken: ${BOOKSIDE_API_TOKEN:-}
+    stop_grace_period: 30s
+```
+
+and a `.env` file next to it:
+
+```bash
+TZ=Europe/London
+# GOOGLE_BOOKS_API_KEY=...
+# BOOKSIDE_API_TOKEN=...   # e.g. from `openssl rand -hex 32`
+```
+
+Then:
+
+```bash
+mkdir -p bookside_data && sudo chown 1654:1654 bookside_data   # the image runs as UID 1654
+docker compose up -d
+```
+
+The app listens on port 8080. Images are multi-arch (`linux/amd64`, `linux/arm64`).
+
+- **Update:** `docker compose pull && docker compose up -d` (migrations run at startup).
+- **Logs:** `docker compose logs -f bookside`.
+  "Deploy (Docker)" above, with `bookside_data/` in place of `data/`.
+
 ## API
 
 Endpoints under `/api` on the same host and port as the web UI. They are off until a token is set
