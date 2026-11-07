@@ -85,8 +85,13 @@ internal static class WordsApi
             .ListBooksAsync(new BookQuery { Search = title, Take = 20 }, cancellationToken)
             .ConfigureAwait(false);
 
+        // Any apostrophe matches any other, like the search.
+        var wanted = Apostrophes.Normalize(title);
         var matches = hits.Items
-            .Where(b => string.Equals(b.Title, title, StringComparison.OrdinalIgnoreCase))
+            .Where(b => string.Equals(
+                Apostrophes.Normalize(b.Title),
+                wanted,
+                StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         return matches.Count switch

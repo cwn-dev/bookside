@@ -86,6 +86,21 @@ public sealed class SearchServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task Books_and_comments_match_any_apostrophe()
+    {
+        var ender = await AddBookAsync("Ender’s Game");
+        Success(await Library.AddCommentAsync(
+            ender.Id,
+            new BookCommentInput { Text = "Ender’s last game." },
+            Ct));
+
+        var results = await Search.SearchAsync("ender's", Ct);
+
+        Assert.Equal(["Ender’s Game"], results.Books.Items.Select(b => b.Title));
+        Assert.Equal(["Ender’s last game."], results.Comments.Items.Select(c => c.Snippet));
+    }
+
+    [Fact]
     public async Task Comments_match_tags_typed_the_way_they_display()
     {
         var mort = await AddBookAsync("Mort");

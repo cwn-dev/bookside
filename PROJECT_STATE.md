@@ -263,6 +263,10 @@
     Validation collects every field error so forms can show them all at once. `ErrorType` maps to HTTP 400/404/409/503 later.
   - Search is `EF.Functions.Like` with escaped wildcards (user's choice: no schema change). Case-insensitive for ASCII
     only; title sorting stays case-sensitive (SQLite BINARY). Word search/sort uses `NormalizedTerm`, so it is effectively case-insensitive.
+  - Session 32 fix: apostrophes `'` `‘` `’` `ʼ` match each other (`Core/Common/Apostrophes`). Imported titles and
+    phone keyboards use `’`, desktops `'`. Search patterns turn them into `_` (`LikePattern.Contains/StartsWith`;
+    `Exact`, used to match author/series names on save, is unchanged); `SearchSnippet`, `SearchHighlight` and the
+    API's `book` title match compare normalized copies. Stored text is untouched (no migration).
   - Authors are matched to existing ones by name (LIKE, so ASCII case-insensitive); authors left with no books are deleted on book update/delete.
   - A book has at most one session with status Reading (Conflict otherwise). FinishedOn is not allowed while Reading.
   - Only ISBN-10 given → ISBN-13 derived. Both are checksum-validated.

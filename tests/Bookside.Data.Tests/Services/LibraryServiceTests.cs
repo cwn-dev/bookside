@@ -125,6 +125,20 @@ public sealed class LibraryServiceTests : ServiceTestBase
             (await Library.ListBooksAsync(new BookQuery { Search = text }, Ct)).Items.Select(b => b.Title);
     }
 
+    [Theory]
+    [InlineData("Ender's Game", "ender's")]
+    [InlineData("Ender’s Game", "ender's")]
+    [InlineData("Ender's Game", "ender’s")]
+    [InlineData("Ender’s Game", "ender’s")]
+    public async Task Search_matches_any_apostrophe(string title, string search)
+    {
+        await AddBookAsync(title);
+
+        var items = (await Library.ListBooksAsync(new BookQuery { Search = search }, Ct)).Items;
+
+        Assert.Equal([title], items.Select(b => b.Title));
+    }
+
     [Fact]
     public async Task List_filters_sorts_and_pages()
     {

@@ -102,6 +102,19 @@ public sealed class WordsApiTests : IAsyncLifetime
     }
 
     [Theory]
+    [InlineData("Ender’s Game", "ender's game")]
+    [InlineData("Ender's Game", "Ender’s Game")]
+    public async Task Book_title_matches_any_apostrophe(string title, string sent)
+    {
+        var bookId = await AddBookAsync(title);
+
+        var response = await PostAsync(new { term = "kanly", book = sent });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal(bookId, (await FindWordAsync("kanly"))?.BookId);
+    }
+
+    [Theory]
     [InlineData("Emma", "No book titled")]
     [InlineData("Dune", "2 books are titled")]
     public async Task Unknown_or_ambiguous_book_title_is_400(string title, string message)
