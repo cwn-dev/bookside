@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 32, 2026-11-07)
+# Bookside: project state (end of session 33, 2026-11-07)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -185,8 +185,9 @@
   ("Remove it from N books and delete it?").
 - Home page reading cards (session 11): "Add comment" opens an inline `CommentForm` (now has `AutoFocus`); saving
   closes it with "Comment added. View" (book link) until another panel opens. One panel per card still. With 2+
-  books the list is two-up when the section is ≥ 640px wide (container query; i.e. desktop main column, not
-  ≤ ~1000px viewports); actions sit under cover + text when a card is < 400px wide (card container query).
+  books the list is two-up when the section is ≥ 690px wide (container query; session 33: was 640px, raised to
+  the desktop main column's full width so the cards stack before the three buttons wrap at 700–900px
+  viewports); actions sit under cover + text when a card is < 400px wide (card container query).
   Side-by-side cards share a height (actions at the bottom; title 1.1rem), except while one has a form open.
 - Home page (session 9): `HomePage` (`/`, replaces the redirect to `/books`; the brand links to it, no nav link).
   Currently reading cards (cover, authors, "Started … · day N", inline "Finished" form = `ReadingSessionForm`, inline
