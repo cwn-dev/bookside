@@ -84,6 +84,8 @@ dotnet publish src/Bookside.Web -p:Version=1.6.1                     # release v
   to `POST /api/words`; one `main.lua`. Not built or tested by `dotnet`; check it in KOReader.
 - `tests/Bookside.Api.Tests`: `WebApplicationFactory<Program>` tests through `ApiHostFactory` (token set, offline
   dictionary that knows no words; `token: null` = API off).
+- `branding/`: logo and favicon sources (not in the image). The header uses `Bookside.UI/Components/BrandLogo`
+  (same paths, inline); the favicons are copies in `Bookside.Web/wwwroot`: update both when the logo changes.
 - `Dockerfile` / `docker-compose.yaml` / `.dockerignore` at the root: the image copies only the root build files
   (`global.json`, `Directory.*.props`, `.editorconfig`) and `src/`; add any new root-level build file to the `COPY`.
 - `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations incl. `AddBooksideUi()` on temp SQLite,

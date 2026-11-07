@@ -1,4 +1,9 @@
-# Bookside
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./branding/bookside-logo-dark.svg">
+    <img src="./branding/bookside-logo-light.svg" width="360" alt="Bookside">
+  </picture>
+</h1>
 
 <p align="center">
   <a href="https://hub.docker.com/r/cwndev/bookside"><img src="https://img.shields.io/docker/v/cwndev/bookside?sort=semver&label=docker&logo=docker&logoColor=white" alt="Docker image version"></a>

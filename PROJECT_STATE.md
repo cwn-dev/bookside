@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 33, 2026-11-07)
+# Bookside: project state (end of session 34, 2026-11-07)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -114,6 +114,12 @@
   `bookside.css`. Search errors are caught in the component (it sits outside the layout's `ErrorBoundary`):
   logged, "Search failed." shown. Session 29: while open, `html:has(...)` in `bookside.css` sets `overflow: hidden` and the backdrop is
   `touch-action: none`, so iOS doesn't scroll the page under the panel at the end of the results. The box is 16px on touch devices (`pointer: coarse`), like other fields, so iOS doesn't zoom in on focus. Checked in Firefox at 1280 and 375 px, light and dark.
+- Logo (session 34): the user's wordmark ("Bookside" + accent full stop) and favicons live in `branding/`
+  (`bookside-logo.svg` follows `prefers-color-scheme`; `-light`/`-dark` fixed variants; `favicon.svg`/`.ico`).
+  Header brand = `Components/BrandLogo` (inline SVG, fills from `--text`/`--accent`, so it follows the app
+  theme with no extra request; link labelled "Bookside home"). `favicon.svg` + `favicon.ico` copied to
+  `Bookside.Web/wwwroot` and linked in `App.razor`. README: logo as the centred `<h1>` via `<picture>`
+  (light/dark). Checked in Firefox at 1280 and 390 px, light and dark.
 - README screenshots (session 32): retaken for the current UI in light and dark, desktop 1280 px @2x and mobile
   390 px @3x, as framed WebP (4.5 MB total, replacing the old PNGs). Hero = home page split diagonally light/dark;
   desktop gallery follows the viewer's GitHub theme (`<picture>`); mobile row alternates light and dark. Taken on a
