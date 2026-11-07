@@ -7,6 +7,10 @@
   <a href="https://github.com/cwn-dev/bookside/actions/workflows/build-and-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/cwn-dev/bookside/build-and-test.yml?branch=main&label=build%20%26%20tests&logo=githubactions&logoColor=white" alt="Build and tests"></a>
 </p>
 
+<p align="center">
+  <img src="./screenshots/hero.webp" width="100%" alt="Bookside home page, half in light mode and half in dark mode">
+</p>
+
 Bookside is a self-hosted reading companion. It keeps your library of books, with covers, authors, series and tags, and imports details by ISBN, title or author from Open Library (or Google Books). For each book you log when you started and finished it, rate it and keep running reading notes. Words you meet while reading go into a vocabulary list, linked to the book, page and sentence they came from, with definitions fetched automatically. A home page brings together what you're reading now, recently finished books, recent words, a word of the day and reading stats. A search box in the header finds books, words, tags and comments as you type.
 
 I like to think this is not just is not just some heartless AI creation.  All the code is written by Claude, but I like to think I add some human to it. I check everything he does before it's committed and give it, hopefully, a more human touch.  The UX/architecture/tech stack was the outcome of a conversation with Claude about the best way to go - I picked C# & .NET as I've been using that stack for close to 20 years now, and Claude suggested Blazor. I work well with Claude, directing him to an actually good output as I know what's going on!
@@ -17,54 +21,56 @@ The CI setup is human developed and run (apart from that time Claude updated the
 
 ## Desktop Browser UI
 
+<sub>These follow your GitHub theme, light or dark. Every screen in both themes is in [screenshots](./screenshots/).</sub>
+
 <table>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-28-30%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-28-30%20Bookside.png" width="100%" alt="Home"></a><br>
+      <a href="./screenshots/desktop/light/home.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/home.webp"><img src="./screenshots/desktop/light/home.webp" width="100%" alt="Home"></picture></a><br>
       <sub>Home</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2022-02-31%20Library%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2022-02-31%20Library%20%C2%B7%20Bookside.png" width="100%" alt="Library"></a><br>
+      <a href="./screenshots/desktop/light/library.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/library.webp"><img src="./screenshots/desktop/light/library.webp" width="100%" alt="Library"></picture></a><br>
       <sub>Library</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png" width="100%" alt="Book details and reading log"></a><br>
-      <sub>Book details and reading log</sub>
+      <a href="./screenshots/desktop/light/book.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/book.webp"><img src="./screenshots/desktop/light/book.webp" width="100%" alt="Book details"></picture></a><br>
+      <sub>Book details</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-30%20at%2022-03-11%202026%20reading%20challenge%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2022-03-11%202026%20reading%20challenge%20%C2%B7%20Bookside.png" width="100%" alt="Reading challenge"></a><br>
+      <a href="./screenshots/desktop/light/reading-log.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/reading-log.webp"><img src="./screenshots/desktop/light/reading-log.webp" width="100%" alt="Reading log with tagged notes"></picture></a><br>
+      <sub>Reading log with tagged notes</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/desktop/light/challenge.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/challenge.webp"><img src="./screenshots/desktop/light/challenge.webp" width="100%" alt="Reading challenge"></picture></a><br>
       <sub>Reading challenge</sub>
     </td>
-  </tr>
-  <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png" width="100%" alt="Add a book: metadata lookup"></a><br>
-      <sub>Add a book: metadata lookup</sub>
-    </td>
-    <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png" width="100%" alt="Add a book: details form"></a><br>
-      <sub>Add a book: details form</sub>
+      <a href="./screenshots/desktop/light/search.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/search.webp"><img src="./screenshots/desktop/light/search.webp" width="100%" alt="Global search"></picture></a><br>
+      <sub>Global search</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png" width="100%" alt="Vocabulary"></a><br>
+      <a href="./screenshots/desktop/light/vocabulary.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/vocabulary.webp"><img src="./screenshots/desktop/light/vocabulary.webp" width="100%" alt="Vocabulary"></picture></a><br>
       <sub>Vocabulary</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png" width="100%" alt="Vocabulary quick-add"></a><br>
-      <sub>Vocabulary quick-add</sub>
+      <a href="./screenshots/desktop/light/add-book.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/add-book.webp"><img src="./screenshots/desktop/light/add-book.webp" width="100%" alt="Add a book: Open Library / Google Books lookup"></picture></a><br>
+      <sub>Add a book: Open Library / Google Books lookup</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png" width="100%" alt="Word details"></a><br>
+      <a href="./screenshots/desktop/light/word.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/word.webp"><img src="./screenshots/desktop/light/word.webp" width="100%" alt="Word details"></picture></a><br>
       <sub>Word details</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-28-10%20Review%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-28-10%20Review%20%C2%B7%20Bookside.png" width="100%" alt="Flash card review"></a><br>
+      <a href="./screenshots/desktop/light/review.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/review.webp"><img src="./screenshots/desktop/light/review.webp" width="100%" alt="Flash card review"></picture></a><br>
       <sub>Flash card review</sub>
     </td>
   </tr>
@@ -85,25 +91,25 @@ The CI setup is human developed and run (apart from that time Claude updated the
 <table>
   <tr>
     <td width="25%" align="center" valign="top">
-      <a href="./screenshots/mobile/home.png"><img src="./screenshots/mobile/home.png" width="100%" alt="Home"></a><br>
+      <a href="./screenshots/mobile/light/home.webp"><img src="./screenshots/mobile/light/home.webp" width="100%" alt="Home (light)"></a><br>
       <sub>Home</sub>
     </td>
     <td width="25%" align="center" valign="top">
-      <a href="./screenshots/mobile/a%20book.png"><img src="./screenshots/mobile/a%20book.png" width="100%" alt="Book"></a><br>
-      <sub>Book</sub>
+      <a href="./screenshots/mobile/dark/search.webp"><img src="./screenshots/mobile/dark/search.webp" width="100%" alt="Search (dark)"></a><br>
+      <sub>Search</sub>
     </td>
     <td width="25%" align="center" valign="top">
-      <a href="./screenshots/mobile/reading%20log.png"><img src="./screenshots/mobile/reading%20log.png" width="100%" alt="Reading log"></a><br>
+      <a href="./screenshots/mobile/light/reading-log.webp"><img src="./screenshots/mobile/light/reading-log.webp" width="100%" alt="Reading log (light)"></a><br>
       <sub>Reading log</sub>
     </td>
     <td width="25%" align="center" valign="top">
-      <a href="./screenshots/mobile/voacbulary%20entry.png"><img src="./screenshots/mobile/voacbulary%20entry.png" width="100%" alt="Word details"></a><br>
+      <a href="./screenshots/mobile/dark/word.webp"><img src="./screenshots/mobile/dark/word.webp" width="100%" alt="Word details (dark)"></a><br>
       <sub>Word details</sub>
     </td>
   </tr>
 </table>
 
-[More screenshots](./screenshots/)
+[More screenshots](./screenshots/): desktop and mobile, light and dark.
 
 ## Features
 

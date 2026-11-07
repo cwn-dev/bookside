@@ -32,7 +32,12 @@ dotnet run --project src/Bookside.Web                                # http://lo
 # (firefox --headless --marionette -remote-allow-system-access --no-remote --profile <tmp>; TCP 2828, length-prefixed
 #  JSON; chrome-context pref layout.css.prefers-color-scheme.content-override = 0 for dark mode). The user's own
 #  Firefox may be running: stop only the headless one by PID, and never `pkill -f` a pattern that also matches
-#  your own shell command.
+#  your own shell command. Headless windows can't go below 500px wide: for phone widths, narrow the content
+#  instead (chrome context: gBrowser.selectedBrowser.style.cssText = "min-width:390px;max-width:390px;…").
+#  Crisp shots: pref layout.css.devPixelsPerPx = "2" (desktop) / "3" (mobile).
+# README screenshots: screenshots/hero.webp (home, light/dark diagonal split) + screenshots/{desktop,mobile}/
+#  {light,dark}/<page>.webp, framed (rounded corners, hairline border, soft shadow, transparent background).
+#  Take them on a copy of the dev DB; the desktop gallery uses <picture> to follow the viewer's GitHub theme.
 dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web   # optional Google Books fallback
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
