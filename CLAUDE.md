@@ -74,6 +74,18 @@ dotnet publish src/Bookside.Web -p:Version=1.6.1                     # release v
   MAUI can reuse it. Components inject Core service interfaces.
 - `src/Bookside.Web`: Blazor Web App host (Interactive Server, no prerendering): `Program.cs`, `App.razor`, `Routes.razor`,
   error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`, `Bookside:DataProtectionKeysPath`.
+<<<<<<< Updated upstream
+=======
+- `src/Bookside.Api`: HTTP API as minimal API endpoints (class library: Core + the ASP.NET Core framework), mapped
+  by the Web host with `MapBooksideApi(token)` under `/api`. One static class per area (`Words/WordsApi.Map`);
+  `ApiResults.Problem(ServiceError)` maps every service error to ProblemDetails (400/404/409/503, `code`, camelCase
+  field errors). Auth: one bearer token (`Bookside:ApiToken`), checked by a group endpoint filter; no token = nothing
+  mapped. Status code pages are skipped for the group. Code here uses `ConfigureAwait(false)` (CA2007 is on).
+- `koreader/bookside.koplugin`: KOReader plugin (Lua, not in the solution) that pushes Vocabulary Builder words
+  to `POST /api/words`; one `main.lua`. Not built or tested by `dotnet`; check it in KOReader.
+- `tests/Bookside.Api.Tests`: `WebApplicationFactory<Program>` tests through `ApiHostFactory` (token set, offline
+  dictionary that knows no words; `token: null` = API off).
+>>>>>>> Stashed changes
 - `Dockerfile` / `docker-compose.yaml` / `.dockerignore` at the root: the image copies only the root build files
   (`global.json`, `Directory.*.props`, `.editorconfig`) and `src/`; add any new root-level build file to the `COPY`.
 - `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations incl. `AddBooksideUi()` on temp SQLite,

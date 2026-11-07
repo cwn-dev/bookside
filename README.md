@@ -170,3 +170,40 @@ docker compose up -d --build
   `dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web`.
 - **No authentication yet:** don't expose it beyond your LAN/VPN.
 - **Update:** `git pull && docker compose up -d --build` (migrations run at startup).
+<<<<<<< Updated upstream
+=======
+
+## API
+
+Endpoints under `/api` on the same host and port as the web UI. They are off until a token is set
+(`BOOKSIDE_API_TOKEN` in `.env`; in development
+`dotnet user-secrets set Bookside:ApiToken <token> --project src/Bookside.Web`). Every request needs
+`Authorization: Bearer <token>`; a missing or wrong token gets 401.
+
+**`POST /api/words`** adds a word to the vocabulary list and looks up its definition.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"term": "petrichor", "book": "Dune", "pageNumber": 42, "context": "the smell of rain"}' \
+  https://bookside.example/api/words
+```
+
+Only `term` is required. Optional: `language` (default `en`), `context` (the sentence), `pageNumber`, `notes`, and
+the book as either `book` (exact title, any case) or `bookId`.
+
+- `201 Created`: the new word (JSON) with its definition, `Location: /words/{id}`.
+- `200 OK`: the word was already on the list; returns the existing one, so resending is safe.
+- `400`: validation errors as ProblemDetails, e.g. `{"errors": {"book": ["No book titled \"Emma\"."]}}`.
+
+### KOReader plugin
+
+`koreader/bookside.koplugin` pushes words saved by KOReader's Vocabulary Builder to `POST /api/words`, with the
+text around the word as `context` and the book's title as `book` (no matching book in Bookside = added without one).
+
+1. Copy the `bookside.koplugin` folder into KOReader's `plugins/` folder and restart KOReader.
+2. Tools → Bookside → Server settings: the server address (e.g. `https://bookside.example`) and the API token.
+3. Tools → Bookside → Push vocabulary.
+
+Only words added since the last push are sent (the time is kept in KOReader's `settings/bookside.lua`). Tap
+"Last pushed" to send everything again; words Bookside already has are skipped.
+>>>>>>> Stashed changes

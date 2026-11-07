@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 # Bookside: project state (end of session 30, 2026-11-06)
+=======
+# Bookside: project state (end of session 32, 2026-11-07)
+>>>>>>> Stashed changes
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -114,6 +118,10 @@
   `bookside.css`. Search errors are caught in the component (it sits outside the layout's `ErrorBoundary`):
   logged, "Search failed." shown. Session 29: while open, `html:has(...)` in `bookside.css` sets `overflow: hidden` and the backdrop is
   `touch-action: none`, so iOS doesn't scroll the page under the panel at the end of the results. The box is 16px on touch devices (`pointer: coarse`), like other fields, so iOS doesn't zoom in on focus. Checked in Firefox at 1280 and 375 px, light and dark.
+- README screenshots (session 32): retaken for the current UI in light and dark, desktop 1280 px @2x and mobile
+  390 px @3x, as framed WebP (4.5 MB total, replacing the old PNGs). Hero = home page split diagonally light/dark;
+  desktop gallery follows the viewer's GitHub theme (`<picture>`); mobile row alternates light and dark. Taken on a
+  copy of the dev DB with the Revolting comments rewritten as realistic notes (the real DB still has the test ones).
 - Version + footer (session 28): `Directory.Build.props` defaults `Version` to `0.0.0-dev` (no `+sha` in the
   informational version); the release workflow passes the tag minus `v` as the Dockerfile `VERSION` build arg →
   `dotnet publish -p:Version=`. `Bookside.UI/AppInfo` (singleton from `AddBooksideUi()`, `TryAdd` so tests can
@@ -121,6 +129,24 @@
   `Components/SiteFooter` on every page (layout is now a full-height flex column, footer at the bottom of short
   pages): "© 2026 **n7e** · Bookside v1.6.1", Bookside → GitHub repo, version → its release page; "dev" unlinked.
   Checked in Firefox at 1280 and 375 px, light and dark, with a `-p:Version=1.6.1` publish.
+<<<<<<< Updated upstream
+=======
+- HTTP API (session 31): `src/Bookside.Api` (class library, `FrameworkReference Microsoft.AspNetCore.App`, Core only),
+  mapped by `Program.cs` with `app.MapBooksideApi(config["Bookside:ApiToken"])`. Blank token = nothing mapped.
+  Group `/api`: endpoint filter checks `Authorization: Bearer` with `CryptographicOperations.FixedTimeEquals`
+  (401 ProblemDetails + `WWW-Authenticate: Bearer`); `SkipStatusCodePagesAttribute` metadata, so bad-JSON 400s
+  aren't re-executed into the HTML not-found page. `ApiResults.Problem(ServiceError)`. JSON enums as strings
+  (`ConfigureHttpJsonOptions` in `Program.cs`). First endpoint `POST /api/words` (`Words/WordsApi`,
+  `ApiWordInput` = `WordInput` + `book` title): 201 + `WordDetails` + `Location: /words/{id}`; duplicate → 200 +
+  existing `WordSummary`; `book` matched exactly (any case) among the first 20 `ListBooksAsync` search hits, 0 or
+  2+ matches or both `book` and `bookId` → 400 field error `book`. Compose `BOOKSIDE_API_TOKEN`; README "API".
+  `tests/Bookside.Api.Tests`: 11 tests (`ApiHostFactory`, `WordsApiTests`). Checked with curl on a scratch DB.
+- KOReader plugin (session 32): `koreader/bookside.koplugin` (`_meta.lua`, `main.lua`). Tools → Bookside:
+  "Push vocabulary", "Server settings" (`MultiInputDialog`: address + token), "Last pushed: …" (tap = reset to
+  send all again). Reads `settings/vocabulary_builder.sqlite3` (`vocabulary` ⋈ `title`, `create_time >
+  last_sync`, oldest first) and POSTs `term`, `context` (prev + word + next, trimmed) and `book` (title). Settings
+  and the `last_sync` cursor (unix s) in `settings/bookside.lua`. Not run yet: no Lua or KOReader on the dev box.
+>>>>>>> Stashed changes
 - Mobile menu (session 30): ≤ 500px the header is burger (left, bars fold into an X) + brand + search icon;
   the `MainLayout` nav becomes a sheet under the header (`clip-path` unroll, dimmed
   backdrop below the header closes it, Escape in the header row closes it, any navigation closes it). The
@@ -424,6 +450,26 @@
   - Session 27 (user's choice: both `/` and Ctrl/⌘+K): a shortcut needs JS (Blazor can't listen on `document`),
     so it is the second JS module. Ctrl+T was asked for first, but browsers never pass it to the page.
     Ctrl+K overrides Firefox's "focus the browser search bar" on this site.
+<<<<<<< Updated upstream
+=======
+- **HTTP API (session 31, user's choices: own `Bookside.Api` project because the API will grow, mapped into the
+  Web host rather than its own host; one simple bearer token; duplicates return the existing word; books by title
+  too):**
+  - Same process, port and container as the UI: one SQLite writer, no second compose service. Moving to an own
+    host later means moving only the `MapBooksideApi` call.
+  - Token in config, not the DB: no UI, no rotation beyond changing the setting and restarting. Off by default.
+    Any holder can call every endpoint; only as private as the proxy's TLS.
+  - A POST to `/api/...` with the API off falls through to the Blazor routes (400 from antiforgery), not 404.
+  - Adding a word looks the definition up inline, so a request can take up to ~16 s if both dictionaries hang.
+- **KOReader plugin (session 32, user's choices: menu item + settings in KOReader, last-sync cursor file,
+  unmatched title → resend without `book`):**
+  - Per word: 200/201 sent; 400 with `errors.book` → resent once without `book`; other 400 → reported and
+    skipped (cursor moves past it); 401 or network/5xx → stop. On a stop the cursor is the failing word's
+    `create_time - 1`, so it and same-second words go again (resends are 200s). Progress via `Trapper:info`
+    (tap to stop). Words are sent one by one, each up to ~16 s if the dictionaries hang (20 s timeout).
+  - KOReader keeps one row per word: looking a word up again updates its `create_time`, so it's resent (Bookside
+    returns the existing word, context not updated). No language or page in KOReader's data: defaults apply.
+>>>>>>> Stashed changes
 - **Versioning (session 28, user's choices: release tag only, footer "© 2026 n7e · Bookside v1.6.1" with links):**
   - The GitHub release tag is the only source (no MinVer/Nerdbank/release-please): nothing to bump by hand, but
     local and CI test builds just say "dev". The Docker build has no `.git`, so the tag must come in as a build arg.
