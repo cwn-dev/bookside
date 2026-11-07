@@ -42,7 +42,7 @@ dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside
 dotnet user-secrets set Bookside:ApiToken <token> --project src/Bookside.Web           # turns the /api endpoints on
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
-docker compose up -d --build                                         # on the Docker host (no Docker on the dev Mac); see README "Deploy"
+docker compose up -d --build                                         # on the Docker host (no Docker on the dev Mac); see README "Deploy from source (Docker)"
 dotnet publish src/Bookside.Web -p:Version=1.6.1                     # release version (footer); unset = 0.0.0-dev, shown as "dev"
 ```
 

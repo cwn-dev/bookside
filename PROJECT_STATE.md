@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 34, 2026-11-07)
+# Bookside: project state (end of session 35, 2026-11-07)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -229,7 +229,8 @@
   `App_Data/scratch.db`) for UI checks without touching the dev database.
 - Docker (session 8): root `Dockerfile` (SDK `10.0.203-noble` on `$BUILDPLATFORM`, `publish -a $TARGETARCH`, NuGet
   cache mount; runtime `aspnet:10.0-noble-chiseled-extra`, UID 1654, port 8080), `.dockerignore`, `docker-compose.yaml`
-  (`./data:/data`, `TZ`, forwarded headers on, port bound to `127.0.0.1` by default). README "Deploy" covers setup,
+  (`./bookside_data:/data`, `TZ`, forwarded headers on, `8080:8080`; session 35, user's choice: no `127.0.0.1` bind in the
+  README examples either). README "Deploy from source (Docker)" covers setup,
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
@@ -371,8 +372,8 @@
   - Chiseled-extra: no shell/package manager (no in-container sqlite3/curl, no compose healthcheck); "extra" has
     ICU + tzdata so `TZ` works. No `LANG` needed: date formats are explicit patterns (English month names).
   - TLS by the user's existing proxy; compose enables `ASPNETCORE_FORWARDEDHEADERS_ENABLED` (trusts any proxy, so
-    the port is published on 127.0.0.1 by default). No HTTPS redirect/HSTS in the app; the proxy owns that.
-  - `./data` bind mount owned by UID 1654. Data Protection keys there unencrypted at rest (startup warning
+    keep the port reachable only by the proxy; session 35: published on all interfaces, user's choice). No HTTPS redirect/HSTS in the app; the proxy owns that.
+  - `./bookside_data` bind mount owned by UID 1654. Data Protection keys there unencrypted at rest (startup warning
     "No XML encryptor configured" is expected); they only protect antiforgery tokens and circuit state.
 
 - **Book metadata import (session 12, user's choices: one box + result list, fill empty fields only, cover only

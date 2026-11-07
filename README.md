@@ -124,60 +124,29 @@ The CI setup is human developed and run (apart from that time Claude updated the
 * HTTP API for adding words from scripts, shortcuts or anything that can send an HTTP request (see "API" below).
 * Global search in the header: finds books (by title, author or series), words, tags and comments as you type, with the matches highlighted. Use the keyboard to move through the results and "See all" to open the full library or vocabulary results.
 
-## Layout
+## Docker
 
-| Project | Role |
-|---|---|
-| `src/Bookside.Core` | Entities, domain rules, service contracts + DTOs, `Result` types. No EF/HTTP dependencies. |
-| `src/Bookside.Data` | Provider-agnostic EF Core model (`BooksideDbContext`, configurations, save rules) and service implementations (`AddBooksideServices`). |
-| `src/Bookside.Data.Sqlite` | SQLite wiring (`AddBooksideSqlite`, `InitializeBooksideDatabaseAsync`), migrations, design-time factory. |
-| `tests/Bookside.Data.Tests` | xUnit v3 tests against real temp SQLite files. |
-
-Also `src/Bookside.Integrations` (dictionary clients), `src/Bookside.UI` (Razor class library), `src/Bookside.Web`
-(Blazor Web App host), `src/Bookside.Api` (HTTP API, mapped by the Web host) and their test projects; see CLAUDE.md.
-Planned: `Bookside.App` (MAUI Blazor Hybrid).
-
-## Commands
+Run the published image from Docker Hub (multi-arch: `linux/amd64`, `linux/arm64`):
 
 ```bash
-dotnet tool restore
-dotnet build
-dotnet test
-
-# Add a migration after changing the model
-dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite
-
-# Generate the SQL for review
-dotnet ef migrations script --project src/Bookside.Data.Sqlite
+mkdir -p bookside_data && sudo chown 1654:1654 bookside_data   # the image runs as UID 1654
+docker run -d --name bookside --restart unless-stopped \
+  -p 8080:8080 \
+  -v "$PWD/bookside_data:/data" \
+  -e TZ=Europe/London \
+  -e ASPNETCORE_FORWARDEDHEADERS_ENABLED=true \
+  --stop-timeout 30 \
+  cwndev/bookside:latest
 ```
 
-Hosts apply migrations at startup via `services.InitializeBooksideDatabaseAsync()`.
+The app listens on port 8080. Optional settings, as extra `-e` flags:
 
-## Deploy (Docker)
+- `Bookside__GoogleBooks__ApiKey=<key>`: Google Books as a fallback for book lookups (Open Library is always used).
+- `Bookside__ApiToken=<token>`: turns the HTTP API on (see "API"), e.g. from `openssl rand -hex 32`.
 
-One container, SQLite in `./data` on the Docker host, plain HTTP behind a reverse proxy that terminates TLS.
-
-```bash
-git clone <repo> bookside && cd bookside
-mkdir -p data && sudo chown 1654:1654 data   # the image runs as the non-root `app` user (UID 1654)
-echo "TZ=Europe/London" > .env               # server time zone: "today" for reading dates, reading-log times
-docker compose up -d --build
-```
-
-- **Data:** `data/bookside.db` (+ `-wal`/`-shm`) and `data/keys/` (ASP.NET Core Data Protection keys, stored
-  unencrypted: keep the folder private). `data/` must be on a local filesystem (SQLite WAL doesn't work on NFS/SMB).
-- **Backup:** stop the container and copy `data/`, or while it runs: `sqlite3 data/bookside.db ".backup backup.db"`
-  (copying only `bookside.db` while it runs can miss changes still in the WAL file).
-- **Port:** published on `127.0.0.1:8080` for a proxy on the same host. `.env` settings: `BOOKSIDE_PORT=…`,
-  `BOOKSIDE_BIND=0.0.0.0` when the proxy runs elsewhere (then keep the port reachable only by the proxy).
-- **Reverse proxy:** must pass WebSockets (Blazor Server), e.g. nginx needs `proxy_http_version 1.1` plus the
-  `Upgrade`/`Connection` headers; Caddy and Traefik do it by default. `X-Forwarded-For`/`-Proto` are trusted.
-- **Book lookup:** Open Library needs no key. To add Google Books as a fallback, put `GOOGLE_BOOKS_API_KEY=…` in
-  `.env` (a Google Cloud API key with the Books API enabled). In development:
-  `dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web`.
-- **API:** off until you set a token: `BOOKSIDE_API_TOKEN=$(openssl rand -hex 32)` in `.env` (see "API").
-- **No authentication for the web UI yet:** don't expose it beyond your LAN/VPN.
-- **Update:** `git pull && docker compose up -d --build` (migrations run at startup).
+- **Update:** `docker pull cwndev/bookside:latest && docker rm -f bookside`, then the same `docker run`
+  (migrations run at startup; the data stays in `bookside_data/`).
+- **Logs:** `docker logs -f bookside`.
 
 ## Docker Compose
 
@@ -191,7 +160,7 @@ services:
     container_name: bookside
     restart: unless-stopped
     ports:
-      - 127.0.0.1:8080:8080
+      - 8080:8080
     volumes:
       - ./bookside_data:/data
     environment:
@@ -220,16 +189,14 @@ mkdir -p bookside_data && sudo chown 1654:1654 bookside_data   # the image runs 
 docker compose up -d
 ```
 
-The app listens on port 8080. Images are multi-arch (`linux/amd64`, `linux/arm64`).
-
 - **Update:** `docker compose pull && docker compose up -d` (migrations run at startup).
 - **Logs:** `docker compose logs -f bookside`.
-  "Deploy (Docker)" above, with `bookside_data/` in place of `data/`.
+- **Data, backup, reverse proxy:** see "Deploy from source (Docker)" below.
 
 ## API
 
 Endpoints under `/api` on the same host and port as the web UI. They are off until a token is set
-(`BOOKSIDE_API_TOKEN` in `.env`; in development
+(`Bookside__ApiToken` with `docker run`, `BOOKSIDE_API_TOKEN` in `.env` with Compose; in development
 `dotnet user-secrets set Bookside:ApiToken <token> --project src/Bookside.Web`). Every request needs
 `Authorization: Bearer <token>`; a missing or wrong token gets 401.
 
@@ -248,7 +215,7 @@ the book as either `book` (exact title, any case) or `bookId`.
 - `200 OK`: the word was already on the list; returns the existing one, so resending is safe.
 - `400`: validation errors as ProblemDetails, e.g. `{"errors": {"book": ["No book titled \"Emma\"."]}}`.
 
-### KOReader plugin
+## KOReader plugin
 
 `koreader/bookside.koplugin` pushes words saved by KOReader's Vocabulary Builder to `POST /api/words`, with the
 text around the word as `context` and the book's title as `book` (no matching book in Bookside = added without one).
@@ -259,3 +226,59 @@ text around the word as `context` and the book's title as `book` (no matching bo
 
 Only words added since the last push are sent (the time is kept in KOReader's `settings/bookside.lua`). Tap
 "Last pushed" to send everything again; words Bookside already has are skipped.
+
+## Deploy from source (Docker)
+
+One container, SQLite in `./bookside_data` on the Docker host, plain HTTP behind a reverse proxy that terminates TLS.
+
+```bash
+git clone <repo> bookside && cd bookside
+mkdir -p bookside_data && sudo chown 1654:1654 bookside_data   # the image runs as the non-root `app` user (UID 1654)
+echo "TZ=Europe/London" > .env   # server time zone: "today" for reading dates, reading-log times
+docker compose up -d --build
+```
+
+- **Data:** `bookside_data/bookside.db` (+ `-wal`/`-shm`) and `bookside_data/keys/` (ASP.NET Core Data Protection
+  keys, stored unencrypted: keep the folder private). `bookside_data/` must be on a local filesystem (SQLite WAL doesn't work on NFS/SMB).
+- **Backup:** stop the container and copy `bookside_data/`, or while it runs:
+  `sqlite3 bookside_data/bookside.db ".backup backup.db"`
+  (copying only `bookside.db` while it runs can miss changes still in the WAL file).
+- **Port:** published on 8080 on all interfaces. `X-Forwarded-For`/`-Proto` are trusted from any client, so keep
+  the port reachable only by the proxy (e.g. with a firewall).
+- **Reverse proxy:** must pass WebSockets (Blazor Server), e.g. nginx needs `proxy_http_version 1.1` plus the
+  `Upgrade`/`Connection` headers; Caddy and Traefik do it by default.
+- **Book lookup:** Open Library needs no key. To add Google Books as a fallback, put `GOOGLE_BOOKS_API_KEY=…` in
+  `.env` (a Google Cloud API key with the Books API enabled). In development:
+  `dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web`.
+- **API:** off until you set a token: `BOOKSIDE_API_TOKEN=$(openssl rand -hex 32)` in `.env` (see "API").
+- **No authentication for the web UI yet:** don't expose it beyond your LAN/VPN.
+- **Update:** `git pull && docker compose up -d --build` (migrations run at startup).
+
+## Layout
+
+| Project | Role |
+|---|---|
+| `src/Bookside.Core` | Entities, domain rules, service contracts + DTOs, `Result` types. No EF/HTTP dependencies. |
+| `src/Bookside.Data` | Provider-agnostic EF Core model (`BooksideDbContext`, configurations, save rules) and service implementations (`AddBooksideServices`). |
+| `src/Bookside.Data.Sqlite` | SQLite wiring (`AddBooksideSqlite`, `InitializeBooksideDatabaseAsync`), migrations, design-time factory. |
+| `tests/Bookside.Data.Tests` | xUnit v3 tests against real temp SQLite files. |
+
+Also `src/Bookside.Integrations` (dictionary clients), `src/Bookside.UI` (Razor class library), `src/Bookside.Web`
+(Blazor Web App host), `src/Bookside.Api` (HTTP API, mapped by the Web host) and their test projects; see CLAUDE.md.
+Planned: `Bookside.App` (MAUI Blazor Hybrid).
+
+## Commands
+
+```bash
+dotnet tool restore
+dotnet build
+dotnet test
+
+# Add a migration after changing the model
+dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite
+
+# Generate the SQL for review
+dotnet ef migrations script --project src/Bookside.Data.Sqlite
+```
+
+Hosts apply migrations at startup via `services.InitializeBooksideDatabaseAsync()`.
