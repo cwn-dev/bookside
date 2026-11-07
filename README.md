@@ -116,6 +116,7 @@ The CI setup is human developed and run (apart from that time Claude updated the
 * Vocabulary flash card practise mode - after your daily review, you can go back into the 'Review' section to practise with one of the three modes: forgotten today, random words, and most forgotten.
 * Set yourself a reading challenge for the year and see your progress on the home page.
 * Comment tagging system (under prototyping/development).
+* HTTP API for adding words from scripts, shortcuts or anything that can send an HTTP request (see "API" below).
 * Global search in the header: finds books (by title, author or series), words, tags and comments as you type, with the matches highlighted. Use the keyboard to move through the results and "See all" to open the full library or vocabulary results.
 
 ## Layout
@@ -128,7 +129,8 @@ The CI setup is human developed and run (apart from that time Claude updated the
 | `tests/Bookside.Data.Tests` | xUnit v3 tests against real temp SQLite files. |
 
 Also `src/Bookside.Integrations` (dictionary clients), `src/Bookside.UI` (Razor class library), `src/Bookside.Web`
-(Blazor Web App host) and their test projects; see CLAUDE.md. Planned: `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
+(Blazor Web App host), `src/Bookside.Api` (HTTP API, mapped by the Web host) and their test projects; see CLAUDE.md.
+Planned: `Bookside.App` (MAUI Blazor Hybrid).
 
 ## Commands
 
@@ -168,5 +170,28 @@ docker compose up -d --build
 - **Book lookup:** Open Library needs no key. To add Google Books as a fallback, put `GOOGLE_BOOKS_API_KEY=…` in
   `.env` (a Google Cloud API key with the Books API enabled). In development:
   `dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web`.
-- **No authentication yet:** don't expose it beyond your LAN/VPN.
+- **API:** off until you set a token: `BOOKSIDE_API_TOKEN=$(openssl rand -hex 32)` in `.env` (see "API").
+- **No authentication for the web UI yet:** don't expose it beyond your LAN/VPN.
 - **Update:** `git pull && docker compose up -d --build` (migrations run at startup).
+
+## API
+
+Endpoints under `/api` on the same host and port as the web UI. They are off until a token is set
+(`BOOKSIDE_API_TOKEN` in `.env`; in development
+`dotnet user-secrets set Bookside:ApiToken <token> --project src/Bookside.Web`). Every request needs
+`Authorization: Bearer <token>`; a missing or wrong token gets 401.
+
+**`POST /api/words`** adds a word to the vocabulary list and looks up its definition.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"term": "petrichor", "book": "Dune", "pageNumber": 42, "context": "the smell of rain"}' \
+  https://bookside.example/api/words
+```
+
+Only `term` is required. Optional: `language` (default `en`), `context` (the sentence), `pageNumber`, `notes`, and
+the book as either `book` (exact title, any case) or `bookId`.
+
+- `201 Created`: the new word (JSON) with its definition, `Location: /words/{id}`.
+- `200 OK`: the word was already on the list; returns the existing one, so resending is safe.
+- `400`: validation errors as ProblemDetails, e.g. `{"errors": {"book": ["No book titled \"Emma\"."]}}`.

@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 30, 2026-11-06)
+# Bookside: project state (end of session 31, 2026-11-07)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -121,6 +121,16 @@
   `Components/SiteFooter` on every page (layout is now a full-height flex column, footer at the bottom of short
   pages): "© 2026 **n7e** · Bookside v1.6.1", Bookside → GitHub repo, version → its release page; "dev" unlinked.
   Checked in Firefox at 1280 and 375 px, light and dark, with a `-p:Version=1.6.1` publish.
+- HTTP API (session 31): `src/Bookside.Api` (class library, `FrameworkReference Microsoft.AspNetCore.App`, Core only),
+  mapped by `Program.cs` with `app.MapBooksideApi(config["Bookside:ApiToken"])`. Blank token = nothing mapped.
+  Group `/api`: endpoint filter checks `Authorization: Bearer` with `CryptographicOperations.FixedTimeEquals`
+  (401 ProblemDetails + `WWW-Authenticate: Bearer`); `SkipStatusCodePagesAttribute` metadata, so bad-JSON 400s
+  aren't re-executed into the HTML not-found page. `ApiResults.Problem(ServiceError)`. JSON enums as strings
+  (`ConfigureHttpJsonOptions` in `Program.cs`). First endpoint `POST /api/words` (`Words/WordsApi`,
+  `ApiWordInput` = `WordInput` + `book` title): 201 + `WordDetails` + `Location: /words/{id}`; duplicate → 200 +
+  existing `WordSummary`; `book` matched exactly (any case) among the first 20 `ListBooksAsync` search hits, 0 or
+  2+ matches or both `book` and `bookId` → 400 field error `book`. Compose `BOOKSIDE_API_TOKEN`; README "API".
+  `tests/Bookside.Api.Tests`: 11 tests (`ApiHostFactory`, `WordsApiTests`). Checked with curl on a scratch DB.
 - Mobile menu (session 30): ≤ 500px the header is burger (left, bars fold into an X) + brand + search icon;
   the `MainLayout` nav becomes a sheet under the header (`clip-path` unroll, dimmed
   backdrop below the header closes it, Escape in the header row closes it, any navigation closes it). The
@@ -424,6 +434,15 @@
   - Session 27 (user's choice: both `/` and Ctrl/⌘+K): a shortcut needs JS (Blazor can't listen on `document`),
     so it is the second JS module. Ctrl+T was asked for first, but browsers never pass it to the page.
     Ctrl+K overrides Firefox's "focus the browser search bar" on this site.
+- **HTTP API (session 31, user's choices: own `Bookside.Api` project because the API will grow, mapped into the
+  Web host rather than its own host; one simple bearer token; duplicates return the existing word; books by title
+  too):**
+  - Same process, port and container as the UI: one SQLite writer, no second compose service. Moving to an own
+    host later means moving only the `MapBooksideApi` call.
+  - Token in config, not the DB: no UI, no rotation beyond changing the setting and restarting. Off by default.
+    Any holder can call every endpoint; only as private as the proxy's TLS.
+  - A POST to `/api/...` with the API off falls through to the Blazor routes (400 from antiforgery), not 404.
+  - Adding a word looks the definition up inline, so a request can take up to ~16 s if both dictionaries hang.
 - **Versioning (session 28, user's choices: release tag only, footer "© 2026 n7e · Bookside v1.6.1" with links):**
   - The GitHub release tag is the only source (no MinVer/Nerdbank/release-please): nothing to bump by hand, but
     local and CI test builds just say "dev". The Docker build has no `.git`, so the tag must come in as a build arg.
@@ -485,7 +504,8 @@
 4. Comment tag follow-ups: tags across books (e.g. a `#tag` page listing comments from every book), user-defined
    triggers. The picker can linger over the Post button while a bare tag is followed by more words (`#grim fate`)
    until Escape or a new line; consider closing it once the query has no match and contains a space.
-5. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
+5. More API endpoints (list/search words, books, comments) as needed; OpenAPI document if clients want one.
+6. Later: MAUI Blazor Hybrid app (HTTP service implementations over `Bookside.Api`; needs per-user auth then).
 
 ## Open questions / minor notes
 - Book import: subjects → tags, series from metadata and merging providers were skipped. Google descriptions can
@@ -502,7 +522,8 @@
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.
 - Possible hardening once the image runs: `read_only: true` + tmpfs `/tmp` in compose, a `/healthz` endpoint for
   the proxy (no compose healthcheck: chiseled has no curl).
-- Auth: none yet. Needs a decision before exposing the container beyond the LAN.
+- Auth: none for the web UI yet (the API has its bearer token). Needs a decision before exposing the container
+  beyond the LAN.
 - Local runtime is ASP.NET Core 10.0.7 while packages are 10.0.13; works, but consider updating the SDK/runtime.
 - Typed `HttpClient` captured by circuit-scoped services lives as long as the circuit (no handler rotation). Fine for
   one user; revisit if long-lived circuits ever see DNS issues.

@@ -19,4 +19,6 @@ services:
       # Optional: Google Books as a fallback for book lookups
       # (Open Library is always used). Empty = not used.
       Bookside__GoogleBooks__ApiKey: ${GOOGLE_BOOKS_API_KEY:-}
+      # Optional: bearer token for the HTTP API (/api). Empty = API off.
+      Bookside__ApiToken: ${BOOKSIDE_API_TOKEN:-}
     stop_grace_period: 30s
