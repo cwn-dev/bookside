@@ -195,3 +195,15 @@ the book as either `book` (exact title, any case) or `bookId`.
 - `201 Created`: the new word (JSON) with its definition, `Location: /words/{id}`.
 - `200 OK`: the word was already on the list; returns the existing one, so resending is safe.
 - `400`: validation errors as ProblemDetails, e.g. `{"errors": {"book": ["No book titled \"Emma\"."]}}`.
+
+### KOReader plugin
+
+`koreader/bookside.koplugin` pushes words saved by KOReader's Vocabulary Builder to `POST /api/words`, with the
+text around the word as `context` and the book's title as `book` (no matching book in Bookside = added without one).
+
+1. Copy the `bookside.koplugin` folder into KOReader's `plugins/` folder and restart KOReader.
+2. Tools → Bookside → Server settings: the server address (e.g. `https://bookside.example`) and the API token.
+3. Tools → Bookside → Push vocabulary.
+
+Only words added since the last push are sent (the time is kept in KOReader's `settings/bookside.lua`). Tap
+"Last pushed" to send everything again; words Bookside already has are skipped.

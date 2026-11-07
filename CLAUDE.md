@@ -80,6 +80,8 @@ dotnet publish src/Bookside.Web -p:Version=1.6.1                     # release v
   `ApiResults.Problem(ServiceError)` maps every service error to ProblemDetails (400/404/409/503, `code`, camelCase
   field errors). Auth: one bearer token (`Bookside:ApiToken`), checked by a group endpoint filter; no token = nothing
   mapped. Status code pages are skipped for the group. Code here uses `ConfigureAwait(false)` (CA2007 is on).
+- `koreader/bookside.koplugin`: KOReader plugin (Lua, not in the solution) that pushes Vocabulary Builder words
+  to `POST /api/words`; one `main.lua`. Not built or tested by `dotnet`; check it in KOReader.
 - `tests/Bookside.Api.Tests`: `WebApplicationFactory<Program>` tests through `ApiHostFactory` (token set, offline
   dictionary that knows no words; `token: null` = API off).
 - `Dockerfile` / `docker-compose.yaml` / `.dockerignore` at the root: the image copies only the root build files
