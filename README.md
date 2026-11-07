@@ -116,6 +116,7 @@ The CI setup is human developed and run (apart from that time Claude updated the
 * Vocabulary flash card practise mode - after your daily review, you can go back into the 'Review' section to practise with one of the three modes: forgotten today, random words, and most forgotten.
 * Set yourself a reading challenge for the year and see your progress on the home page.
 * Comment tagging system (under prototyping/development).
+* HTTP API for adding words from scripts, shortcuts or anything that can send an HTTP request (see "API" below).
 * Global search in the header: finds books (by title, author or series), words, tags and comments as you type, with the matches highlighted. Use the keyboard to move through the results and "See all" to open the full library or vocabulary results.
 
 ## Layout
@@ -128,7 +129,8 @@ The CI setup is human developed and run (apart from that time Claude updated the
 | `tests/Bookside.Data.Tests` | xUnit v3 tests against real temp SQLite files. |
 
 Also `src/Bookside.Integrations` (dictionary clients), `src/Bookside.UI` (Razor class library), `src/Bookside.Web`
-(Blazor Web App host) and their test projects; see CLAUDE.md. Planned: `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
+(Blazor Web App host), `src/Bookside.Api` (HTTP API, mapped by the Web host) and their test projects; see CLAUDE.md.
+Planned: `Bookside.App` (MAUI Blazor Hybrid).
 
 ## Commands
 
@@ -168,10 +170,9 @@ docker compose up -d --build
 - **Book lookup:** Open Library needs no key. To add Google Books as a fallback, put `GOOGLE_BOOKS_API_KEY=…` in
   `.env` (a Google Cloud API key with the Books API enabled). In development:
   `dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web`.
-- **No authentication yet:** don't expose it beyond your LAN/VPN.
+- **API:** off until you set a token: `BOOKSIDE_API_TOKEN=$(openssl rand -hex 32)` in `.env` (see "API").
+- **No authentication for the web UI yet:** don't expose it beyond your LAN/VPN.
 - **Update:** `git pull && docker compose up -d --build` (migrations run at startup).
-<<<<<<< Updated upstream
-=======
 
 ## API
 
@@ -206,4 +207,3 @@ text around the word as `context` and the book's title as `book` (no matching bo
 
 Only words added since the last push are sent (the time is kept in KOReader's `settings/bookside.lua`). Tap
 "Last pushed" to send everything again; words Bookside already has are skipped.
->>>>>>> Stashed changes

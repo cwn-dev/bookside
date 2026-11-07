@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
-# Bookside: project state (end of session 30, 2026-11-06)
-=======
 # Bookside: project state (end of session 32, 2026-11-07)
->>>>>>> Stashed changes
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -129,8 +125,6 @@
   `Components/SiteFooter` on every page (layout is now a full-height flex column, footer at the bottom of short
   pages): "© 2026 **n7e** · Bookside v1.6.1", Bookside → GitHub repo, version → its release page; "dev" unlinked.
   Checked in Firefox at 1280 and 375 px, light and dark, with a `-p:Version=1.6.1` publish.
-<<<<<<< Updated upstream
-=======
 - HTTP API (session 31): `src/Bookside.Api` (class library, `FrameworkReference Microsoft.AspNetCore.App`, Core only),
   mapped by `Program.cs` with `app.MapBooksideApi(config["Bookside:ApiToken"])`. Blank token = nothing mapped.
   Group `/api`: endpoint filter checks `Authorization: Bearer` with `CryptographicOperations.FixedTimeEquals`
@@ -146,7 +140,6 @@
   send all again). Reads `settings/vocabulary_builder.sqlite3` (`vocabulary` ⋈ `title`, `create_time >
   last_sync`, oldest first) and POSTs `term`, `context` (prev + word + next, trimmed) and `book` (title). Settings
   and the `last_sync` cursor (unix s) in `settings/bookside.lua`. Not run yet: no Lua or KOReader on the dev box.
->>>>>>> Stashed changes
 - Mobile menu (session 30): ≤ 500px the header is burger (left, bars fold into an X) + brand + search icon;
   the `MainLayout` nav becomes a sheet under the header (`clip-path` unroll, dimmed
   backdrop below the header closes it, Escape in the header row closes it, any navigation closes it). The
@@ -450,8 +443,6 @@
   - Session 27 (user's choice: both `/` and Ctrl/⌘+K): a shortcut needs JS (Blazor can't listen on `document`),
     so it is the second JS module. Ctrl+T was asked for first, but browsers never pass it to the page.
     Ctrl+K overrides Firefox's "focus the browser search bar" on this site.
-<<<<<<< Updated upstream
-=======
 - **HTTP API (session 31, user's choices: own `Bookside.Api` project because the API will grow, mapped into the
   Web host rather than its own host; one simple bearer token; duplicates return the existing word; books by title
   too):**
@@ -469,7 +460,6 @@
     (tap to stop). Words are sent one by one, each up to ~16 s if the dictionaries hang (20 s timeout).
   - KOReader keeps one row per word: looking a word up again updates its `create_time`, so it's resent (Bookside
     returns the existing word, context not updated). No language or page in KOReader's data: defaults apply.
->>>>>>> Stashed changes
 - **Versioning (session 28, user's choices: release tag only, footer "© 2026 n7e · Bookside v1.6.1" with links):**
   - The GitHub release tag is the only source (no MinVer/Nerdbank/release-please): nothing to bump by hand, but
     local and CI test builds just say "dev". The Docker build has no `.git`, so the tag must come in as a build arg.
@@ -531,7 +521,8 @@
 4. Comment tag follow-ups: tags across books (e.g. a `#tag` page listing comments from every book), user-defined
    triggers. The picker can linger over the Post button while a bare tag is followed by more words (`#grim fate`)
    until Escape or a new line; consider closing it once the query has no match and contains a space.
-5. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
+5. More API endpoints (list/search words, books, comments) as needed; OpenAPI document if clients want one.
+6. Later: MAUI Blazor Hybrid app (HTTP service implementations over `Bookside.Api`; needs per-user auth then).
 
 ## Open questions / minor notes
 - Book import: subjects → tags, series from metadata and merging providers were skipped. Google descriptions can
@@ -548,7 +539,8 @@
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.
 - Possible hardening once the image runs: `read_only: true` + tmpfs `/tmp` in compose, a `/healthz` endpoint for
   the proxy (no compose healthcheck: chiseled has no curl).
-- Auth: none yet. Needs a decision before exposing the container beyond the LAN.
+- Auth: none for the web UI yet (the API has its bearer token). Needs a decision before exposing the container
+  beyond the LAN.
 - Local runtime is ASP.NET Core 10.0.7 while packages are 10.0.13; works, but consider updating the SDK/runtime.
 - Typed `HttpClient` captured by circuit-scoped services lives as long as the circuit (no handler rotation). Fine for
   one user; revisit if long-lived circuits ever see DNS issues.
