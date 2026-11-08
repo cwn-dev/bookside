@@ -113,6 +113,30 @@ public sealed class HomeServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task Tags_count_read_and_unread_books_most_books_first()
+    {
+        var read = await AddBookAsync("Mort");
+        await AddSessionAsync(read.Id, ReadingStatus.Finished, finished: new(2026, 1, 1));
+        await AddSessionAsync(read.Id, ReadingStatus.Finished, finished: new(2026, 5, 1));
+        var reading = await AddBookAsync("Eric");
+        await AddSessionAsync(reading.Id, ReadingStatus.Reading, started: new(2026, 6, 1));
+        var unread = await AddBookAsync("Sourcery");
+        Success(await Tags.SetBookTagsAsync(read.Id, ["Own", "Fantasy"], Ct));
+        Success(await Tags.SetBookTagsAsync(reading.Id, ["Fantasy"], Ct));
+        Success(await Tags.SetBookTagsAsync(unread.Id, ["Fantasy", "Unused later"], Ct));
+        Success(await Tags.SetBookTagsAsync(unread.Id, ["Fantasy"], Ct));
+
+        var tags = (await Home.GetHomeAsync(Ct)).Tags;
+
+        Assert.Equal(
+            [
+                new TagReadCounts { Name = "Fantasy", BookCount = 3, ReadCount = 1, UnreadCount = 1 },
+                new TagReadCounts { Name = "Own", BookCount = 1, ReadCount = 1, UnreadCount = 0 },
+            ],
+            tags);
+    }
+
+    [Fact]
     public async Task Challenge_counts_this_years_finished_reads_with_the_goal()
     {
         var book = await AddBookAsync("Mort");

@@ -1,5 +1,5 @@
 /* Phones: one column in priority order (the column wrappers dissolve so `order` can interleave their sections).
-   Wide screens: main column (reading, finished) beside a narrower side column
+   Wide screens: main column (reading, finished, stats) beside a narrower side column
    (challenge, review, word, quick-add, recent words). */
 
 .home {
@@ -37,9 +37,6 @@
         min-width: 0;
     }
 
-    .stats {
-        grid-column: 1 / -1;
-    }
 }
 
 section h2 {
@@ -415,35 +412,123 @@ section h2 {
 
 /* ---------- Stats ---------- */
 
-.stats dl {
+/* One card, figures split by hairlines. */
+.stat-figures {
     margin: 0;
+    padding: 0;
     display: grid;
-    gap: 0.75rem;
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.stats dl > div {
+.stat-figures > div {
     display: flex;
     flex-direction: column-reverse;
-    gap: 0.1rem;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
+    /* Reversed column: flex-end is the top, so numbers line up when a label wraps. */
+    justify-content: flex-end;
+    gap: 0.15rem;
+    padding: 1rem 1.25rem;
+    min-width: 0;
 }
 
-.stats dt {
+.stat-figures > div + div {
+    border-left: 1px solid var(--border);
+}
+
+.stat-figures dt {
     color: var(--text-muted);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
 }
 
-.stats dt a {
+.stat-figures dt a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.stat-figures dt a:hover {
+    color: var(--accent);
+}
+
+.stat-figures dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+@media (max-width: 420px) {
+    .stat-figures > div {
+        padding: 0.75rem;
+    }
+
+    .stat-figures dd {
+        font-size: 1.6rem;
+    }
+}
+
+.tag-stats-heading {
+    margin-top: 1.5rem;
+}
+
+.tag-stats {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+}
+
+.tag-stat-head {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 0.92rem;
+}
+
+.tag-stat-name {
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.tag-stat-name:hover {
+    color: var(--accent);
+}
+
+.tag-stat-head .muted {
+    white-space: nowrap;
+}
+
+.tag-bar {
+    display: flex;
+    height: 6px;
+    margin: 0.35rem 0;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface-muted);
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.tag-bar .read {
+    background: var(--accent);
+}
+
+.tag-bar .started {
+    background: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.tag-stat-counts {
+    font-size: 0.85rem;
+}
+
+.tag-stat-counts a {
     color: inherit;
 }
 
-.stats dd {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 1.6rem;
-    font-weight: 600;
+.tag-stat-counts a:hover {
+    color: var(--accent);
 }

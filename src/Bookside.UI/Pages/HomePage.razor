@@ -129,6 +129,47 @@ else
                     </ul>
                 </section>
             }
+
+            <section class="stats" aria-labelledby="stats-heading">
+                <div class="section-header">
+                    <h2 id="stats-heading">Your library</h2>
+                </div>
+                <dl class="card stat-figures">
+                    <div><dt><a href="books">Books</a></dt><dd>@_home.Stats.BookCount</dd></div>
+                    <div><dt><a href="words">Words</a></dt><dd>@_home.Stats.WordCount</dd></div>
+                    <div>
+                        <dt>Words in @_home.Stats.Today.ToString("MMMM", CultureInfo.CurrentCulture)</dt>
+                        <dd>@_home.Stats.WordsAddedThisMonth</dd>
+                    </div>
+                </dl>
+                @if (_home.Tags.Count > 0)
+                {
+                    <h3 class="eyebrow tag-stats-heading">By tag</h3>
+                    <ul class="tag-stats">
+                        @foreach (var tag in _home.Tags)
+                        {
+                            var url = $"books?tag={Uri.EscapeDataString(tag.Name)}";
+                            <li @key="tag.Name">
+                                <div class="tag-stat-head">
+                                    <a class="tag-stat-name" href="@url">@tag.Name</a>
+                                    <span class="muted">@tag.BookCount @(tag.BookCount == 1 ? "book" : "books")</span>
+                                </div>
+                                @* Read, then started but not finished; the empty
+                                   track that's left is the unread share. *@
+                                <div class="tag-bar" aria-hidden="true">
+                                    <span class="read" style="width: @Percent(tag.ReadCount, tag.BookCount)"></span>
+                                    <span class="started"
+                                          style="width: @Percent(tag.BookCount - tag.ReadCount - tag.UnreadCount, tag.BookCount)"></span>
+                                </div>
+                                <div class="tag-stat-counts muted">
+                                    <a href="@url&filter=finished">@tag.ReadCount read</a>
+                                    · <a href="@url&filter=unread">@tag.UnreadCount unread</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
         </div>
 
         <div class="home-side">
@@ -240,13 +281,6 @@ else
             }
         </div>
 
-        <section class="stats" aria-label="Stats">
-            <dl>
-                <div><dt>Words in @_home.Stats.Today.ToString("MMMM", CultureInfo.CurrentCulture)</dt><dd>@_home.Stats.WordsAddedThisMonth</dd></div>
-                <div><dt><a href="books">Books</a></dt><dd>@_home.Stats.BookCount</dd></div>
-                <div><dt><a href="words">Words</a></dt><dd>@_home.Stats.WordCount</dd></div>
-            </dl>
-        </section>
     </div>
 }
 
@@ -394,6 +428,9 @@ else
         var day = _home!.Stats.Today.DayNumber - started.DayNumber + 1;
         return day >= 1 ? $"Started {Format(started)} · day {day}" : $"Starts {Format(started)}";
     }
+
+    private static string Percent(int part, int total) =>
+        (100.0 * part / total).ToString("0.#", CultureInfo.InvariantCulture) + "%";
 
     private static string Format(DateOnly date) => date.ToString("d MMM yyyy", CultureInfo.CurrentCulture);
 }
