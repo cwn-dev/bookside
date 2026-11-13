@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 36, 2026-11-08)
+# Bookside: project state (end of session 35, 2026-11-07)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -189,12 +189,6 @@
   + "Manage tags"; cards show outlined `.tag` pills after the status badges (not links: the card is one `<a>`).
   `TagsPage` (`/tags`, no nav link): name, book count linking to the filtered library, inline rename, two-step delete
   ("Remove it from N books and delete it?").
-- Home stats (session 36): the stats moved from a full-width row at the bottom into the main column under
-  "Recently finished" as "Your library": one card with three figures split by hairlines (Books, Words, Words in
-  {month}), then "By tag": `HomeSummary.Tags` (`TagReadCounts`: tags with books, most books first, max 10, same
-  `GetHomeAsync` round trip) with a bar (read / started-not-finished / unread = empty track) and "N read · N
-  unread" links to `books?tag=…&filter=finished|unread`. Read/unread use the library filters' definitions
-  (finished at least once / no sessions). Checked in Firefox at 1280 and 390 px, light and dark.
 - Home page reading cards (session 11): "Add comment" opens an inline `CommentForm` (now has `AutoFocus`); saving
   closes it with "Comment added. View" (book link) until another panel opens. One panel per card still. With 2+
   books the list is two-up when the section is ≥ 690px wide (container query; session 33: was 640px, raised to
@@ -204,9 +198,9 @@
 - Home page (session 9): `HomePage` (`/`, replaces the redirect to `/books`; the brand links to it, no nav link).
   Currently reading cards (cover, authors, "Started … · day N", inline "Finished" form = `ReadingSessionForm`, inline
   "Add word" = `WordForm` that stays open), word of the day + "Another", quick-add word, recent words (5), recently
-  finished (4, rating + date), stats (session 36: see Home stats). Empty library →
+  finished (4, rating + date), stats (finished this year, words this month, book and word counts). Empty library →
   welcome card (add a book, or add a word). Phones: one column in that order (column wrappers are `display: contents`
-  and sections use `order`); ≥900px: 2fr main column (reading, finished, stats) + 1fr side column.
+  and sections use `order`); ≥900px: 2fr main column (reading, finished) + 1fr side column, stats full width.
 - `Bookside.UI` (session 4, RCL; references only Core + `Microsoft.AspNetCore.Components.Web`, so MAUI can reuse it):
   `Layout/MainLayout` (sticky header nav, `ErrorBoundary`), pages `LibraryPage` (`/books`: search, filter chips,
   sort, cover grid, "Show more" paging of 48), `BookDetailsPage` (`/books/{id}`: details, cover editor, reading

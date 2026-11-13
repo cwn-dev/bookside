@@ -9,7 +9,6 @@ internal sealed class HomeService(IDbContextFactory<BooksideDbContext> dbFactory
     internal const int MaxReading = 6;
     internal const int RecentlyFinishedCount = 4;
     internal const int RecentWordsCount = 5;
-    internal const int MaxTags = 10;
 
     public async Task<HomeSummary> GetHomeAsync(CancellationToken cancellationToken = default)
     {
@@ -60,7 +59,6 @@ internal sealed class HomeService(IDbContextFactory<BooksideDbContext> dbFactory
                 .GetProgressAsync(db, today.Year, cancellationToken)
                 .ConfigureAwait(false),
             Stats = await LoadStatsAsync(db, today, cancellationToken).ConfigureAwait(false),
-            Tags = await LoadTagsAsync(db, cancellationToken).ConfigureAwait(false),
         };
     }
 
@@ -91,25 +89,6 @@ internal sealed class HomeService(IDbContextFactory<BooksideDbContext> dbFactory
             }),
         ];
     }
-
-    private static async Task<List<TagReadCounts>> LoadTagsAsync(
-        BooksideDbContext db,
-        CancellationToken cancellationToken) =>
-            await db.Tags.AsNoTracking()
-                .Where(t => t.Books.Any())
-                .OrderByDescending(t => t.Books.Count)
-                .ThenBy(t => t.NormalizedName)
-                .Take(MaxTags)
-                .Select(t => new TagReadCounts
-                {
-                    Name = t.Name,
-                    BookCount = t.Books.Count,
-                    ReadCount = t.Books.Count(bt => bt.Book.ReadingSessions
-                        .Any(s => s.Status == ReadingStatus.Finished)),
-                    UnreadCount = t.Books.Count(bt => bt.Book.ReadingSessions.Count == 0),
-                })
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
 
     private async Task<HomeStats> LoadStatsAsync(BooksideDbContext db, DateOnly today, CancellationToken cancellationToken)
     {
