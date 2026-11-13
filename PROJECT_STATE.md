@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 35, 2026-11-07)
+# Bookside: project state (end of session 36, 2026-11-13)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -179,6 +179,10 @@
   comment links to `books/{id}?tag={stored form}` (e.g. `?tag=%23%5Bgrim%5D` = `#[grim]`); the log then shows only
   matching comments (sessions hidden); the selected chip clears it; no match → "No comments tagged … Show the whole
   log". A query-only change doesn't reload the book or close open forms.
+- Editable added date (session 36): `BookInput.AddedOn` (`DateOnly?`, local date) moves an existing book's
+  `CreatedAtUtc` to that date, keeping the local time of day; null = unchanged; ignored on add (stamped now);
+  1900 to today, else field error `AddedOn`. Edit page only (not add): "Added to library" date field after the
+  description, prefilled via `BookFormModel.From(book, zone)`. No migration.
 - Book series (session 10): `BookInput`/`BookSummary`/`BookDetails` carry `Series` + `SeriesNumber`;
   `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
   + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page
@@ -476,6 +480,16 @@
   - The GitHub release tag is the only source (no MinVer/Nerdbank/release-please): nothing to bump by hand, but
     local and CI test builds just say "dev". The Docker build has no `.git`, so the tag must come in as a build arg.
   - Copyright years run from 2026 to the server's current local year.
+- **Activity calendar (session 29, user's choices: month grid + day list, plus abandoned reads, flash cards
+  started, goal reached):**
+  - Starts/finishes aren't events: the UI derives them from `Reads`, so nothing is listed twice. A read's span
+    is start (else finish) to finish, else today while Reading, else its start; a future start shows one day.
+  - The read overlap query has no useful index (sessions are few); events use the new `CreatedAtUtc` indexes,
+    flash cards the existing `FirstReviewedOn` one. Per-day review counts would need a review log.
+  - The selected day isn't in the URL; days of neighbouring months aren't clickable (their events aren't loaded).
+- **Added date (session 36, user's choices: edit `CreatedAtUtc` itself rather than a new `AddedOn` column; date
+  only):** "Recently added" and the activity calendar's "Book added" follow the edited date with no query
+  changes; the record's real creation time is lost once edited. Keeping the time of day keeps same-day books in order.
 - **Book series (session 10, user's choices: own table, optional number):**
   - `Series` table rather than a text column, so a rename could later be one row. Matched by name like authors
     (LIKE, ASCII case-insensitive; an existing spelling wins); series left with no books are deleted on book update/delete.

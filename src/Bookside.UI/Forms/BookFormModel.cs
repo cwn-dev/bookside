@@ -34,7 +34,13 @@ public sealed class BookFormModel
 
     public string? MetadataSourceId { get; set; }
 
-    public static BookFormModel From(BookDetails book)
+    /// <summary>
+    /// Null for a new book (the service stamps it now).
+    /// </summary>
+    public DateOnly? AddedOn { get; set; }
+
+    /// <param name="zone">Time zone the added date is shown in.</param>
+    public static BookFormModel From(BookDetails book, TimeZoneInfo zone)
     {
         ArgumentNullException.ThrowIfNull(book);
         var model = new BookFormModel
@@ -51,6 +57,7 @@ public sealed class BookFormModel
             Description = book.Description,
             MetadataSource = book.MetadataSource,
             MetadataSourceId = book.MetadataSourceId,
+            AddedOn = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(book.CreatedAtUtc, zone)),
         };
 
         if (book.Authors.Count > 0)
@@ -107,6 +114,7 @@ public sealed class BookFormModel
         Description = Description,
         MetadataSource = MetadataSource,
         MetadataSourceId = MetadataSourceId,
+        AddedOn = AddedOn,
     };
 }
 

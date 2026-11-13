@@ -3,6 +3,7 @@
 @inject ILibraryService Library
 @inject IBookMetadataService Metadata
 @inject NavigationManager Navigation
+@inject TimeProvider Clock
 
 <PageTitle>@(IsNew ? "Add book" : "Edit book") · Bookside</PageTitle>
 
@@ -115,6 +116,15 @@ else
                     <InputTextArea id="description" @bind-Value="_model.Description" rows="6" maxlength="@Book.DescriptionMaxLength" />
                     <ValidationMessage For="() => _model.Description" />
                 </div>
+
+                @if (!IsNew)
+                {
+                    <div class="field">
+                        <label for="added-on">Added to library</label>
+                        <InputDate id="added-on" @bind-Value="_model.AddedOn" max="@Today" />
+                        <ValidationMessage For="() => _model.AddedOn" />
+                    </div>
+                }
             </div>
 
             <div class="actions form-actions">
@@ -156,6 +166,8 @@ else
 
     private string CancelUrl => IsNew ? "books" : $"books/{Id}";
 
+    private string Today => Clock.GetLocalNow().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
     protected override async Task OnInitializedAsync() => _seriesNames = await Library.ListSeriesNamesAsync();
 
     protected override async Task OnParametersSetAsync()
@@ -172,7 +184,7 @@ else
         var result = await Library.GetBookAsync(id);
         if (result.IsSuccess)
         {
-            _model = BookFormModel.From(result.Value);
+            _model = BookFormModel.From(result.Value, Clock.LocalTimeZone);
             _hasCover = result.Value.CoverSha256 is not null;
         }
         else

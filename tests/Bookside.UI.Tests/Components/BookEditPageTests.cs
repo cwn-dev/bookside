@@ -1,3 +1,4 @@
+using System.Globalization;
 using Bookside.Core.Books.Lookup;
 using Bookside.Core.Books.Services;
 using Bookside.UI.Pages;
@@ -187,6 +188,33 @@ public sealed class BookEditPageTests : ComponentTestBase
         Assert.Equal(["A", "B"], saved.Authors);
         Assert.Equal("openlibrary", saved.MetadataSource);
         Assert.Equal("OL1M", saved.MetadataSourceId);
+    }
+
+    [Fact]
+    public async Task Editing_changes_the_added_date()
+    {
+        var book = await AddBookAsync("Mort");
+        var addedOn = DateOnly.FromDateTime(DateTime.Now).AddDays(-30);
+
+        var page = Render<BookEditPage>(p => p.Add(x => x.Id, book.Id));
+        page.WaitForAssertion(() => Assert.Equal(
+            DateOnly.FromDateTime(DateTime.Now).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            page.Find("#added-on").GetAttribute("value")));
+
+        page.Find("#added-on").Change(addedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        page.Find("form").Submit();
+
+        page.WaitForAssertion(() => Assert.EndsWith($"/books/{book.Id}", Navigation.Uri, StringComparison.Ordinal));
+        var saved = await GetBookAsync(book.Id);
+        Assert.Equal(addedOn, DateOnly.FromDateTime(saved.CreatedAtUtc.ToLocalTime()));
+    }
+
+    [Fact]
+    public void Adding_a_book_has_no_added_date_field()
+    {
+        var page = Render<BookEditPage>();
+
+        Assert.Empty(page.FindAll("#added-on"));
     }
 
     [Fact]
