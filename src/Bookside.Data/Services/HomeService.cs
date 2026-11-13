@@ -106,7 +106,7 @@ internal sealed class HomeService(IDbContextFactory<BooksideDbContext> dbFactory
     }
 
     /// <summary>Where a DST change skips midnight, the day starts at the first valid local time.</summary>
-    private static DateTime LocalMidnightToUtc(DateTime localMidnight, TimeZoneInfo zone)
+    internal static DateTime LocalMidnightToUtc(DateTime localMidnight, TimeZoneInfo zone)
     {
         var local = DateTime.SpecifyKind(localMidnight, DateTimeKind.Unspecified);
         while (zone.IsInvalidTime(local))

@@ -131,7 +131,7 @@ internal sealed class ChallengeService(
     /// A date range rather than <c>FinishedOn.Year</c>, so the FinishedOn
     /// index is used.
     /// </summary>
-    private static IQueryable<ReadingSession> FinishedIn(BooksideDbContext db, int year)
+    internal static IQueryable<ReadingSession> FinishedIn(BooksideDbContext db, int year)
     {
         var start = new DateOnly(year, 1, 1);
         var end = new DateOnly(year, 12, 31);

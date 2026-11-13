@@ -1,3 +1,4 @@
+using Bookside.Core.Activity.Services;
 using Bookside.Core.Books.Services;
 using Bookside.Core.Challenge.Services;
 using Bookside.Core.Home.Services;
@@ -25,6 +26,7 @@ public static class BooksideServiceCollectionExtensions
 
         services.TryAddSingleton(TimeProvider.System);
 
+        services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IChallengeService, ChallengeService>();
         services.AddScoped<IHomeService, HomeService>();
         services.AddScoped<ILibraryService, LibraryService>();

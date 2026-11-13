@@ -1,0 +1,20 @@
+.activity-icon {
+    flex: none;
+    width: 1em;
+    height: 1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vertical-align: -0.125em;
+}
+
+.added { color: var(--text-muted); }
+.word { color: var(--accent); }
+.comment { color: var(--text-muted); }
+.cards,
+.goal,
+.finished { color: var(--success); }
+.started { color: var(--accent); }
+.stopped { color: var(--danger); }

@@ -19,6 +19,7 @@ internal sealed class VocabularyWordConfiguration : IEntityTypeConfiguration<Voc
 
         builder.HasIndex(w => new { w.Language, w.NormalizedTerm }).IsUnique();
         builder.HasIndex(w => w.BookId);
+        builder.HasIndex(w => w.CreatedAtUtc); // activity calendar
 
         // Deleting a book keeps the words; they just lose the "found in" link.
         builder.HasOne(w => w.Book)

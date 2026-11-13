@@ -1,3 +1,4 @@
+using Bookside.Core.Activity.Services;
 using Bookside.Core.Books.Services;
 using Bookside.Core.Challenge.Services;
 using Bookside.Core.Common;
@@ -60,6 +61,9 @@ public abstract class ServiceTestBase : IAsyncLifetime
 
     protected IChallengeService Challenges =>
         _scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+    protected IActivityService Activity =>
+        _scope.ServiceProvider.GetRequiredService<IActivityService>();
 
     protected IHomeService Home => _scope.ServiceProvider.GetRequiredService<IHomeService>();
 

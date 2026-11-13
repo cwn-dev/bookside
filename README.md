@@ -60,6 +60,12 @@ The CI setup is human developed and run (apart from that time Claude updated the
     </td>
   </tr>
   <tr>
+    <td colspan="2" align="center" valign="top">
+      <a href="./screenshots/desktop/light/activity.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/activity.webp"><img src="./screenshots/desktop/light/activity.webp" width="100%" alt="Activity calendar: reads as lines with comments and words on them"></picture></a><br>
+      <sub>Activity calendar: each read is a line from start to finish, with the comments and words you added along the way</sub>
+    </td>
+  </tr>
+  <tr>
     <td width="50%" align="center" valign="top">
       <a href="./screenshots/desktop/light/vocabulary.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/vocabulary.webp"><img src="./screenshots/desktop/light/vocabulary.webp" width="100%" alt="Vocabulary"></picture></a><br>
       <sub>Vocabulary</sub>
@@ -123,6 +129,7 @@ The CI setup is human developed and run (apart from that time Claude updated the
 * Comment tagging system (under prototyping/development).
 * HTTP API for adding words from scripts, shortcuts or anything that can send an HTTP request (see "API" below).
 * Global search in the header: finds books (by title, author or series), words, tags and comments as you type, with the matches highlighted. Use the keyboard to move through the results and "See all" to open the full library or vocabulary results.
+* Activity calendar: a month at a glance. Each read is a line from the day you started to the day you finished (ticked) or stopped (dashed). Comments and words added while reading sit on the book's line; everything else (books added, other comments and words, flash cards, reaching your goal) shows as a small icon on its day. Hover for details, or pick a day to list everything that happened on it.
 
 ## Docker
 

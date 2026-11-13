@@ -29,6 +29,7 @@ internal sealed class BookConfiguration : IEntityTypeConfiguration<Book>
         builder.HasIndex(b => b.Title);
         // Not unique: owning two editions/copies with the same ISBN is legitimate.
         builder.HasIndex(b => b.Isbn13);
+        builder.HasIndex(b => b.CreatedAtUtc); // activity calendar
 
         // Series left without books are deleted by the service; SetNull just keeps the FK safe.
         builder.HasOne(b => b.Series)

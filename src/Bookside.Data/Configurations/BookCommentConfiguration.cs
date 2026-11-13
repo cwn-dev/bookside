@@ -14,5 +14,6 @@ internal sealed class BookCommentConfiguration : IEntityTypeConfiguration<BookCo
         builder.Property(c => c.Text).HasMaxLength(BookComment.TextMaxLength);
 
         builder.HasIndex(c => new { c.BookId, c.CreatedAtUtc });
+        builder.HasIndex(c => c.CreatedAtUtc); // activity calendar
     }
 }
