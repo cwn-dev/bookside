@@ -20,6 +20,7 @@
 .quick-add { order: 5; }
 .recent-words { order: 6; }
 .finished { order: 7; }
+.activity { order: 7; }
 .stats { order: 8; }
 
 @media (min-width: 900px) {

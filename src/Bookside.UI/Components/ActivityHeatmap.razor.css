@@ -1,0 +1,72 @@
+/* rtl on the scroller makes a too-narrow screen open at the right (today)
+   with no JS; the grid itself stays ltr. */
+.heatmap-scroll {
+    overflow-x: auto;
+    direction: rtl;
+}
+
+.heatmap {
+    direction: ltr;
+    display: grid;
+    /* Squares fill the width, down to 9px; below that the scroller takes
+       over. max-content makes the overflow the grid's own width, so the rtl
+       scroller can start at its right end. */
+    width: max-content;
+    min-width: 100%;
+    grid-template-columns: auto repeat(53, minmax(9px, 1fr));
+    gap: 2px;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+/* Zero width: a label spills over the next columns instead of widening its own. */
+.month {
+    grid-row: 1;
+    width: 0;
+    white-space: nowrap;
+    padding-bottom: 0.25rem;
+    color: var(--text-muted);
+}
+
+.weekday {
+    grid-column: 1;
+    padding-right: 0.4rem;
+    color: var(--text-muted);
+    align-self: center;
+}
+
+.day {
+    display: block;
+    aspect-ratio: 1;
+    border-radius: 2px;
+    background: var(--surface-muted);
+    outline: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    outline-offset: -1px;
+}
+
+.day:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+}
+
+.l1 { background: color-mix(in srgb, var(--accent) 30%, var(--surface)); }
+.l2 { background: color-mix(in srgb, var(--accent) 55%, var(--surface)); }
+.l3 { background: color-mix(in srgb, var(--accent) 78%, var(--surface)); }
+.l4 { background: var(--accent); }
+
+.key {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.key .day {
+    width: 9px;
+}
+
+@media (forced-colors: active) {
+    .day { forced-color-adjust: none; }
+}

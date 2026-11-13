@@ -39,6 +39,12 @@ public sealed record HomeSummary
     public required ChallengeProgress Challenge { get; init; }
 
     public required HomeStats Stats { get; init; }
+
+    /// <summary>
+    /// Activity points per local day for the 53 weeks (Monday first) up to
+    /// <see cref="HomeStats.Today"/>; days with none are left out.
+    /// </summary>
+    public required IReadOnlyDictionary<DateOnly, int> DailyActivity { get; init; }
 }
 
 /// <summary>

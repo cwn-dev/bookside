@@ -129,6 +129,19 @@ else
                     </ul>
                 </section>
             }
+
+            @if (_home.DailyActivity.Count > 0)
+            {
+                <section class="activity" aria-labelledby="activity-heading">
+                    <div class="section-header">
+                        <h2 id="activity-heading">Activity</h2>
+                        <a href="activity">Open calendar →</a>
+                    </div>
+                    <div class="card">
+                        <ActivityHeatmap Days="_home.DailyActivity" Today="_home.Stats.Today" />
+                    </div>
+                </section>
+            }
         </div>
 
         <div class="home-side">

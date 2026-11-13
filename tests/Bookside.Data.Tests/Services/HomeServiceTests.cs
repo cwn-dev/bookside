@@ -191,6 +191,38 @@ public sealed class HomeServiceTests : ServiceTestBase
         Assert.True(picks.Count >= 4, $"Only {picks.Count} distinct words in 30 days.");
     }
 
+    [Fact]
+    public async Task Daily_activity_counts_reading_days_and_each_thing_added()
+    {
+        Dictionary.Define("ennui", "Listlessness.");
+        Dictionary.Define("brillig", "Teatime.");
+        var book = await AddBookAsync("Mort");
+        await AddSessionAsync(book.Id, ReadingStatus.Reading, started: new(2026, 6, 13));
+        await AddSessionAsync(
+            book.Id,
+            ReadingStatus.Finished,
+            started: new(2025, 6, 1),
+            finished: new(2025, 6, 10));
+        var ennui = Success(await Vocabulary.AddWordAsync(new WordInput { Term = "ennui" }, Ct));
+        var brillig = Success(await Vocabulary.AddWordAsync(new WordInput { Term = "brillig" }, Ct));
+        Success(await Library.AddCommentAsync(book.Id, new BookCommentInput { Text = "Fun." }, Ct));
+        Success(await Reviews.RecordReviewAsync(ennui.Id, knew: true, Ct));
+        Success(await Reviews.RecordReviewAsync(brillig.Id, knew: true, Ct));
+
+        var home = await Home.GetHomeAsync(Ct);
+
+        // Today: reading + book + 2 words + comment + one flash-card day. The
+        // 2025 read ends before the window (Monday 16 June 2025).
+        Assert.Equal(
+            new Dictionary<DateOnly, int>
+            {
+                [new(2026, 6, 13)] = 1,
+                [new(2026, 6, 14)] = 1,
+                [Today] = 6,
+            },
+            home.DailyActivity);
+    }
+
     private async Task AddSessionAsync(
         Guid bookId,
         ReadingStatus status,

@@ -59,8 +59,23 @@ internal sealed class HomeService(IDbContextFactory<BooksideDbContext> dbFactory
                 .GetProgressAsync(db, today.Year, cancellationToken)
                 .ConfigureAwait(false),
             Stats = await LoadStatsAsync(db, today, cancellationToken).ConfigureAwait(false),
+            DailyActivity = await ActivityService
+                .CountDaysAsync(
+                    db,
+                    ActivityStart(today),
+                    today,
+                    today,
+                    timeProvider.LocalTimeZone,
+                    cancellationToken)
+                .ConfigureAwait(false),
         };
     }
+
+    /// <summary>
+    /// The Monday 52 weeks before the Monday of <paramref name="today"/>'s week.
+    /// </summary>
+    internal static DateOnly ActivityStart(DateOnly today) =>
+        today.AddDays(-(((int)today.DayOfWeek + 6) % 7) - (52 * 7));
 
     internal static async Task<List<BookRead>> LoadReadsAsync(
         IQueryable<ReadingSession> sessions,

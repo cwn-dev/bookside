@@ -1,0 +1,82 @@
+@* One square per day for the 53 weeks up to Today (Monday first), darker
+   the busier the day: four levels as quarters of the busiest day. *@
+
+<div class="heatmap-scroll">
+    <div class="heatmap">
+        <span class="weekday" style="grid-row: 3">Mon</span>
+        <span class="weekday" style="grid-row: 5">Wed</span>
+        <span class="weekday" style="grid-row: 7">Fri</span>
+        @for (var day = _first; day <= Today; day = day.AddDays(1))
+        {
+            var column = Column(day);
+            // A label needs about three columns: none in the last two.
+            if (day.Day == 1 && column <= Weeks - 1)
+            {
+                <span class="month" style="grid-column: @column">
+                    @day.ToString("MMM", CultureInfo.CurrentCulture)
+                </span>
+            }
+
+            var count = Days.GetValueOrDefault(day);
+            var label = Label(day, count);
+            <a class="day l@(Level(count))"
+               style="grid-column: @column; grid-row: @(DaysFromMonday(day) + 2)"
+               href="@MonthUrl(day)"
+               title="@label"
+               aria-label="@label"></a>
+        }
+    </div>
+</div>
+<div class="key muted" aria-hidden="true">
+    Less
+    @for (var level = 0; level <= 4; level++)
+    {
+        <span class="day l@(level)"></span>
+    }
+    More
+</div>
+
+@code {
+    private const int Weeks = 53;
+
+    private DateOnly _first;
+    private int _max;
+
+    /// <summary>
+    /// Activity points per day; missing days have none.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyDictionary<DateOnly, int> Days { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public DateOnly Today { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        _first = Today.AddDays(-DaysFromMonday(Today) - ((Weeks - 1) * 7));
+        _max = Days.Count == 0 ? 0 : Days.Values.Max();
+    }
+
+    // Column 1 holds the weekday labels.
+    private int Column(DateOnly day) => ((day.DayNumber - _first.DayNumber) / 7) + 2;
+
+    private int Level(int count) =>
+        count == 0 ? 0 : (int)Math.Ceiling(4.0 * count / _max);
+
+    private static int DaysFromMonday(DateOnly date) => ((int)date.DayOfWeek + 6) % 7;
+
+    private static string Label(DateOnly day, int count)
+    {
+        var amount = count switch
+        {
+            0 => "No activity",
+            1 => "1 activity",
+            _ => $"{count} activities",
+        };
+
+        return $"{amount} on {day.ToString("d MMM yyyy", CultureInfo.CurrentCulture)}";
+    }
+
+    private static string MonthUrl(DateOnly day) =>
+        string.Create(CultureInfo.InvariantCulture, $"activity/{day.Year}/{day.Month}");
+}

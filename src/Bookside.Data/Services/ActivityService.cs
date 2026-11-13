@@ -160,7 +160,7 @@ internal sealed class ActivityService(
         };
     }
 
-    private static async Task<List<ActivityRead>> LoadReadsAsync(
+    internal static async Task<List<ActivityRead>> LoadReadsAsync(
         BooksideDbContext db,
         DateOnly first,
         DateOnly last,
@@ -212,6 +212,79 @@ internal sealed class ActivityService(
                 };
             }),
         ];
+    }
+
+    /// <summary>
+    /// Activity points per local day from <paramref name="first"/> to
+    /// <paramref name="last"/>, non-zero days only: one per book being read,
+    /// book added, word added and comment, and one for a flash-card day.
+    /// </summary>
+    internal static async Task<Dictionary<DateOnly, int>> CountDaysAsync(
+        BooksideDbContext db,
+        DateOnly first,
+        DateOnly last,
+        DateOnly today,
+        TimeZoneInfo zone,
+        CancellationToken cancellationToken)
+    {
+        var fromUtc = HomeService.LocalMidnightToUtc(
+            first.ToDateTime(TimeOnly.MinValue),
+            zone);
+        var toUtc = HomeService.LocalMidnightToUtc(
+            last.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            zone);
+        var counts = new Dictionary<DateOnly, int>();
+
+        void Add(DateOnly date)
+        {
+            if (date >= first && date <= last)
+            {
+                counts[date] = counts.GetValueOrDefault(date) + 1;
+            }
+        }
+
+        foreach (var read in await LoadReadsAsync(db, first, last, today, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            for (var day = read.From; day <= read.To; day = day.AddDays(1))
+            {
+                Add(day);
+            }
+        }
+
+        var created = new List<DateTime>();
+        created.AddRange(await db.Books
+            .Where(b => b.CreatedAtUtc >= fromUtc && b.CreatedAtUtc < toUtc)
+            .Select(b => b.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false));
+        created.AddRange(await db.VocabularyWords
+            .Where(w => w.CreatedAtUtc >= fromUtc && w.CreatedAtUtc < toUtc)
+            .Select(w => w.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false));
+        created.AddRange(await db.BookComments
+            .Where(c => c.CreatedAtUtc >= fromUtc && c.CreatedAtUtc < toUtc)
+            .Select(c => c.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false));
+        foreach (var utc in created)
+        {
+            Add(LocalDate(utc, zone));
+        }
+
+        var flashCardDays = await db.WordReviews
+            .Where(r => r.FirstReviewedOn >= first && r.FirstReviewedOn <= last)
+            .Select(r => r.FirstReviewedOn)
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var day in flashCardDays)
+        {
+            Add(day);
+        }
+
+        return counts;
     }
 
     /// <summary>

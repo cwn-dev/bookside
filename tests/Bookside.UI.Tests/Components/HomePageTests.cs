@@ -1,3 +1,4 @@
+using System.Globalization;
 using Bookside.Core.Books;
 using Bookside.Core.Books.Services;
 using Bookside.Core.Challenge.Services;
@@ -35,6 +36,25 @@ public sealed class HomePageTests : ComponentTestBase
         Assert.Equal("ennui", page.Find(".recent-term").TextContent);
         Assert.Equal("ennui", page.Find(".wotd-term").TextContent);
         Assert.Contains("You’re not reading anything right now.", page.Find(".reading").TextContent);
+    }
+
+    [Fact]
+    public async Task Activity_heatmap_shades_the_busiest_day_and_links_to_its_month()
+    {
+        var book = await AddBookAsync("Dune");
+        await AddSessionAsync(
+            book.Id,
+            new ReadingSessionInput { Status = ReadingStatus.Reading, StartedOn = Today.AddDays(-1) });
+
+        var page = Render<HomePage>();
+
+        page.WaitForAssertion(() => page.Find(".activity"));
+        var date = Today.ToString("d MMM yyyy", CultureInfo.CurrentCulture);
+        var today = page.Find($"a.day[title$='{date}']");
+        Assert.Contains("l4", today.ClassList);
+        Assert.Equal($"activity/{Today.Year}/{Today.Month}", today.GetAttribute("href"));
+        Assert.Equal("2 activities", today.GetAttribute("title")![..12]);
+        Assert.Equal(2, page.FindAll(".activity a.day:not(.l0)").Count);
     }
 
     [Fact]

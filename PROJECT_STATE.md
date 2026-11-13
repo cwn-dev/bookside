@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 36, 2026-11-13)
+# Bookside: project state (end of session 37, 2026-11-13)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -207,6 +207,15 @@
   comment links to `books/{id}?tag={stored form}` (e.g. `?tag=%23%5Bgrim%5D` = `#[grim]`); the log then shows only
   matching comments (sessions hidden); the selected chip clears it; no match → "No comments tagged … Show the whole
   log". A query-only change doesn't reload the book or close open forms.
+- Home activity heatmap (session 37): GitHub-style grid under "Recently finished" (phones: after it, `order: 7`).
+  `HomeSummary.DailyActivity` (non-zero days only) comes from `ActivityService.CountDaysAsync` (internal static,
+  reuses `LoadReadsAsync`; dates only, existing indexes) inside `GetHomeAsync`, so no extra round trip.
+  `HomeService.ActivityStart` = the Monday 52 weeks before this week's. `Components/ActivityHeatmap`:
+  53 Monday-first columns, levels `l0`–`l4` = quarters of the busiest day (`color-mix` of `--accent`), each day a
+  link to `activity/{y}/{m}` with an "N activities on d MMM yyyy" title, Mon/Wed/Fri + month labels, a
+  Less/More key. Squares fill the card (≥ 9px). Narrower screens scroll sideways, opening at today with no JS
+  (an rtl scroller around an ltr `max-content` grid; zero-width month labels so they don't widen the columns).
+  Hidden when the year has no activity. Checked in Firefox at 1280 and 390 px, light and dark.
 - Editable added date (session 36): `BookInput.AddedOn` (`DateOnly?`, local date) moves an existing book's
   `CreatedAtUtc` to that date, keeping the local time of day; null = unchanged; ignored on add (stamped now);
   1900 to today, else field error `AddedOn`. Edit page only (not add): "Added to library" date field after the
@@ -517,6 +526,11 @@
   - The selected day isn't in the URL; session 36: the service loads the whole Monday-to-Sunday grid (the neighbouring months' days in the
     first and last weeks, and both years' goals when a week crosses New Year), so those days show their
     reads and events and can be selected.
+- **Activity heatmap (session 37, user's choices: last 53 weeks with sideways scroll on phones, days link to the
+  month calendar, shading relative to the busiest day):** one point per book being read that day (each day of
+  a read's span, as on the calendar), book added, word added and comment, plus one for any flash-card day
+  (not one per card, so new cards don't drown the rest). Goal reached isn't counted. A quiet year looks as
+  dark as a busy one (relative levels).
 - **Added date (session 36, user's choices: edit `CreatedAtUtc` itself rather than a new `AddedOn` column; date
   only):** "Recently added" and the activity calendar's "Book added" follow the edited date with no query
   changes; the record's real creation time is lost once edited. Keeping the time of day keeps same-day books in order.
