@@ -146,7 +146,7 @@
   3 event pills + "+N more"; ≤ 500px: pills hidden, up to 3 event icons under the day number; a key under the
   grid (bar swatches + icons); the selected day (default today in the current month) lists its items below).
   `Components/ActivityIcon` (inline SVG stroke icons, colour per type, name from `CalendarItem.Icon`) marks
-  each pill, day-list row and key entry, so the type shows without hovering (user's request). "Activity" nav link after Challenge (in the
+  each pill, day-list row and key entry, so the type shows without hovering (user's request). Session 36: every week row is as tall as the tallest (`.calendar` is a grid with `grid-auto-rows: 1fr`), and weeks with no bars leave out `repeat(0, …)`, which is invalid CSS and was dropping their row template. "Activity" nav link after Challenge (in the
   mobile menu sheet on phones). Checked in Firefox
   at 1280 and 375 px (375 via a 375px iframe: headless windows stop at 500), light and dark.
 - HTTP API (session 31): `src/Bookside.Api` (class library, `FrameworkReference Microsoft.AspNetCore.App`, Core only),

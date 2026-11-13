@@ -45,7 +45,8 @@ else
         </div>
         @foreach (var week in _weeks)
         {
-            <div class="week" style="grid-template-rows: auto repeat(@week.Lanes, var(--bar-height)) 1fr">
+            @* repeat(0, …) is invalid CSS, so weeks with no bars skip it. *@
+            <div class="week" style="grid-template-rows: auto @(week.Lanes > 0 ? $"repeat({week.Lanes}, var(--bar-height))" : null) 1fr">
                 @for (var i = 0; i < 7; i++)
                 {
                     var day = week.Days[i];

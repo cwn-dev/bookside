@@ -31,6 +31,10 @@
     background: var(--surface);
     overflow: hidden;
     margin-bottom: 1.5rem;
+    /* Every week as tall as the tallest one. */
+    display: grid;
+    grid-template-rows: auto;
+    grid-auto-rows: 1fr;
 }
 
 .weekdays,
@@ -54,7 +58,6 @@
 .week {
     row-gap: 2px;
     min-height: 6.5rem;
-    padding-bottom: 0.25rem;
 }
 
 .week + .week {
@@ -168,7 +171,7 @@
     flex-direction: column;
     gap: 2px;
     min-width: 0;
-    padding: 0.15rem 0.2rem 0;
+    padding: 0.15rem 0.2rem 0.25rem;
 }
 
 .pill,
