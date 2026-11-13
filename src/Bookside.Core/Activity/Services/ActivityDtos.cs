@@ -17,12 +17,14 @@ public sealed record ActivityMonth
     public required DateOnly Today { get; init; }
 
     /// <summary>
-    /// Reading sessions whose span overlaps the month, earliest start first.
+    /// Reading sessions whose span overlaps the month's calendar weeks
+    /// (Monday to Sunday, so a few days of the months either side),
+    /// earliest start first.
     /// </summary>
     public required IReadOnlyList<ActivityRead> Reads { get; init; }
 
     /// <summary>
-    /// The month's other events, oldest first.
+    /// Other events in the same weeks, oldest first.
     /// </summary>
     public required IReadOnlyList<ActivityEvent> Events { get; init; }
 }

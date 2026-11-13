@@ -141,9 +141,14 @@
   VocabularyWords, BookComments. UI: `ActivityCalendar` (pure: Monday-first weeks padded with neighbouring
   months, per-week bar segments with greedy lanes and continue flags, `ItemsOn(day)` = started / finished /
   stopped then events, `Item(event)` = label/text/href), `ActivityPage` (`/activity`, `/activity/{y}/{m}`:
-  prev/next month (next up to current + 1), "This month", 7-column grid per week, bars as book links (reading =
-  outlined accent-soft, finished = solid accent, abandoned = dashed muted, square ends where a bar continues),
-  3 event pills + "+N more"; ≤ 500px: pills hidden, up to 3 event icons under the day number; a key under the
+  prev/next month (next up to current + 1), "This month", 7-column grid per week, reads as book links drawn
+  as a thin line with an end stop at each date and the title in the line (session 36, user's request: reading = accent, no end
+  stop yet; finished = accent + a tick at the finish; abandoned = dashed muted; no stop where a read continues),
+  the book's own comments/words on a read's days as beads on its line (`CalendarBar.Marks`; icon, or a count
+  when several; hover lists them; the title stops before the first bead; "Added" on a line has no bead), other
+  events as one muted icon each under the lines (`CalendarDay.Pills`; text on hover, links like the day list;
+  goals stay coloured; no cap, they wrap),
+  event icons; ≤ 500px: those hidden, up to 3 event icons under the day number; a key under the
   grid (bar swatches + icons); the selected day (default today in the current month) lists its items below).
   `Components/ActivityIcon` (inline SVG stroke icons, colour per type, name from `CalendarItem.Icon`) marks
   each pill, day-list row and key entry, so the type shows without hovering (user's request). Session 36: every week row is as tall as the tallest (`.calendar` is a grid with `grid-auto-rows: 1fr`), and weeks with no bars leave out `repeat(0, …)`, which is invalid CSS and was dropping their row template. "Activity" nav link after Challenge (in the
@@ -504,7 +509,9 @@
     is start (else finish) to finish, else today while Reading, else its start; a future start shows one day.
   - The read overlap query has no useful index (sessions are few); events use the new `CreatedAtUtc` indexes,
     flash cards the existing `FirstReviewedOn` one. Per-day review counts would need a review log.
-  - The selected day isn't in the URL; days of neighbouring months aren't clickable (their events aren't loaded).
+  - The selected day isn't in the URL; session 36: the service loads the whole Monday-to-Sunday grid (the neighbouring months' days in the
+    first and last weeks, and both years' goals when a week crosses New Year), so those days show their
+    reads and events and can be selected.
 - **Added date (session 36, user's choices: edit `CreatedAtUtc` itself rather than a new `AddedOn` column; date
   only):** "Recently added" and the activity calendar's "Book added" follow the edited date with no query
   changes; the record's real creation time is lost once edited. Keeping the time of day keeps same-day books in order.

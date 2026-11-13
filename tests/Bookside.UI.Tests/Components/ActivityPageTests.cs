@@ -23,8 +23,11 @@ public sealed class ActivityPageTests : ComponentTestBase
         page.WaitForAssertion(() => page.Find(".bar"));
         Assert.Equal($"books/{book.Id}", page.Find(".bar.reading").GetAttribute("href"));
         Assert.Equal("Mort, reading", page.Find(".bar").GetAttribute("aria-label"));
-        Assert.Contains(page.FindAll(".pill-text"), p => p.TextContent == "brillig (Mort)");
-        Assert.Contains(page.FindAll(".pill .activity-icon"), i => i.ClassList.Contains("word"));
+        // The book's word is a mark on its line, not a pill; "Added" is
+        // the line itself.
+        Assert.Equal("Word: brillig (Mort)", page.Find(".bar .mark").GetAttribute("title"));
+        Assert.True(page.Find(".bar .mark .activity-icon").ClassList.Contains("word"));
+        Assert.Empty(page.FindAll(".pill"));
         Assert.Equal(
             ["Started", "Added", "Word"],
             page.FindAll(".day-items .day-label").Select(l => l.TextContent.Trim()));

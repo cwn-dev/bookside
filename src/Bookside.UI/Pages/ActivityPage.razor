@@ -52,44 +52,31 @@ else
                     var day = week.Days[i];
                     <div class="cell @(day.InMonth ? null : "outside") @(day.Date == _month.Today ? "today" : null) @(day.Date == _selected ? "selected" : null)"
                          style="grid-column: @(i + 1)"></div>
-                    @if (day.InMonth)
-                    {
-                        <button type="button"
-                                class="day-number"
-                                style="grid-column: @(i + 1)"
-                                aria-label="@DayLabel(day)"
-                                aria-pressed="@(day.Date == _selected ? "true" : "false")"
-                                @onclick="() => _selected = day.Date">
-                            @day.Date.Day
-                            @if (day.Events.Count > 0)
-                            {
-                                <span class="day-icons">
-                                    @foreach (var item in day.Events.Take(MaxPills).Select(ActivityCalendar.Item))
-                                    {
-                                        <ActivityIcon Name="@item.Icon" />
-                                    }
-                                </span>
-                            }
-                        </button>
-                    }
-                    else
-                    {
-                        <span class="day-number outside" style="grid-column: @(i + 1)">@day.Date.Day</span>
-                    }
+                    <button type="button"
+                            class="day-number @(day.InMonth ? null : "outside")"
+                            style="grid-column: @(i + 1)"
+                            aria-label="@DayLabel(day)"
+                            aria-pressed="@(day.Date == _selected ? "true" : "false")"
+                            @onclick="() => _selected = day.Date">
+                        @day.Date.Day
+                        @if (day.Pills.Count > 0)
+                        {
+                            <span class="day-icons">
+                                @foreach (var item in day.Pills.Take(MaxPills).Select(ActivityCalendar.Item))
+                                {
+                                    <ActivityIcon Name="@item.Icon" />
+                                }
+                            </span>
+                        }
+                    </button>
                     <div class="pills" style="grid-column: @(i + 1); grid-row: @(week.Lanes + 2)">
-                        @foreach (var item in day.Events.Take(MaxPills).Select(ActivityCalendar.Item))
+                        @* One icon per event; the text shows on hover. *@
+                        @foreach (var item in day.Pills.Select(ActivityCalendar.Item))
                         {
                             <a class="pill" href="@item.Href" title="@item.Label: @item.Text">
                                 <ActivityIcon Name="@item.Icon" />
-                                <span class="visually-hidden">@item.Label: </span>
-                                <span class="pill-text">@item.Text</span>
+                                <span class="visually-hidden">@item.Label: @item.Text</span>
                             </a>
-                        }
-                        @if (day.Events.Count > MaxPills)
-                        {
-                            <button type="button" class="more-pill" @onclick="() => _selected = day.Date">
-                                +@(day.Events.Count - MaxPills) more
-                            </button>
                         }
                     </div>
                 }
@@ -99,7 +86,29 @@ else
                        href="books/@bar.Read.BookId"
                        style="grid-column: @bar.Column / span @bar.Span; grid-row: @(bar.Lane + 2)"
                        aria-label="@BarLabel(bar.Read)"
-                       title="@BarLabel(bar.Read)">@bar.Read.Title</a>
+                       title="@BarLabel(bar.Read)">
+                        <span class="bar-title" style="@TitleWidth(bar)">@bar.Read.Title</span>
+                        @foreach (var mark in bar.Marks)
+                        {
+                            <span class="mark"
+                                  style="left: @Percent(mark.Day + 0.5, bar.Span)"
+                                  title="@MarkTitle(mark)"
+                                  aria-hidden="true">
+                                @if (mark.Events.Count == 1)
+                                {
+                                    <ActivityIcon Name="@ActivityCalendar.Item(mark.Events[0]).Icon" />
+                                }
+                                else
+                                {
+                                    @mark.Events.Count
+                                }
+                            </span>
+                        }
+                        @if (bar.Read.Status == ReadingStatus.Finished && !bar.ContinuesAfter)
+                        {
+                            <ActivityIcon Name="finished" />
+                        }
+                    </a>
                 }
             </div>
         }
@@ -111,7 +120,7 @@ else
         <li><span class="swatch abandoned"></span><ActivityIcon Name="stopped" />Stopped</li>
         @foreach (var (icon, label) in LegendIcons)
         {
-            <li><ActivityIcon Name="@icon" />@label</li>
+            <li class="event"><ActivityIcon Name="@icon" />@label</li>
         }
     </ul>
 
@@ -220,6 +229,22 @@ else
             _ => $"{date}, {count} events",
         };
     }
+
+    private static string Percent(double part, int whole) =>
+        string.Create(CultureInfo.InvariantCulture, $"{part * 100 / whole:0.##}%");
+
+    // The title stops short of the bar's first mark.
+    private static string? TitleWidth(CalendarBar bar) =>
+        bar.Marks.Count == 0
+            ? null
+            : $"max-width: calc({Percent(bar.Marks[0].Day + 0.5, bar.Span)} - 1.5rem)";
+
+    private static string MarkTitle(CalendarMark mark) =>
+        string.Join(
+            "\n",
+            mark.Events
+                .Select(ActivityCalendar.Item)
+                .Select(i => $"{i.Label}: {i.Text}"));
 
     private static string BarLabel(ActivityRead read) =>
         read.Status switch

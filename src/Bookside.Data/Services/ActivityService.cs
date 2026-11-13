@@ -39,12 +39,18 @@ internal sealed class ActivityService(
 
         var zone = timeProvider.LocalTimeZone;
         var today = DateOnly.FromDateTime(timeProvider.GetLocalNow().DateTime);
-        var first = new DateOnly(year, month, 1);
-        var last = first.AddDays(DateTime.DaysInMonth(year, month) - 1);
+        // The calendar shows whole Monday-to-Sunday weeks, so load the days of
+        // the months either side that share the month's first and last weeks.
+        var monthFirst = new DateOnly(year, month, 1);
+        var monthLast = monthFirst.AddDays(DateTime.DaysInMonth(year, month) - 1);
+        var first = monthFirst.AddDays(-DaysFromMonday(monthFirst));
+        var last = DateOnly.FromDayNumber(Math.Min(
+            monthLast.DayNumber + 6 - DaysFromMonday(monthLast),
+            DateOnly.MaxValue.DayNumber));
         var fromUtc = HomeService.LocalMidnightToUtc(
             first.ToDateTime(TimeOnly.MinValue),
             zone);
-        var toUtc = year == ReadingGoal.MaxYear && month == 12
+        var toUtc = last == DateOnly.MaxValue
             ? DateTime.MaxValue
             : HomeService.LocalMidnightToUtc(
                 last.AddDays(1).ToDateTime(TimeOnly.MinValue),
@@ -127,17 +133,21 @@ internal sealed class ActivityService(
             Count = f.Count,
         }));
 
-        if (await GoalReachedOnAsync(db, year, cancellationToken).ConfigureAwait(false)
-            is ({ } reachedOn, var target)
-            && reachedOn >= first
-            && reachedOn <= last)
+        // The first and last weeks can reach into the years either side.
+        foreach (var goalYear in new[] { first.Year, last.Year }.Distinct())
         {
-            events.Add(new ActivityEvent
+            if (await GoalReachedOnAsync(db, goalYear, cancellationToken).ConfigureAwait(false)
+                is ({ } reachedOn, var target)
+                && reachedOn >= first
+                && reachedOn <= last)
             {
-                Date = reachedOn,
-                Kind = ActivityKind.GoalReached,
-                Count = target,
-            });
+                events.Add(new ActivityEvent
+                {
+                    Date = reachedOn,
+                    Kind = ActivityKind.GoalReached,
+                    Count = target,
+                });
+            }
         }
 
         return new ActivityMonth
@@ -232,6 +242,8 @@ internal sealed class ActivityService(
 
         return (on, books);
     }
+
+    private static int DaysFromMonday(DateOnly date) => ((int)date.DayOfWeek + 6) % 7;
 
     private static DateOnly LocalDate(DateTime utc, TimeZoneInfo zone) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(utc, zone));

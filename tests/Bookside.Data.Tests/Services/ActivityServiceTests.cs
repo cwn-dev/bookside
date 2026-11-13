@@ -67,6 +67,23 @@ public sealed class ActivityServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task A_month_includes_the_neighbouring_days_of_its_first_and_last_weeks()
+    {
+        // July 2026's calendar runs from Monday 29 June to Sunday 2 August.
+        _clock.Set(new DateTimeOffset(2026, 6, 30, 12, 0, 0, TimeSpan.Zero));
+        var book = await AddBookAsync("Mort");
+        await AddSessionAsync(book.Id, ReadingStatus.Finished, new(2026, 6, 28), new(2026, 6, 29));
+        _clock.Set(new DateTimeOffset(2026, 6, 28, 12, 0, 0, TimeSpan.Zero));
+        await AddBookAsync("Eric");
+
+        var july = Success(await GetAsync(2026, 7));
+
+        Assert.Equal("Mort", Assert.Single(july.Reads).Title);
+        var added = Assert.Single(july.Events);
+        Assert.Equal(("Mort", new DateOnly(2026, 6, 30)), (added.BookTitle, added.Date));
+    }
+
+    [Fact]
     public async Task Flash_cards_started_are_counted_per_day()
     {
         Dictionary.Define("ennui", "Listlessness.");

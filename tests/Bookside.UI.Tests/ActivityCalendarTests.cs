@@ -68,6 +68,28 @@ public sealed class ActivityCalendarTests
     }
 
     [Fact]
+    public void A_books_events_move_onto_its_bar_and_others_stay_pills()
+    {
+        var read = Read("Mort", new(2026, 6, 2), new(2026, 6, 4));
+        var day = new DateOnly(2026, 6, 3);
+        ActivityEvent Event(ActivityKind kind, Guid? book) =>
+            new() { Date = day, Kind = kind, BookId = book };
+        var comment = Event(ActivityKind.Comment, read.BookId);
+        var word = Event(ActivityKind.WordAdded, read.BookId);
+        var other = Event(ActivityKind.Comment, Guid.NewGuid());
+        var added = Event(ActivityKind.BookAdded, read.BookId) with { Date = read.From };
+
+        var week = ActivityCalendar.Build(June([read], comment, word, other, added))[0];
+
+        var mark = Assert.Single(week.Bars[0].Marks);
+        Assert.Equal(1, mark.Day);
+        Assert.Equal([comment, word], mark.Events);
+        Assert.Equal([other], week.Days[2].Pills);
+        Assert.Equal(3, week.Days[2].Events.Count);
+        Assert.Empty(week.Days[1].Pills); // "Added" is the bar itself
+    }
+
+    [Fact]
     public void A_day_lists_starts_finishes_then_events()
     {
         var day = new DateOnly(2026, 6, 3);

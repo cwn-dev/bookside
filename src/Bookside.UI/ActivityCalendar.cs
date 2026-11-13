@@ -14,23 +14,33 @@ public sealed record CalendarWeek(
     int Lanes);
 
 /// <param name="InMonth">False for the padding days of the months either side.</param>
+/// <param name="Pills">The events not shown on a bar.</param>
 public sealed record CalendarDay(
     DateOnly Date,
     bool InMonth,
-    IReadOnlyList<ActivityEvent> Events);
+    IReadOnlyList<ActivityEvent> Events,
+    IReadOnlyList<ActivityEvent> Pills);
 
 /// <summary>
 /// The part of a read that falls in one week.
 /// </summary>
 /// <param name="Column">First day, 1 = Monday.</param>
 /// <param name="Lane">Bar row within the week, from 0.</param>
+/// <param name="Marks">The read's book events on the bar's days.</param>
 public sealed record CalendarBar(
     ActivityRead Read,
     int Column,
     int Span,
     int Lane,
     bool ContinuesBefore,
-    bool ContinuesAfter);
+    bool ContinuesAfter,
+    IReadOnlyList<CalendarMark> Marks);
+
+/// <summary>
+/// A book's events on one day of its bar.
+/// </summary>
+/// <param name="Day">Days from the bar's first day, from 0.</param>
+public sealed record CalendarMark(int Day, IReadOnlyList<ActivityEvent> Events);
 
 /// <summary>
 /// One line of a day's list: a read starting or ending, or an event.
@@ -56,14 +66,7 @@ public static class ActivityCalendar
         for (var monday = start; monday <= last; monday = monday.AddDays(7))
         {
             var sunday = monday.AddDays(6);
-            var days = Enumerable.Range(0, 7)
-                .Select(i => monday.AddDays(i))
-                .Select(d => new CalendarDay(
-                    d,
-                    d.Month == month.Month,
-                    [.. events[d]]))
-                .ToList();
-
+            var onBar = new HashSet<ActivityEvent>(ReferenceEqualityComparer.Instance);
             // Greedy lanes: each bar takes the first row that is free by its
             // first day. Reads arrive earliest start first.
             var laneEnds = new List<int>();
@@ -87,14 +90,41 @@ public static class ActivityCalendar
                     laneEnds[lane] = end;
                 }
 
+                // The book's own events move onto its bar. "Added" needs no
+                // mark: the bar already shows the book.
+                var marks = new List<CalendarMark>();
+
+                for (var day = column; day <= end; day++)
+                {
+                    var own = events[monday.AddDays(day - 1)]
+                        .Where(e => e.BookId == read.BookId && onBar.Add(e))
+                        .Where(e => e.Kind != ActivityKind.BookAdded)
+                        .ToList();
+
+                    if (own.Count > 0)
+                    {
+                        marks.Add(new CalendarMark(day - column, own));
+                    }
+                }
+
                 bars.Add(new CalendarBar(
                     read,
                     column,
                     end - column + 1,
                     lane,
                     read.From < monday,
-                    read.To > sunday));
+                    read.To > sunday,
+                    marks));
             }
+
+            var days = Enumerable.Range(0, 7)
+                .Select(i => monday.AddDays(i))
+                .Select(d => new CalendarDay(
+                    d,
+                    d.Month == month.Month,
+                    [.. events[d]],
+                    [.. events[d].Where(e => !onBar.Contains(e))]))
+                .ToList();
 
             weeks.Add(new CalendarWeek(days, bars, laneEnds.Count));
         }

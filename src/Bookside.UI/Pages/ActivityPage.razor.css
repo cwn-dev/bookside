@@ -96,7 +96,7 @@
     border: none;
     border-radius: var(--radius-sm);
     background: none;
-    color: var(--text);
+    color: color-mix(in srgb, var(--text) 80%, transparent);
     font: inherit;
     font-size: 0.85rem;
     cursor: pointer;
@@ -108,7 +108,6 @@
 
 .day-number.outside {
     color: var(--text-muted);
-    cursor: default;
 }
 
 .day-icons {
@@ -119,97 +118,135 @@
 
 /* ---------- Bars ---------- */
 
+/* A read is a thin line with the title in it and an end stop at each
+   date: |-- Title ------| */
 .bar {
+    --line: var(--accent);
+    --dash: linear-gradient(var(--line), var(--line));
+    position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
     margin: 0 0.2rem;
-    padding: 0 0.4rem;
-    border-radius: var(--radius-sm);
-    background: var(--accent);
-    color: var(--accent-contrast);
+    color: var(--text);
     font-size: 0.75rem;
     line-height: var(--bar-height);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     text-decoration: none;
 }
 
-.bar:hover {
-    background: var(--accent-hover);
+.bar::before,
+.bar::after {
+    content: "";
+    height: 0.5rem;
+    background: var(--dash) center / 100% 2px no-repeat;
 }
 
-.bar.reading {
-    background: var(--accent-soft);
-    color: var(--text);
-    border: 1px solid var(--accent);
-    line-height: calc(var(--bar-height) - 2px);
+.bar::before {
+    flex: 0 0 0.4rem;
+    border-left: 2px solid var(--line);
+}
+
+.bar::after {
+    flex: 1 0 0.4rem;
+    border-right: 2px solid var(--line);
+}
+
+.bar-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bar:hover .bar-title {
+    text-decoration: underline;
+}
+
+/* The tick goes after the line's end stop. */
+.bar > ::deep .activity-icon {
+    order: 1;
+    margin-left: -0.1rem;
+}
+
+/* A comment or word on its book's line: a bead at the middle of its day,
+   with the number of events when there are several. */
+.mark {
+    position: absolute;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: var(--line);
+    color: var(--surface);
+    font-size: 0.6rem;
+    font-weight: 600;
+    line-height: 1;
+    transform: translate(-50%, -50%);
+}
+
+.mark ::deep .activity-icon {
+    width: 0.65rem;
+    height: 0.65rem;
+    color: inherit;
+}
+
+/* Still reading: no end stop yet. */
+.bar.reading::after {
+    border-right: none;
 }
 
 .bar.abandoned {
-    background: var(--surface-muted);
+    --line: var(--text-muted);
+    --dash: repeating-linear-gradient(90deg, var(--line) 0 4px, transparent 4px 7px);
     color: var(--text-muted);
-    border: 1px dashed var(--border);
-    line-height: calc(var(--bar-height) - 2px);
 }
 
 .bar.from-before {
     margin-left: 0;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
+}
+
+.bar.from-before::before {
+    border-left: none;
 }
 
 .bar.to-after {
     margin-right: 0;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+}
+
+.bar.to-after::after {
+    border-right: none;
 }
 
 /* ---------- Pills ---------- */
 
 .pills {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-wrap: wrap;
+    align-content: start;
+    gap: 0.2rem;
     min-width: 0;
-    padding: 0.15rem 0.2rem 0.25rem;
-}
-
-.pill,
-.more-pill {
-    font-size: 0.72rem;
-    line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    padding: 0.2rem 0.4rem 0.25rem;
 }
 
 .pill {
     display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0 0.2rem;
-    color: var(--text);
-    text-decoration: none;
+    padding: 0.1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
 }
 
-.pill-text {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.pill:hover {
+    background: var(--surface-muted);
 }
 
-.pill:hover .pill-text {
-    text-decoration: underline;
-}
-
-.more-pill {
-    align-self: start;
-    padding: 0 0.3rem;
-    border: none;
-    background: none;
-    color: var(--accent);
-    font-family: inherit;
-    cursor: pointer;
+/* Events stay quiet next to the lines: one muted colour, except goals. */
+.pill ::deep .activity-icon:not(.goal),
+.day-icons ::deep .activity-icon:not(.goal),
+.legend .event ::deep .activity-icon:not(.goal) {
+    color: var(--text-muted);
 }
 
 /* Phones: bars stay, events shrink to their icons; the day list shows them. */
@@ -245,8 +282,28 @@
 
     .bar {
         margin: 0 1px;
-        padding: 0 0.2rem;
         font-size: 0.65rem;
+    }
+
+    .bar {
+        gap: 0.15rem;
+    }
+
+    .bar::before,
+    .bar::after {
+        height: 0.4rem;
+        flex-basis: 0.2rem;
+    }
+
+    .mark {
+        width: 0.8rem;
+        height: 0.8rem;
+        font-size: 0.5rem;
+    }
+
+    .mark ::deep .activity-icon {
+        width: 0.5rem;
+        height: 0.5rem;
     }
 }
 
@@ -270,20 +327,21 @@
 }
 
 .swatch {
+    --line: var(--accent);
     width: 1.4rem;
-    height: 0.75rem;
-    border-radius: 3px;
-    background: var(--accent);
+    height: 0.6rem;
+    border-inline: 2px solid var(--line);
+    background: linear-gradient(var(--line), var(--line)) center / 100% 2px no-repeat;
 }
 
 .swatch.reading {
-    background: var(--accent-soft);
-    border: 1px solid var(--accent);
+    border-right: none;
 }
 
 .swatch.abandoned {
-    background: var(--surface-muted);
-    border: 1px dashed var(--text-muted);
+    --line: var(--text-muted);
+    background: repeating-linear-gradient(90deg, var(--line) 0 4px, transparent 4px 7px)
+        center / 100% 2px no-repeat;
 }
 
 /* ---------- Day list ---------- */
