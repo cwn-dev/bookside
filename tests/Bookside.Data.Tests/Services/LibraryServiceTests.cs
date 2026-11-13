@@ -74,6 +74,47 @@ public sealed class LibraryServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task Update_moves_the_added_date_and_keeps_the_time_of_day()
+    {
+        var book = await AddBookAsync("Mort");
+        var zone = TimeZoneInfo.Local;
+        var created = TimeZoneInfo.ConvertTimeFromUtc(book.CreatedAtUtc, zone);
+        var addedOn = DateOnly.FromDateTime(created).AddDays(-30);
+
+        var updated = Success(await Library.UpdateBookAsync(
+            book.Id,
+            new BookInput { Title = "Mort", AddedOn = addedOn },
+            Ct));
+
+        var local = TimeZoneInfo.ConvertTimeFromUtc(updated.CreatedAtUtc, zone);
+        Assert.Equal(addedOn, DateOnly.FromDateTime(local));
+        Assert.Equal(created.TimeOfDay, local.TimeOfDay);
+
+        var unchanged = Success(await Library.UpdateBookAsync(
+            book.Id,
+            new BookInput { Title = "Mort" },
+            Ct));
+        Assert.Equal(updated.CreatedAtUtc, unchanged.CreatedAtUtc);
+    }
+
+    [Fact]
+    public async Task Update_rejects_an_added_date_in_the_future()
+    {
+        var book = await AddBookAsync("Mort");
+        var tomorrow = DateOnly.FromDateTime(DateTime.Now).AddDays(1);
+
+        var error = Failure(
+            await Library.UpdateBookAsync(
+                book.Id,
+                new BookInput { Title = "Mort", AddedOn = tomorrow },
+                Ct),
+            ErrorType.Validation);
+
+        Assert.Equal([nameof(BookInput.AddedOn)], error.FieldErrors.Select(e => e.Field));
+        Assert.Equal(book.CreatedAtUtc, Success(await Library.GetBookAsync(book.Id, Ct)).CreatedAtUtc);
+    }
+
+    [Fact]
     public async Task Unknown_ids_return_not_found()
     {
         var id = Guid.CreateVersion7();

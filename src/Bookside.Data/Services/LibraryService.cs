@@ -12,6 +12,8 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
 {
     private const int MinPublishedYear = -3000;
 
+    private static readonly DateOnly MinAddedOn = new(1900, 1, 1);
+
     public async Task<PagedResult<BookSummary>> ListBooksAsync(BookQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -643,6 +645,34 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             .AsSplitQuery()
             .SingleOrDefaultAsync(cancellationToken);
 
+    /// <summary>
+    /// Moves an existing book's creation time to another local date, keeping
+    /// the time of day so books added on the same day stay in order.
+    /// </summary>
+    private void ApplyAddedOn(InputValidator v, DateOnly? addedOn, Book book)
+    {
+        if (addedOn is not { } date || book.CreatedAtUtc == default)
+        {
+            return;
+        }
+
+        var zone = timeProvider.LocalTimeZone;
+        var today = DateOnly.FromDateTime(timeProvider.GetLocalNow().DateTime);
+        if (date < MinAddedOn || date > today)
+        {
+            v.Add(nameof(BookInput.AddedOn), "Must be between 1900 and today.");
+            return;
+        }
+
+        var local = TimeZoneInfo.ConvertTimeFromUtc(book.CreatedAtUtc, zone);
+        if (DateOnly.FromDateTime(local) != date)
+        {
+            book.CreatedAtUtc = HomeService.LocalMidnightToUtc(
+                date.ToDateTime(TimeOnly.FromDateTime(local)),
+                zone);
+        }
+    }
+
     /// <summary>Validates <paramref name="input"/> onto <paramref name="book"/> and returns the cleaned author and series names.</summary>
     private (List<string> Authors, string? Series) ApplyInput(InputValidator v, BookInput input, Book book)
     {
@@ -670,6 +700,8 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             nameof(BookInput.PublishedYear),
             $"Must be between {MinPublishedYear} and {maxYear}.");
         book.PublishedYear = input.PublishedYear;
+
+        ApplyAddedOn(v, input.AddedOn, book);
 
         var isbn13 = CleanOrNull(input.Isbn13);
         var isbn10 = CleanOrNull(input.Isbn10);

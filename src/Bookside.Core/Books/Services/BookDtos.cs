@@ -47,6 +47,13 @@ public sealed record BookInput
     public string? MetadataSource { get; init; }
 
     public string? MetadataSourceId { get; init; }
+
+    /// <summary>
+    /// Local date the book was added (its <see cref="Common.Entity.CreatedAtUtc"/>),
+    /// keeping the time of day. Only used when updating: a new book is stamped
+    /// now. Null leaves it unchanged.
+    /// </summary>
+    public DateOnly? AddedOn { get; init; }
 }
 
 public enum BookFilter
