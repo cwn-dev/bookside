@@ -21,7 +21,21 @@
             <nav id="main-nav"
                  class="@(_menuOpen ? "open" : null)"
                  aria-label="Main">
-                <NavLink class="nav-link" href="books" Match="NavLinkMatch.Prefix">Library</NavLink>
+                <div class="nav-group">
+                    <NavLink class="nav-link" href="books" Match="NavLinkMatch.Prefix">Library</NavLink>
+                    <button type="button"
+                            class="nav-toggle"
+                            aria-label="More library pages"
+                            aria-expanded="@(_libraryOpen ? "true" : "false")"
+                            @onclick="() => _libraryOpen = !_libraryOpen">▾</button>
+                    @if (_libraryOpen)
+                    {
+                        <div class="nav-backdrop" @onclick="() => _libraryOpen = false"></div>
+                    }
+                    <div class="submenu @(_libraryOpen ? "open" : null)">
+                        <NavLink class="nav-link" href="books/series" Match="NavLinkMatch.Prefix">Series</NavLink>
+                    </div>
+                </div>
                 <div class="nav-group">
                     <NavLink class="nav-link" href="words" Match="NavLinkMatch.Prefix">Vocabulary</NavLink>
                     <button type="button"
@@ -69,12 +83,14 @@
 
 @code {
     private ErrorBoundary? _errorBoundary;
+    private bool _libraryOpen;
     private bool _vocabularyOpen;
     private bool _menuOpen;
 
     protected override void OnParametersSet()
     {
         // Runs on every navigation: close the menus after a link is followed.
+        _libraryOpen = false;
         _vocabularyOpen = false;
         _menuOpen = false;
         _errorBoundary?.Recover();

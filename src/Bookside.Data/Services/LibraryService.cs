@@ -200,6 +200,24 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<SeriesBooks>> ListSeriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        // shortcut: not paged, fine for a personal library; page by series if it grows to thousands.
+        var books = await ToSummaries(db.Books.AsNoTracking().Where(b => b.SeriesId != null))
+            .OrderBy(b => b.Series)
+            .ThenBy(b => b.SeriesNumber == null)
+            .ThenBy(b => b.SeriesNumber)
+            .ThenBy(b => b.Title)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return books
+            .GroupBy(b => b.Series!)
+            .Select(g => new SeriesBooks { Name = g.Key, Books = g.ToList() })
+            .ToList();
+    }
+
     public async Task<Result<CoverContent>> GetCoverAsync(Guid bookId, CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);

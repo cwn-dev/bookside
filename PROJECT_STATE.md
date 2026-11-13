@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 36, 2026-11-13)
+# Bookside: project state (end of session 37, 2026-11-13)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -211,6 +211,15 @@
   `CreatedAtUtc` to that date, keeping the local time of day; null = unchanged; ignored on add (stamped now);
   1900 to today, else field error `AddedOn`. Edit page only (not add): "Added to library" date field after the
   description, prefilled via `BookFormModel.From(book, zone)`. No migration.
+- Series page (session 37): `SeriesPage` (`/books/series`; `LibraryListState` only treats GUID paths as books,
+  so it forgets the list there like any other page), reached from a new Library submenu in the header (same
+  `nav-group` pattern as Vocabulary → Review; an indented row in the phone menu). `ILibraryService.ListSeriesAsync()`
+  → `SeriesBooks` (name + `BookSummary`s): one query over books with a series, sorted by series name, then number
+  (unnumbered last), then title, grouped in memory; not paged (shortcut, fine at personal size). No cards (user's
+  choice): series sit on the page background, split by a hairline that fades out to the right. Per series:
+  name (links to `books?q={series}`), "N books · M read", small covers side by side (wrapping grid, 64px phones /
+  76px desktop) with "#n" under each and a ✓ (read) or accent dot (reading) in the corner. Checked in Firefox at
+  1280 and 390 px, light and dark, on a copy of the dev DB with made-up series.
 - Book series (session 10): `BookInput`/`BookSummary`/`BookDetails` carry `Series` + `SeriesNumber`;
   `ILibraryService.ListSeriesNamesAsync()`. Edit form: "Series" text input with a native `<datalist>` of existing names
   + "Number in series". Library cards show `SeriesLabel.Format` ("Discworld #3") under the authors; the book page

@@ -445,6 +445,22 @@ public sealed class LibraryServiceTests : ServiceTestBase
     }
 
     [Fact]
+    public async Task List_series_groups_books_by_series_in_number_order()
+    {
+        await Library.AddBookAsync(new BookInput { Title = "Mort", Series = "Discworld", SeriesNumber = 4 }, Ct);
+        await Library.AddBookAsync(new BookInput { Title = "Unnumbered", Series = "Discworld" }, Ct);
+        await Library.AddBookAsync(new BookInput { Title = "Equal Rites", Series = "Discworld", SeriesNumber = 3 }, Ct);
+        await Library.AddBookAsync(new BookInput { Title = "Dune", Series = "Dune Chronicles", SeriesNumber = 1 }, Ct);
+        await Library.AddBookAsync(new BookInput { Title = "Coraline" }, Ct);
+
+        var series = await Library.ListSeriesAsync(Ct);
+
+        Assert.Equal(["Discworld", "Dune Chronicles"], series.Select(s => s.Name));
+        Assert.Equal(["Equal Rites", "Mort", "Unnumbered"], series[0].Books.Select(b => b.Title));
+        Assert.Equal(["Dune"], series[1].Books.Select(b => b.Title));
+    }
+
+    [Fact]
     public async Task Changing_clearing_or_deleting_removes_series_left_without_books()
     {
         var mort = Success(await Library.AddBookAsync(new BookInput { Title = "Mort", Series = "Discworld" }, Ct));

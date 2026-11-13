@@ -110,6 +110,13 @@ public sealed record BookQuery
     public int Take { get; init; } = Common.Paging.DefaultTake;
 }
 
+public sealed record SeriesBooks
+{
+    public required string Name { get; init; }
+
+    public required IReadOnlyList<BookSummary> Books { get; init; }
+}
+
 public sealed record BookSummary
 {
     public required Guid Id { get; init; }

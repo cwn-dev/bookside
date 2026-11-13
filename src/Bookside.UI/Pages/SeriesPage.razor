@@ -1,0 +1,67 @@
+@page "/books/series"
+@inject ILibraryService Library
+
+<PageTitle>Series · Bookside</PageTitle>
+
+<div class="page-header">
+    <h1>Series</h1>
+</div>
+
+@if (_series is null)
+{
+    <p class="loading" role="status">Loading…</p>
+}
+else if (_series.Count == 0)
+{
+    <div class="empty card">
+        <p>No series yet. Set one in a book's "Series" field when you edit it.</p>
+        <a class="btn" href="books">Go to the library</a>
+    </div>
+}
+else
+{
+    <ul class="series-list">
+        @foreach (var series in _series)
+        {
+            var read = series.Books.Count(b => b.TimesRead > 0);
+            <li @key="series.Name" class="series">
+                <div class="series-header">
+                    <h2><a href="@($"books?q={Uri.EscapeDataString(series.Name)}")">@series.Name</a></h2>
+                    <span class="muted">
+                        @(series.Books.Count == 1 ? "1 book" : $"{series.Books.Count} books")@(read > 0 ? $" · {read} read" : "")
+                    </span>
+                </div>
+                <ol class="shelf">
+                    @foreach (var book in series.Books)
+                    {
+                        var label = SeriesLabel.Format(series.Name, book.SeriesNumber)!;
+                        <li @key="book.Id">
+                            <a href="books/@book.Id" title="@book.Title">
+                                <CoverImage BookId="book.Id" Title="@book.Title" CoverSha256="@book.CoverSha256" />
+                                <span class="visually-hidden">@book.Title, @label</span>
+                                @if (book.TimesRead > 0)
+                                {
+                                    <span class="mark read" aria-hidden="true">✓</span>
+                                }
+                                else if (book.IsReading)
+                                {
+                                    <span class="mark reading" aria-hidden="true"></span>
+                                }
+                            </a>
+                            @if (book.SeriesNumber is not null)
+                            {
+                                <span class="number" aria-hidden="true">#@book.SeriesNumber.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)</span>
+                            }
+                        </li>
+                    }
+                </ol>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private IReadOnlyList<SeriesBooks>? _series;
+
+    protected override async Task OnInitializedAsync() => _series = await Library.ListSeriesAsync();
+}

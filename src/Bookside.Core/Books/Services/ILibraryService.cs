@@ -43,6 +43,13 @@ public interface ILibraryService
     Task<IReadOnlyList<string>> ListSeriesNamesAsync(
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Every series with its books, series by name, books by number then
+    /// title (unnumbered last).
+    /// </summary>
+    Task<IReadOnlyList<SeriesBooks>> ListSeriesAsync(
+        CancellationToken cancellationToken = default);
+
     Task<Result<CoverContent>> GetCoverAsync(
         Guid bookId,
         CancellationToken cancellationToken = default);

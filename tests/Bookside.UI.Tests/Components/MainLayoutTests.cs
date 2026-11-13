@@ -6,21 +6,23 @@ namespace Bookside.UI.Tests.Components;
 
 public sealed class MainLayoutTests : ComponentTestBase
 {
-    [Fact]
-    public void Vocabulary_submenu_links_to_review_and_toggles_on_tap()
+    [Theory]
+    [InlineData(0, "books/series")]
+    [InlineData(1, "words/review")]
+    public void Submenus_link_to_sub_pages_and_toggle_on_tap(int group, string href)
     {
         var layout = Render<MainLayout>();
-        var toggle = layout.Find(".nav-toggle");
+        var toggle = layout.FindAll(".nav-toggle")[group];
 
-        Assert.Equal("words/review", layout.Find(".submenu a").GetAttribute("href"));
+        Assert.Equal(href, layout.FindAll(".submenu a")[group].GetAttribute("href"));
         Assert.Equal("false", toggle.GetAttribute("aria-expanded"));
 
         toggle.Click();
-        Assert.Equal("true", layout.Find(".nav-toggle").GetAttribute("aria-expanded"));
-        Assert.Contains("open", layout.Find(".submenu").ClassList);
+        Assert.Equal("true", layout.FindAll(".nav-toggle")[group].GetAttribute("aria-expanded"));
+        Assert.Contains("open", layout.FindAll(".submenu")[group].ClassList);
 
         layout.Find(".nav-backdrop").Click();
-        Assert.Equal("false", layout.Find(".nav-toggle").GetAttribute("aria-expanded"));
+        Assert.Equal("false", layout.FindAll(".nav-toggle")[group].GetAttribute("aria-expanded"));
         Assert.Empty(layout.FindAll(".nav-backdrop"));
     }
 
