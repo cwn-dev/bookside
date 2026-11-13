@@ -252,6 +252,12 @@
     box-shadow: 0 6px 16px rgb(0 0 0 / 0.18);
 }
 
+.popover-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+}
+
 .pills-popover.up {
     top: auto;
     bottom: 0;

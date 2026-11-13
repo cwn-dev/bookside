@@ -85,6 +85,12 @@ public sealed class ActivityPageTests : ComponentTestBase
         page.Find(".pills-popover .more-icons").Click();
 
         Assert.Empty(page.FindAll(".pills-popover"));
+
+        // A click anywhere else closes it too.
+        page.Find(".more-icons").Click();
+        page.Find(".popover-backdrop").Click();
+
+        Assert.Empty(page.FindAll(".pills-popover"));
     }
 
     [Fact]

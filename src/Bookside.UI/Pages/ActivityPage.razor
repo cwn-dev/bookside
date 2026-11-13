@@ -89,6 +89,8 @@ else
                             @if (_expanded == day.Date)
                             {
                                 @* Over the cells, so the weeks keep their height. *@
+                                @* A click anywhere else lands here and closes it. *@
+                                <div class="popover-backdrop" @onclick="() => _expanded = null"></div>
                                 <div class="pills-popover @(weekIndex >= _weeks.Count / 2 ? "up" : null)">
                                     @foreach (var item in items)
                                     {

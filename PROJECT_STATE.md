@@ -151,7 +151,8 @@
   events as one muted icon each under the lines (`CalendarDay.Pills`; text on hover, links like the day list;
   goals stay coloured; a busy day shows 11 then "▾ +N", which opens the full list as a panel over the
   cells (below, or above in the lower weeks so the rounded calendar edge doesn't clip it; ≤ 12rem, scrolls), so the
-  weeks keep their height; one day open at a time, "▴" closes it),
+  weeks keep their height; one day open at a time; "▴" or a click anywhere else (transparent fixed backdrop under the panel, below the
+  sticky header) closes it),
   event icons; ≤ 500px: those hidden, up to 3 event icons under the day number; a key under the
   grid (bar swatches + icons); the selected day (default today in the current month) lists its items below).
   `Components/ActivityIcon` (inline SVG stroke icons, colour per type, name from `CalendarItem.Icon`) marks
