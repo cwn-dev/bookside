@@ -32,11 +32,17 @@ dotnet run --project src/Bookside.Web                                # http://lo
 # (firefox --headless --marionette -remote-allow-system-access --no-remote --profile <tmp>; TCP 2828, length-prefixed
 #  JSON; chrome-context pref layout.css.prefers-color-scheme.content-override = 0 for dark mode). The user's own
 #  Firefox may be running: stop only the headless one by PID, and never `pkill -f` a pattern that also matches
-#  your own shell command.
+#  your own shell command. Headless windows can't go below 500px wide: for phone widths, narrow the content
+#  instead (chrome context: gBrowser.selectedBrowser.style.cssText = "min-width:390px;max-width:390px;…").
+#  Crisp shots: pref layout.css.devPixelsPerPx = "2" (desktop) / "3" (mobile).
+# README screenshots: screenshots/hero.webp (home, light/dark diagonal split) + screenshots/{desktop,mobile}/
+#  {light,dark}/<page>.webp, framed (rounded corners, hairline border, soft shadow, transparent background).
+#  Take them on a copy of the dev DB; the desktop gallery uses <picture> to follow the viewer's GitHub theme.
 dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web   # optional Google Books fallback
+dotnet user-secrets set Bookside:ApiToken <token> --project src/Bookside.Web           # turns the /api endpoints on
 dotnet ef migrations add <Name> --project src/Bookside.Data.Sqlite   # after any model change
 dotnet ef migrations script --project src/Bookside.Data.Sqlite       # review generated SQL
-docker compose up -d --build                                         # on the Docker host (no Docker on the dev Mac); see README "Deploy"
+docker compose up -d --build                                         # on the Docker host (no Docker on the dev Mac); see README "Deploy from source (Docker)"
 dotnet publish src/Bookside.Web -p:Version=1.6.1                     # release version (footer); unset = 0.0.0-dev, shown as "dev"
 ```
 
@@ -69,12 +75,24 @@ dotnet publish src/Bookside.Web -p:Version=1.6.1                     # release v
   MAUI can reuse it. Components inject Core service interfaces.
 - `src/Bookside.Web`: Blazor Web App host (Interactive Server, no prerendering): `Program.cs`, `App.razor`, `Routes.razor`,
   error page, minimal API endpoints (`CoverEndpoint`). Config: `Bookside:DatabasePath`, `Bookside:DataProtectionKeysPath`.
+- `src/Bookside.Api`: HTTP API as minimal API endpoints (class library: Core + the ASP.NET Core framework), mapped
+  by the Web host with `MapBooksideApi(token)` under `/api`. One static class per area (`Words/WordsApi.Map`);
+  `ApiResults.Problem(ServiceError)` maps every service error to ProblemDetails (400/404/409/503, `code`, camelCase
+  field errors). Auth: one bearer token (`Bookside:ApiToken`), checked by a group endpoint filter; no token = nothing
+  mapped. Status code pages are skipped for the group. Code here uses `ConfigureAwait(false)` (CA2007 is on).
+- `koreader/bookside.koplugin`: KOReader plugin (Lua, not in the solution) that pushes Vocabulary Builder words
+  to `POST /api/words`; one `main.lua`. Not built or tested by `dotnet`; check it in KOReader.
+- `tests/Bookside.Api.Tests`: `WebApplicationFactory<Program>` tests through `ApiHostFactory` (token set, offline
+  dictionary that knows no words; `token: null` = API off).
+- `branding/`: logo and favicon sources (not in the image). The header uses `Bookside.UI/Components/BrandLogo`
+  (same paths, inline); the favicons are copies in `Bookside.Web/wwwroot`: update both when the logo changes.
 - `Dockerfile` / `docker-compose.yaml` / `.dockerignore` at the root: the image copies only the root build files
   (`global.json`, `Directory.*.props`, `.editorconfig`) and `src/`; add any new root-level build file to the `COPY`.
 - `tests/Bookside.UI.Tests`: bUnit tests deriving from `ComponentTestBase` (production registrations incl. `AddBooksideUi()` on temp SQLite,
   controllable `FakeDictionaryLookup` via `Dictionary`, `FakeBookLookup` via `BookLookup`) and
   `WebApplicationFactory<Program>` endpoint tests (`Endpoints/WebHostFactory`).
-- Planned: `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
+- Planned: `Bookside.App` (MAUI Blazor Hybrid), with HTTP implementations of the Core service interfaces calling
+  `Bookside.Api`.
 
 ## Conventions
 

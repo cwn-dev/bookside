@@ -1,10 +1,19 @@
-# Bookside
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./branding/bookside-logo-dark.svg">
+    <img src="./branding/bookside-logo-light.svg" width="360" alt="Bookside">
+  </picture>
+</h1>
 
 <p align="center">
   <a href="https://hub.docker.com/r/cwndev/bookside"><img src="https://img.shields.io/docker/v/cwndev/bookside?sort=semver&label=docker&logo=docker&logoColor=white" alt="Docker image version"></a>
   <a href="https://github.com/cwn-dev/
   bookside/releases/latest"><img src="https://img.shields.io/github/v/release/cwn-dev/bookside?sort=semver&logo=github" alt="Latest release"></a>
   <a href="https://github.com/cwn-dev/bookside/actions/workflows/build-and-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/cwn-dev/bookside/build-and-test.yml?branch=main&label=build%20%26%20tests&logo=githubactions&logoColor=white" alt="Build and tests"></a>
+</p>
+
+<p align="center">
+  <img src="./screenshots/hero.webp" width="100%" alt="Bookside home page, half in light mode and half in dark mode">
 </p>
 
 Bookside is a self-hosted reading companion. It keeps your library of books, with covers, authors, series and tags, and imports details by ISBN, title or author from Open Library (or Google Books). For each book you log when you started and finished it, rate it and keep running reading notes. Words you meet while reading go into a vocabulary list, linked to the book, page and sentence they came from, with definitions fetched automatically. A home page brings together what you're reading now, recently finished books, recent words, a word of the day and reading stats. A search box in the header finds books, words, tags and comments as you type.
@@ -17,65 +26,57 @@ The CI setup is human developed and run (apart from that time Claude updated the
 
 ## Desktop Browser UI
 
+<sub>These follow your GitHub theme, light or dark. Every screen in both themes is in [screenshots](./screenshots/).</sub>
+
 <table>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-28-30%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-28-30%20Bookside.png" width="100%" alt="Home"></a><br>
+      <a href="./screenshots/desktop/light/home.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/home.webp"><img src="./screenshots/desktop/light/home.webp" width="100%" alt="Home"></picture></a><br>
       <sub>Home</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2022-02-31%20Library%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2022-02-31%20Library%20%C2%B7%20Bookside.png" width="100%" alt="Library"></a><br>
+      <a href="./screenshots/desktop/light/library.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/library.webp"><img src="./screenshots/desktop/light/library.webp" width="100%" alt="Library"></picture></a><br>
       <sub>Library</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-57%20The%20Colour%20of%20Magic%20%C2%B7%20Bookside.png" width="100%" alt="Book details and reading log"></a><br>
-      <sub>Book details and reading log</sub>
+      <a href="./screenshots/desktop/light/book.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/book.webp"><img src="./screenshots/desktop/light/book.webp" width="100%" alt="Book details"></picture></a><br>
+      <sub>Book details</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-30%20at%2022-03-11%202026%20reading%20challenge%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2022-03-11%202026%20reading%20challenge%20%C2%B7%20Bookside.png" width="100%" alt="Reading challenge"></a><br>
+      <a href="./screenshots/desktop/light/reading-log.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/reading-log.webp"><img src="./screenshots/desktop/light/reading-log.webp" width="100%" alt="Reading log with tagged notes"></picture></a><br>
+      <sub>Reading log with tagged notes</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="./screenshots/desktop/light/challenge.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/challenge.webp"><img src="./screenshots/desktop/light/challenge.webp" width="100%" alt="Reading challenge"></picture></a><br>
       <sub>Reading challenge</sub>
     </td>
-  </tr>
-  <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-43-44%20Add%20book%20%C2%B7%20Bookside.png" width="100%" alt="Add a book: metadata lookup"></a><br>
-      <sub>Add a book: metadata lookup</sub>
-    </td>
-    <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-00%20Add%20book%20%C2%B7%20Bookside.png" width="100%" alt="Add a book: details form"></a><br>
-      <sub>Add a book: details form</sub>
+      <a href="./screenshots/desktop/light/search.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/search.webp"><img src="./screenshots/desktop/light/search.webp" width="100%" alt="Global search"></picture></a><br>
+      <sub>Global search</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-35%20Vocabulary%20%C2%B7%20Bookside.png" width="100%" alt="Vocabulary"></a><br>
+      <a href="./screenshots/desktop/light/vocabulary.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/vocabulary.webp"><img src="./screenshots/desktop/light/vocabulary.webp" width="100%" alt="Vocabulary"></picture></a><br>
       <sub>Vocabulary</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-44-28%20Vocabulary%20%C2%B7%20Bookside.png" width="100%" alt="Vocabulary quick-add"></a><br>
-      <sub>Vocabulary quick-add</sub>
+      <a href="./screenshots/desktop/light/add-book.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/add-book.webp"><img src="./screenshots/desktop/light/add-book.webp" width="100%" alt="Add a book: Open Library / Google Books lookup"></picture></a><br>
+      <sub>Add a book: Open Library / Google Books lookup</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-26%20at%2020-41-44%20sapient%20%C2%B7%20Bookside.png" width="100%" alt="Word details"></a><br>
+      <a href="./screenshots/desktop/light/word.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/word.webp"><img src="./screenshots/desktop/light/word.webp" width="100%" alt="Word details"></picture></a><br>
       <sub>Word details</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-28-10%20Review%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-28-10%20Review%20%C2%B7%20Bookside.png" width="100%" alt="Flash card review"></a><br>
+      <a href="./screenshots/desktop/light/review.webp"><picture><source media="(prefers-color-scheme: dark)" srcset="./screenshots/desktop/dark/review.webp"><img src="./screenshots/desktop/light/review.webp" width="100%" alt="Flash card review"></picture></a><br>
       <sub>Flash card review</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png"><img src="./screenshots/Screenshot%202026-10-30%20at%2020-27-35%20Review%20%C2%B7%20Bookside.png" width="100%" alt="Review done: practice rounds"></a><br>
-      <sub>Review done: practice rounds</sub>
-    </td>
-    <td width="50%" align="center" valign="top">
-      <a href="./screenshots/Screenshot%20from%202026-11-06%2020-06-24.png"><img src="./screenshots/Screenshot%20from%202026-11-06%2020-06-24.png" width="100%" alt="Global search"></a><br>
-      <sub>Global search</sub>
     </td>
   </tr>
 </table>
@@ -85,25 +86,25 @@ The CI setup is human developed and run (apart from that time Claude updated the
 <table>
   <tr>
     <td width="25%" align="center" valign="top">
-      <a href="./screenshots/mobile/home.png"><img src="./screenshots/mobile/home.png" width="100%" alt="Home"></a><br>
+      <a href="./screenshots/mobile/light/home.webp"><img src="./screenshots/mobile/light/home.webp" width="100%" alt="Home (light)"></a><br>
       <sub>Home</sub>
     </td>
     <td width="25%" align="center" valign="top">
-      <a href="./screenshots/mobile/a%20book.png"><img src="./screenshots/mobile/a%20book.png" width="100%" alt="Book"></a><br>
-      <sub>Book</sub>
+      <a href="./screenshots/mobile/dark/search.webp"><img src="./screenshots/mobile/dark/search.webp" width="100%" alt="Search (dark)"></a><br>
+      <sub>Search</sub>
     </td>
     <td width="25%" align="center" valign="top">
-      <a href="./screenshots/mobile/reading%20log.png"><img src="./screenshots/mobile/reading%20log.png" width="100%" alt="Reading log"></a><br>
+      <a href="./screenshots/mobile/light/reading-log.webp"><img src="./screenshots/mobile/light/reading-log.webp" width="100%" alt="Reading log (light)"></a><br>
       <sub>Reading log</sub>
     </td>
     <td width="25%" align="center" valign="top">
-      <a href="./screenshots/mobile/voacbulary%20entry.png"><img src="./screenshots/mobile/voacbulary%20entry.png" width="100%" alt="Word details"></a><br>
+      <a href="./screenshots/mobile/dark/word.webp"><img src="./screenshots/mobile/dark/word.webp" width="100%" alt="Word details (dark)"></a><br>
       <sub>Word details</sub>
     </td>
   </tr>
 </table>
 
-[More screenshots](./screenshots/)
+[More screenshots](./screenshots/): desktop and mobile, light and dark.
 
 ## Features
 
@@ -120,7 +121,138 @@ The CI setup is human developed and run (apart from that time Claude updated the
 * Vocabulary flash card practise mode - after your daily review, you can go back into the 'Review' section to practise with one of the three modes: forgotten today, random words, and most forgotten.
 * Set yourself a reading challenge for the year and see your progress on the home page.
 * Comment tagging system (under prototyping/development).
+* HTTP API for adding words from scripts, shortcuts or anything that can send an HTTP request (see "API" below).
 * Global search in the header: finds books (by title, author or series), words, tags and comments as you type, with the matches highlighted. Use the keyboard to move through the results and "See all" to open the full library or vocabulary results.
+
+## Docker
+
+Run the published image from Docker Hub (multi-arch: `linux/amd64`, `linux/arm64`):
+
+```bash
+mkdir -p bookside_data && sudo chown 1654:1654 bookside_data   # the image runs as UID 1654
+docker run -d --name bookside --restart unless-stopped \
+  -p 8080:8080 \
+  -v "$PWD/bookside_data:/data" \
+  -e TZ=Europe/London \
+  -e ASPNETCORE_FORWARDEDHEADERS_ENABLED=true \
+  --stop-timeout 30 \
+  cwndev/bookside:latest
+```
+
+The app listens on port 8080. Optional settings, as extra `-e` flags:
+
+- `Bookside__GoogleBooks__ApiKey=<key>`: Google Books as a fallback for book lookups (Open Library is always used).
+- `Bookside__ApiToken=<token>`: turns the HTTP API on (see "API"), e.g. from `openssl rand -hex 32`.
+
+- **Update:** `docker pull cwndev/bookside:latest && docker rm -f bookside`, then the same `docker run`
+  (migrations run at startup; the data stays in `bookside_data/`).
+- **Logs:** `docker logs -f bookside`.
+
+## Docker Compose
+
+To run the published image from Docker Hub without cloning the repo, create a folder with this
+`docker-compose.yaml`:
+
+```yaml
+services:
+  bookside:
+    image: cwndev/bookside:latest
+    container_name: bookside
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    volumes:
+      - ./bookside_data:/data
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+      # Trust X-Forwarded-For/-Proto from the reverse proxy.
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      # Optional: Google Books as a fallback for book lookups. Empty = not used.
+      Bookside__GoogleBooks__ApiKey: ${GOOGLE_BOOKS_API_KEY:-}
+      # Optional: bearer token for the HTTP API (/api). Empty = API off.
+      Bookside__ApiToken: ${BOOKSIDE_API_TOKEN:-}
+    stop_grace_period: 30s
+```
+
+and a `.env` file next to it:
+
+```bash
+TZ=Europe/London
+# GOOGLE_BOOKS_API_KEY=...
+# BOOKSIDE_API_TOKEN=...   # e.g. from `openssl rand -hex 32`
+```
+
+Then:
+
+```bash
+mkdir -p bookside_data && sudo chown 1654:1654 bookside_data   # the image runs as UID 1654
+docker compose up -d
+```
+
+- **Update:** `docker compose pull && docker compose up -d` (migrations run at startup).
+- **Logs:** `docker compose logs -f bookside`.
+- **Data, backup, reverse proxy:** see "Deploy from source (Docker)" below.
+
+## API
+
+Endpoints under `/api` on the same host and port as the web UI. They are off until a token is set
+(`Bookside__ApiToken` with `docker run`, `BOOKSIDE_API_TOKEN` in `.env` with Compose; in development
+`dotnet user-secrets set Bookside:ApiToken <token> --project src/Bookside.Web`). Every request needs
+`Authorization: Bearer <token>`; a missing or wrong token gets 401.
+
+**`POST /api/words`** adds a word to the vocabulary list and looks up its definition.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"term": "petrichor", "book": "Dune", "pageNumber": 42, "context": "the smell of rain"}' \
+  https://bookside.example/api/words
+```
+
+Only `term` is required. Optional: `language` (default `en`), `context` (the sentence), `pageNumber`, `notes`, and
+the book as either `book` (exact title, any case) or `bookId`.
+
+- `201 Created`: the new word (JSON) with its definition, `Location: /words/{id}`.
+- `200 OK`: the word was already on the list; returns the existing one, so resending is safe.
+- `400`: validation errors as ProblemDetails, e.g. `{"errors": {"book": ["No book titled \"Emma\"."]}}`.
+
+## KOReader plugin
+
+`koreader/bookside.koplugin` pushes words saved by KOReader's Vocabulary Builder to `POST /api/words`, with the
+text around the word as `context` and the book's title as `book` (no matching book in Bookside = added without one).
+
+1. Copy the `bookside.koplugin` folder into KOReader's `plugins/` folder and restart KOReader.
+2. Tools → Bookside → Server settings: the server address (e.g. `https://bookside.example`) and the API token.
+3. Tools → Bookside → Push vocabulary.
+
+Only words added since the last push are sent (the time is kept in KOReader's `settings/bookside.lua`). Tap
+"Last pushed" to send everything again; words Bookside already has are skipped.
+
+## Deploy from source (Docker)
+
+One container, SQLite in `./bookside_data` on the Docker host, plain HTTP behind a reverse proxy that terminates TLS.
+
+```bash
+git clone <repo> bookside && cd bookside
+mkdir -p bookside_data && sudo chown 1654:1654 bookside_data   # the image runs as the non-root `app` user (UID 1654)
+echo "TZ=Europe/London" > .env   # server time zone: "today" for reading dates, reading-log times
+docker compose up -d --build
+```
+
+- **Data:** `bookside_data/bookside.db` (+ `-wal`/`-shm`) and `bookside_data/keys/` (ASP.NET Core Data Protection
+  keys, stored unencrypted: keep the folder private). `bookside_data/` must be on a local filesystem (SQLite WAL doesn't work on NFS/SMB).
+- **Backup:** stop the container and copy `bookside_data/`, or while it runs:
+  `sqlite3 bookside_data/bookside.db ".backup backup.db"`
+  (copying only `bookside.db` while it runs can miss changes still in the WAL file).
+- **Port:** published on 8080 on all interfaces. `X-Forwarded-For`/`-Proto` are trusted from any client, so keep
+  the port reachable only by the proxy (e.g. with a firewall).
+- **Reverse proxy:** must pass WebSockets (Blazor Server), e.g. nginx needs `proxy_http_version 1.1` plus the
+  `Upgrade`/`Connection` headers; Caddy and Traefik do it by default.
+- **Book lookup:** Open Library needs no key. To add Google Books as a fallback, put `GOOGLE_BOOKS_API_KEY=…` in
+  `.env` (a Google Cloud API key with the Books API enabled). In development:
+  `dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web`.
+- **API:** off until you set a token: `BOOKSIDE_API_TOKEN=$(openssl rand -hex 32)` in `.env` (see "API").
+- **No authentication for the web UI yet:** don't expose it beyond your LAN/VPN.
+- **Update:** `git pull && docker compose up -d --build` (migrations run at startup).
 
 ## Layout
 
@@ -132,7 +264,8 @@ The CI setup is human developed and run (apart from that time Claude updated the
 | `tests/Bookside.Data.Tests` | xUnit v3 tests against real temp SQLite files. |
 
 Also `src/Bookside.Integrations` (dictionary clients), `src/Bookside.UI` (Razor class library), `src/Bookside.Web`
-(Blazor Web App host) and their test projects; see CLAUDE.md. Planned: `Bookside.Api` + `Bookside.App` (MAUI Blazor Hybrid).
+(Blazor Web App host), `src/Bookside.Api` (HTTP API, mapped by the Web host) and their test projects; see CLAUDE.md.
+Planned: `Bookside.App` (MAUI Blazor Hybrid).
 
 ## Commands
 
@@ -149,28 +282,3 @@ dotnet ef migrations script --project src/Bookside.Data.Sqlite
 ```
 
 Hosts apply migrations at startup via `services.InitializeBooksideDatabaseAsync()`.
-
-## Deploy (Docker)
-
-One container, SQLite in `./data` on the Docker host, plain HTTP behind a reverse proxy that terminates TLS.
-
-```bash
-git clone <repo> bookside && cd bookside
-mkdir -p data && sudo chown 1654:1654 data   # the image runs as the non-root `app` user (UID 1654)
-echo "TZ=Europe/London" > .env               # server time zone: "today" for reading dates, reading-log times
-docker compose up -d --build
-```
-
-- **Data:** `data/bookside.db` (+ `-wal`/`-shm`) and `data/keys/` (ASP.NET Core Data Protection keys, stored
-  unencrypted: keep the folder private). `data/` must be on a local filesystem (SQLite WAL doesn't work on NFS/SMB).
-- **Backup:** stop the container and copy `data/`, or while it runs: `sqlite3 data/bookside.db ".backup backup.db"`
-  (copying only `bookside.db` while it runs can miss changes still in the WAL file).
-- **Port:** published on `127.0.0.1:8080` for a proxy on the same host. `.env` settings: `BOOKSIDE_PORT=…`,
-  `BOOKSIDE_BIND=0.0.0.0` when the proxy runs elsewhere (then keep the port reachable only by the proxy).
-- **Reverse proxy:** must pass WebSockets (Blazor Server), e.g. nginx needs `proxy_http_version 1.1` plus the
-  `Upgrade`/`Connection` headers; Caddy and Traefik do it by default. `X-Forwarded-For`/`-Proto` are trusted.
-- **Book lookup:** Open Library needs no key. To add Google Books as a fallback, put `GOOGLE_BOOKS_API_KEY=…` in
-  `.env` (a Google Cloud API key with the Books API enabled). In development:
-  `dotnet user-secrets set Bookside:GoogleBooks:ApiKey <key> --project src/Bookside.Web`.
-- **No authentication yet:** don't expose it beyond your LAN/VPN.
-- **Update:** `git pull && docker compose up -d --build` (migrations run at startup).

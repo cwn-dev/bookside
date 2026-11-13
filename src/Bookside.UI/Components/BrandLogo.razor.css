@@ -1,0 +1,13 @@
+.brand-logo {
+    display: block;
+    height: 1.6rem;
+    width: auto;
+}
+
+.logo-text {
+    fill: var(--text);
+}
+
+.logo-accent {
+    fill: var(--accent);
+}

@@ -14,6 +14,12 @@ public sealed class SearchSnippetTests
         Assert.Equal("@Jane Eyre on p. 42, #slow burn", snippet);
     }
 
+    [Theory]
+    [InlineData("Ender’s game", "ender's")]
+    [InlineData("Ender's game", "ender’s")]
+    public void Any_apostrophe_matches_any_other(string text, string query) =>
+        Assert.Equal(text, SearchSnippet.Around(text, query));
+
     [Fact]
     public void A_match_near_the_start_cuts_only_the_end_at_a_space()
     {

@@ -8,6 +8,7 @@
     <UserSecretsId>941cede2-1ff6-49c9-808a-a285f0813286</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Bookside.Api\Bookside.Api.csproj" />
     <ProjectReference Include="..\Bookside.UI\Bookside.UI.csproj" />
     <ProjectReference Include="..\Bookside.Data.Sqlite\Bookside.Data.Sqlite.csproj" />
     <ProjectReference Include="..\Bookside.Integrations\Bookside.Integrations.csproj" />

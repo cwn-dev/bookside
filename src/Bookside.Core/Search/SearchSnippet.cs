@@ -1,5 +1,6 @@
 using System.Text;
 using Bookside.Core.Books;
+using Bookside.Core.Common;
 
 namespace Bookside.Core.Search;
 
@@ -14,7 +15,8 @@ public static class SearchSnippet
 
     /// <summary>
     /// About <paramref name="maxLength"/> characters of <paramref name="text"/>
-    /// around the first case-insensitive match of <paramref name="query"/>,
+    /// around the first case-insensitive match of <paramref name="query"/>
+    /// (any apostrophe matches any other, like the search query),
     /// cut at spaces where possible, with <c>…</c> where text was left out.
     /// Inline tags are shown in display form first (<c>@[Jane Eyre]</c> →
     /// <c>@Jane Eyre</c>), so a cut never leaves half a tag's brackets.
@@ -36,7 +38,9 @@ public static class SearchSnippet
         var term = query.Trim();
         var match = term.Length == 0
             ? -1
-            : searchable.IndexOf(term, StringComparison.OrdinalIgnoreCase);
+            : Apostrophes.Normalize(searchable).IndexOf(
+                Apostrophes.Normalize(term),
+                StringComparison.OrdinalIgnoreCase);
 
         if (term.Length > 0 && match < 0)
         {

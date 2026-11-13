@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- HTTP API (minimal API endpoints) over the Core service interfaces. Mapped by the host with
+       MapBooksideApi(); the services come from the host's DI container. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Bookside.Core\Bookside.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bookside.Api.Tests" />
+  </ItemGroup>
+</Project>

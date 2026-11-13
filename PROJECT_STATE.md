@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 29, 2026-11-06)
+# Bookside: project state (end of session 36, 2026-11-08)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -112,7 +112,18 @@
   `Components/Search/` (`BookResults`, `WordResults`, `TagResults`, `CommentResults`, `Highlighted` for `<mark>`,
   `SearchLinks`); shared result styles (`.search-section`, `.search-hits`, `.search-meta`, `.search-see-all`) in
   `bookside.css`. Search errors are caught in the component (it sits outside the layout's `ErrorBoundary`):
-  logged, "Search failed." shown. Checked in Firefox at 1280 and 375 px, light and dark.
+  logged, "Search failed." shown. Session 29: while open, `html:has(...)` in `bookside.css` sets `overflow: hidden` and the backdrop is
+  `touch-action: none`, so iOS doesn't scroll the page under the panel at the end of the results. The box is 16px on touch devices (`pointer: coarse`), like other fields, so iOS doesn't zoom in on focus. Checked in Firefox at 1280 and 375 px, light and dark.
+- Logo (session 34): the user's wordmark ("Bookside" + accent full stop) and favicons live in `branding/`
+  (`bookside-logo.svg` follows `prefers-color-scheme`; `-light`/`-dark` fixed variants; `favicon.svg`/`.ico`).
+  Header brand = `Components/BrandLogo` (inline SVG, fills from `--text`/`--accent`, so it follows the app
+  theme with no extra request; link labelled "Bookside home"). `favicon.svg` + `favicon.ico` copied to
+  `Bookside.Web/wwwroot` and linked in `App.razor`. README: logo as the centred `<h1>` via `<picture>`
+  (light/dark). Checked in Firefox at 1280 and 390 px, light and dark.
+- README screenshots (session 32): retaken for the current UI in light and dark, desktop 1280 px @2x and mobile
+  390 px @3x, as framed WebP (4.5 MB total, replacing the old PNGs). Hero = home page split diagonally light/dark;
+  desktop gallery follows the viewer's GitHub theme (`<picture>`); mobile row alternates light and dark. Taken on a
+  copy of the dev DB with the Revolting comments rewritten as realistic notes (the real DB still has the test ones).
 - Version + footer (session 28): `Directory.Build.props` defaults `Version` to `0.0.0-dev` (no `+sha` in the
   informational version); the release workflow passes the tag minus `v` as the Dockerfile `VERSION` build arg →
   `dotnet publish -p:Version=`. `Bookside.UI/AppInfo` (singleton from `AddBooksideUi()`, `TryAdd` so tests can
@@ -135,9 +146,29 @@
   3 event pills + "+N more"; ≤ 500px: pills hidden, up to 3 event icons under the day number; a key under the
   grid (bar swatches + icons); the selected day (default today in the current month) lists its items below).
   `Components/ActivityIcon` (inline SVG stroke icons, colour per type, name from `CalendarItem.Icon`) marks
-  each pill, day-list row and key entry, so the type shows without hovering (user's request). "Activity" nav link after Challenge; to fit four links at 375px
-  the phone header shows a serif "B" monogram instead of "Bookside" (`aria-label="Bookside"`). Checked in Firefox
+  each pill, day-list row and key entry, so the type shows without hovering (user's request). "Activity" nav link after Challenge (in the
+  mobile menu sheet on phones). Checked in Firefox
   at 1280 and 375 px (375 via a 375px iframe: headless windows stop at 500), light and dark.
+- HTTP API (session 31): `src/Bookside.Api` (class library, `FrameworkReference Microsoft.AspNetCore.App`, Core only),
+  mapped by `Program.cs` with `app.MapBooksideApi(config["Bookside:ApiToken"])`. Blank token = nothing mapped.
+  Group `/api`: endpoint filter checks `Authorization: Bearer` with `CryptographicOperations.FixedTimeEquals`
+  (401 ProblemDetails + `WWW-Authenticate: Bearer`); `SkipStatusCodePagesAttribute` metadata, so bad-JSON 400s
+  aren't re-executed into the HTML not-found page. `ApiResults.Problem(ServiceError)`. JSON enums as strings
+  (`ConfigureHttpJsonOptions` in `Program.cs`). First endpoint `POST /api/words` (`Words/WordsApi`,
+  `ApiWordInput` = `WordInput` + `book` title): 201 + `WordDetails` + `Location: /words/{id}`; duplicate → 200 +
+  existing `WordSummary`; `book` matched exactly (any case) among the first 20 `ListBooksAsync` search hits, 0 or
+  2+ matches or both `book` and `bookId` → 400 field error `book`. Compose `BOOKSIDE_API_TOKEN`; README "API".
+  `tests/Bookside.Api.Tests`: 11 tests (`ApiHostFactory`, `WordsApiTests`). Checked with curl on a scratch DB.
+- KOReader plugin (session 32): `koreader/bookside.koplugin` (`_meta.lua`, `main.lua`). Tools → Bookside:
+  "Push vocabulary", "Server settings" (`MultiInputDialog`: address + token), "Last pushed: …" (tap = reset to
+  send all again). Reads `settings/vocabulary_builder.sqlite3` (`vocabulary` ⋈ `title`, `create_time >
+  last_sync`, oldest first) and POSTs `term`, `context` (prev + word + next, trimmed) and `book` (title). Settings
+  and the `last_sync` cursor (unix s) in `settings/bookside.lua`. Not run yet: no Lua or KOReader on the dev box.
+- Mobile menu (session 30): ≤ 500px the header is burger (left, bars fold into an X) + brand + search icon;
+  the `MainLayout` nav becomes a sheet under the header (`clip-path` unroll, dimmed
+  backdrop below the header closes it, Escape in the header row closes it, any navigation closes it). The
+  Vocabulary dropdown shows inline there (Review as an indented row, toggle hidden); on a sub-page only that
+  row is highlighted. No JS. Desktop unchanged. Checked in Firefox at 375 and 1280 px, light and dark.
 - Library return (session 22): `Bookside.UI/LibraryListState` (scoped = per circuit, registered by
   `AddBooksideUi()`; the host and `ComponentTestBase` call it) remembers the list URL and loaded count the library
   reports after each load, and the book opened from it (tracked from `LocationChanged`). Coming back to that same
@@ -176,17 +207,24 @@
   + "Manage tags"; cards show outlined `.tag` pills after the status badges (not links: the card is one `<a>`).
   `TagsPage` (`/tags`, no nav link): name, book count linking to the filtered library, inline rename, two-step delete
   ("Remove it from N books and delete it?").
+- Home stats (session 36): the stats moved from a full-width row at the bottom into the main column under
+  "Recently finished" as "Your library": one card with three figures split by hairlines (Books, Words, Words in
+  {month}), then "By tag": `HomeSummary.Tags` (`TagReadCounts`: tags with books, most books first, max 10, same
+  `GetHomeAsync` round trip) with a bar (read / started-not-finished / unread = empty track) and "N read · N
+  unread" links to `books?tag=…&filter=finished|unread`. Read/unread use the library filters' definitions
+  (finished at least once / no sessions). Checked in Firefox at 1280 and 390 px, light and dark.
 - Home page reading cards (session 11): "Add comment" opens an inline `CommentForm` (now has `AutoFocus`); saving
   closes it with "Comment added. View" (book link) until another panel opens. One panel per card still. With 2+
-  books the list is two-up when the section is ≥ 640px wide (container query; i.e. desktop main column, not
-  ≤ ~1000px viewports); actions sit under cover + text when a card is < 400px wide (card container query).
+  books the list is two-up when the section is ≥ 690px wide (container query; session 33: was 640px, raised to
+  the desktop main column's full width so the cards stack before the three buttons wrap at 700–900px
+  viewports); actions sit under cover + text when a card is < 400px wide (card container query).
   Side-by-side cards share a height (actions at the bottom; title 1.1rem), except while one has a form open.
 - Home page (session 9): `HomePage` (`/`, replaces the redirect to `/books`; the brand links to it, no nav link).
   Currently reading cards (cover, authors, "Started … · day N", inline "Finished" form = `ReadingSessionForm`, inline
   "Add word" = `WordForm` that stays open), word of the day + "Another", quick-add word, recent words (5), recently
-  finished (4, rating + date), stats (finished this year, words this month, book and word counts). Empty library →
+  finished (4, rating + date), stats (session 36: see Home stats). Empty library →
   welcome card (add a book, or add a word). Phones: one column in that order (column wrappers are `display: contents`
-  and sections use `order`); ≥900px: 2fr main column (reading, finished) + 1fr side column, stats full width.
+  and sections use `order`); ≥900px: 2fr main column (reading, finished, stats) + 1fr side column.
 - `Bookside.UI` (session 4, RCL; references only Core + `Microsoft.AspNetCore.Components.Web`, so MAUI can reuse it):
   `Layout/MainLayout` (sticky header nav, `ErrorBoundary`), pages `LibraryPage` (`/books`: search, filter chips,
   sort, cover grid, "Show more" paging of 48), `BookDetailsPage` (`/books/{id}`: details, cover editor, reading
@@ -215,7 +253,8 @@
   `App_Data/scratch.db`) for UI checks without touching the dev database.
 - Docker (session 8): root `Dockerfile` (SDK `10.0.203-noble` on `$BUILDPLATFORM`, `publish -a $TARGETARCH`, NuGet
   cache mount; runtime `aspnet:10.0-noble-chiseled-extra`, UID 1654, port 8080), `.dockerignore`, `docker-compose.yaml`
-  (`./data:/data`, `TZ`, forwarded headers on, port bound to `127.0.0.1` by default). README "Deploy" covers setup,
+  (`./bookside_data:/data`, `TZ`, forwarded headers on, `8080:8080`; session 35, user's choice: no `127.0.0.1` bind in the
+  README examples either). README "Deploy from source (Docker)" covers setup,
   backup, proxy WebSockets.
 - CI (GitHub `cwn-dev/bookside`): `build-and-test.yml` (push/PR to main; SDK from `global.json`) and
   `docker-publish.yml` (release → Docker Hub `cwndev/bookside`). README has shields.io badges for both.
@@ -256,6 +295,10 @@
     Validation collects every field error so forms can show them all at once. `ErrorType` maps to HTTP 400/404/409/503 later.
   - Search is `EF.Functions.Like` with escaped wildcards (user's choice: no schema change). Case-insensitive for ASCII
     only; title sorting stays case-sensitive (SQLite BINARY). Word search/sort uses `NormalizedTerm`, so it is effectively case-insensitive.
+  - Session 32 fix: apostrophes `'` `‘` `’` `ʼ` match each other (`Core/Common/Apostrophes`). Imported titles and
+    phone keyboards use `’`, desktops `'`. Search patterns turn them into `_` (`LikePattern.Contains/StartsWith`;
+    `Exact`, used to match author/series names on save, is unchanged); `SearchSnippet`, `SearchHighlight` and the
+    API's `book` title match compare normalized copies. Stored text is untouched (no migration).
   - Authors are matched to existing ones by name (LIKE, so ASCII case-insensitive); authors left with no books are deleted on book update/delete.
   - A book has at most one session with status Reading (Conflict otherwise). FinishedOn is not allowed while Reading.
   - Only ISBN-10 given → ISBN-13 derived. Both are checksum-validated.
@@ -353,8 +396,8 @@
   - Chiseled-extra: no shell/package manager (no in-container sqlite3/curl, no compose healthcheck); "extra" has
     ICU + tzdata so `TZ` works. No `LANG` needed: date formats are explicit patterns (English month names).
   - TLS by the user's existing proxy; compose enables `ASPNETCORE_FORWARDEDHEADERS_ENABLED` (trusts any proxy, so
-    the port is published on 127.0.0.1 by default). No HTTPS redirect/HSTS in the app; the proxy owns that.
-  - `./data` bind mount owned by UID 1654. Data Protection keys there unencrypted at rest (startup warning
+    keep the port reachable only by the proxy; session 35: published on all interfaces, user's choice). No HTTPS redirect/HSTS in the app; the proxy owns that.
+  - `./bookside_data` bind mount owned by UID 1654. Data Protection keys there unencrypted at rest (startup warning
     "No XML encryptor configured" is expected); they only protect antiforgery tokens and circuit state.
 
 - **Book metadata import (session 12, user's choices: one box + result list, fill empty fields only, cover only
@@ -413,11 +456,12 @@
   - A synthesized chime (Web Audio, the UI's first JS module) was built and then removed at the user's request:
     no sound, and the UI stays JS-free.
 - **Global search (session 25, user's choices: in the sticky header right of the nav, one service with typed sections rather than pluggable sources, comments included in v1):**
-  - Open/close is CSS `:focus-within`, so the page dims at click time with no round trip. Blazor can't blur
+  - Open/close is CSS `:focus-within` (session 29: or `has-query`, so the iOS keyboard's Done, which blurs the
+    box, keeps the results up; Tabbing out with a query now leaves it open until Escape/X/backdrop), so the page dims at click time with no round trip. Blazor can't blur
     without JS, so a `dismissed` class closes it while focused (Escape, any navigation, which also clears the
     query); `@onmousedown:preventDefault` on the panel keeps focus while a result is clicked (Safari doesn't
-    focus links). The panel itself is `pointer-events: none` (only cards take clicks), so a click in the gaps
-    reaches the backdrop; backdrop click and Escape both clear the query and close. Phones (≤ 500px): a 40px icon that spans the header row when focused; the header's gaps and
+    focus links). Session 29: the panel takes pointer events (with `pointer-events: none` iOS WebKit
+    couldn't scroll it and scrolled the page behind), so clicks in its gaps no longer close it; its bottom padding adds `env(safe-area-inset-bottom)` (`viewport-fit=cover`); backdrop click and Escape both clear the query and close. Phones (≤ 500px): a 40px icon that spans the header row when focused; the header's gaps and
     link padding were tightened so brand + links + icon fit at 375px.
   - No index helps `%q%`; books and words already searched this way. Comments add a scan of comment text: fine
     at personal size; FTS5 (+ migration) is the fix if it gets slow. One round trip, ~4 queries, no BLOBs.
@@ -435,12 +479,29 @@
   - Session 27 (user's choice: both `/` and Ctrl/⌘+K): a shortcut needs JS (Blazor can't listen on `document`),
     so it is the second JS module. Ctrl+T was asked for first, but browsers never pass it to the page.
     Ctrl+K overrides Firefox's "focus the browser search bar" on this site.
+- **HTTP API (session 31, user's choices: own `Bookside.Api` project because the API will grow, mapped into the
+  Web host rather than its own host; one simple bearer token; duplicates return the existing word; books by title
+  too):**
+  - Same process, port and container as the UI: one SQLite writer, no second compose service. Moving to an own
+    host later means moving only the `MapBooksideApi` call.
+  - Token in config, not the DB: no UI, no rotation beyond changing the setting and restarting. Off by default.
+    Any holder can call every endpoint; only as private as the proxy's TLS.
+  - A POST to `/api/...` with the API off falls through to the Blazor routes (400 from antiforgery), not 404.
+  - Adding a word looks the definition up inline, so a request can take up to ~16 s if both dictionaries hang.
+- **KOReader plugin (session 32, user's choices: menu item + settings in KOReader, last-sync cursor file,
+  unmatched title → resend without `book`):**
+  - Per word: 200/201 sent; 400 with `errors.book` → resent once without `book`; other 400 → reported and
+    skipped (cursor moves past it); 401 or network/5xx → stop. On a stop the cursor is the failing word's
+    `create_time - 1`, so it and same-second words go again (resends are 200s). Progress via `Trapper:info`
+    (tap to stop). Words are sent one by one, each up to ~16 s if the dictionaries hang (20 s timeout).
+  - KOReader keeps one row per word: looking a word up again updates its `create_time`, so it's resent (Bookside
+    returns the existing word, context not updated). No language or page in KOReader's data: defaults apply.
 - **Versioning (session 28, user's choices: release tag only, footer "© 2026 n7e · Bookside v1.6.1" with links):**
   - The GitHub release tag is the only source (no MinVer/Nerdbank/release-please): nothing to bump by hand, but
     local and CI test builds just say "dev". The Docker build has no `.git`, so the tag must come in as a build arg.
   - Copyright years run from 2026 to the server's current local year.
 - **Activity calendar (session 29, user's choices: month grid + day list, plus abandoned reads, flash cards
-  started, goal reached; "B" monogram on phones over a second header row or a submenu):**
+  started, goal reached):**
   - Starts/finishes aren't events: the UI derives them from `Reads`, so nothing is listed twice. A read's span
     is start (else finish) to finish, else today while Reading, else its start; a future start shows one day.
   - The read overlap query has no useful index (sessions are few); events use the new `CreatedAtUtc` indexes,
@@ -503,7 +564,8 @@
 4. Comment tag follow-ups: tags across books (e.g. a `#tag` page listing comments from every book), user-defined
    triggers. The picker can linger over the Post button while a bare tag is followed by more words (`#grim fate`)
    until Escape or a new line; consider closing it once the query has no match and contains a space.
-5. Later: `Bookside.Api`, MAUI Blazor Hybrid app.
+5. More API endpoints (list/search words, books, comments) as needed; OpenAPI document if clients want one.
+6. Later: MAUI Blazor Hybrid app (HTTP service implementations over `Bookside.Api`; needs per-user auth then).
 
 ## Open questions / minor notes
 - Book import: subjects → tags, series from metadata and merging providers were skipped. Google descriptions can
@@ -520,7 +582,8 @@
 - Non-ASCII search/sort (é vs É) is case-sensitive with LIKE. If it matters, revisit: normalized search columns (+ migration) or NOCASE/ICU.
 - Possible hardening once the image runs: `read_only: true` + tmpfs `/tmp` in compose, a `/healthz` endpoint for
   the proxy (no compose healthcheck: chiseled has no curl).
-- Auth: none yet. Needs a decision before exposing the container beyond the LAN.
+- Auth: none for the web UI yet (the API has its bearer token). Needs a decision before exposing the container
+  beyond the LAN.
 - Local runtime is ASP.NET Core 10.0.7 while packages are 10.0.13; works, but consider updating the SDK/runtime.
 - Typed `HttpClient` captured by circuit-scoped services lives as long as the circuit (no handler rotation). Fine for
   one user; revisit if long-lived circuits ever see DNS issues.

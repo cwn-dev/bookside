@@ -1,7 +1,7 @@
 @*
     Header search over books, words, tags and comments. Opening and closing
-    is CSS (:focus-within), so the page dims the moment the box is clicked,
-    with no server round trip. The "dismissed" class closes it while the box
+    is CSS (:focus-within, or has-query while a query is held), so the page
+    dims the moment the box is clicked, with no server round trip. The "dismissed" class closes it while the box
     keeps focus (Escape, after following a result): Blazor can't blur without
     JS. "/" and Ctrl/⌘+K focus the box (GlobalSearch.razor.js).
 *@
@@ -15,8 +15,7 @@
 <div class="@RootClass"
      role="search"
      @onfocusin="Reopen">
-    @* Clicking it blurs the box, which closes the overlay at once (CSS);
-       the click then clears the query, like Escape. *@
+    @* Clicking it clears the query and closes, like Escape. *@
     <div class="search-backdrop" aria-hidden="true" @onclick="Clear"></div>
 
     <div class="search-field">

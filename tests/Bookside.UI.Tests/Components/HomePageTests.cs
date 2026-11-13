@@ -164,6 +164,22 @@ public sealed class HomePageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Stats_show_read_and_unread_counts_per_tag()
+    {
+        var book = await AddBookAsync("Dune");
+        await Tags.SetBookTagsAsync(book.Id, ["Sci-fi & more"], Xunit.TestContext.Current.CancellationToken);
+
+        var page = Render<HomePage>();
+
+        page.WaitForAssertion(() => page.Find(".tag-stats"));
+        Assert.Equal("Sci-fi & more", page.Find(".tag-stat-name").TextContent);
+        Assert.Equal(
+            ["books?tag=Sci-fi%20%26%20more&filter=finished", "books?tag=Sci-fi%20%26%20more&filter=unread"],
+            page.FindAll(".tag-stat-counts a").Select(a => a.GetAttribute("href")));
+        Assert.Equal(["0 read", "1 unread"], page.FindAll(".tag-stat-counts a").Select(a => a.TextContent));
+    }
+
+    [Fact]
     public async Task Challenge_card_sets_a_goal_inline_then_shows_progress()
     {
         await AddBookAsync("Dune");

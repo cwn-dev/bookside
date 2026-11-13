@@ -39,6 +39,11 @@ public sealed record HomeSummary
     public required ChallengeProgress Challenge { get; init; }
 
     public required HomeStats Stats { get; init; }
+
+    /// <summary>
+    /// Tags with books, most books first (capped).
+    /// </summary>
+    public IReadOnlyList<TagReadCounts> Tags { get; init; } = [];
 }
 
 /// <summary>
@@ -72,4 +77,19 @@ public sealed record HomeStats
     /// Words added since the start of <see cref="Today"/>'s month (local time).
     /// </summary>
     public int WordsAddedThisMonth { get; init; }
+}
+
+/// <summary>
+/// How many of a tag's books have been read (finished at least once) and how
+/// many are unread (never started), matching the library's filters.
+/// </summary>
+public sealed record TagReadCounts
+{
+    public required string Name { get; init; }
+
+    public int BookCount { get; init; }
+
+    public int ReadCount { get; init; }
+
+    public int UnreadCount { get; init; }
 }

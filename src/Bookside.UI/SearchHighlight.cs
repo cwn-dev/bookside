@@ -1,3 +1,5 @@
+using Bookside.Core.Common;
+
 namespace Bookside.UI;
 
 /// <summary>
@@ -13,9 +15,10 @@ public static class SearchHighlight
 {
     /// <summary>
     /// Every non-overlapping match of <paramref name="query"/> (trimmed,
-    /// ordinal ignoring case, like SQLite's LIKE for ASCII), with the text
-    /// between; joined, the segments give <paramref name="text"/> back. A
-    /// blank query gives the whole text, unmatched.
+    /// ordinal ignoring case, like SQLite's LIKE for ASCII; any apostrophe
+    /// matches any other, like the search), with the text between; joined,
+    /// the segments give <paramref name="text"/> back. A blank query gives
+    /// the whole text, unmatched.
     /// </summary>
     public static IReadOnlyList<HighlightSegment> Split(string text, string? query)
     {
@@ -28,12 +31,15 @@ public static class SearchHighlight
             return text.Length == 0 ? [] : [new HighlightSegment(text, false)];
         }
 
+        // Same length as the originals, so match indexes fit text.
+        var haystack = Apostrophes.Normalize(text);
+        term = Apostrophes.Normalize(term);
         var segments = new List<HighlightSegment>();
         var start = 0;
 
         while (start < text.Length)
         {
-            var match = text.IndexOf(term, start, StringComparison.OrdinalIgnoreCase);
+            var match = haystack.IndexOf(term, start, StringComparison.OrdinalIgnoreCase);
 
             if (match < 0)
             {

@@ -17,6 +17,16 @@ public sealed class SearchHighlightTests
             segments.Select(s => (s.Text, s.IsMatch)));
     }
 
+    [Fact]
+    public void Any_apostrophe_matches_any_other_and_keeps_the_text()
+    {
+        var segments = SearchHighlight.Split("Ender’s Game", "ender's");
+
+        Assert.Equal(
+            [("Ender’s", true), (" Game", false)],
+            segments.Select(s => (s.Text, s.IsMatch)));
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("  ")]
