@@ -28,6 +28,8 @@ public sealed class ActivityPageTests : ComponentTestBase
         Assert.Equal("Word: brillig (Mort)", page.Find(".bar .mark").GetAttribute("title"));
         Assert.True(page.Find(".bar .mark .activity-icon").ClassList.Contains("word"));
         Assert.Empty(page.FindAll(".pill"));
+        // The mark is on the bar's first day, so the title goes after it.
+        Assert.Contains("--lead:", page.Find(".bar").GetAttribute("style"));
         Assert.Equal(
             ["Started", "Added", "Word"],
             page.FindAll(".day-items .day-label").Select(l => l.TextContent.Trim()));

@@ -124,6 +124,8 @@
   390 px @3x, as framed WebP (4.5 MB total, replacing the old PNGs). Hero = home page split diagonally light/dark;
   desktop gallery follows the viewer's GitHub theme (`<picture>`); mobile row alternates light and dark. Taken on a
   copy of the dev DB with the Revolting comments rewritten as realistic notes (the real DB still has the test ones).
+  Session 36: `activity.webp` (desktop + mobile, light + dark) of October 2026 on a seeded scratch DB (made-up
+  reads, comments, words, flash cards, goal; not the dev DB), shown full width in the README's desktop gallery.
 - Version + footer (session 28): `Directory.Build.props` defaults `Version` to `0.0.0-dev` (no `+sha` in the
   informational version); the release workflow passes the tag minus `v` as the Dockerfile `VERSION` build arg →
   `dotnet publish -p:Version=`. `Bookside.UI/AppInfo` (singleton from `AddBooksideUi()`, `TryAdd` so tests can
@@ -145,7 +147,7 @@
   as a thin line with an end stop at each date and the title in the line (session 36, user's request: reading = accent, no end
   stop yet; finished = accent + a tick at the finish; abandoned = dashed muted; no stop where a read continues),
   the book's own comments/words on a read's days as beads on its line (`CalendarBar.Marks`; icon, or a count
-  when several; hover lists them; the title stops before the first bead; "Added" on a line has no bead), other
+  when several; hover lists them; the title stops before the first bead, or follows it when the bead is on the bar's first day (`--lead`); "Added" on a line has no bead), other
   events as one muted icon each under the lines (`CalendarDay.Pills`; text on hover, links like the day list;
   goals stay coloured; no cap, they wrap),
   event icons; ≤ 500px: those hidden, up to 3 event icons under the day number; a key under the

@@ -144,7 +144,7 @@
 }
 
 .bar::before {
-    flex: 0 0 0.4rem;
+    flex: 0 0 var(--lead, 0.4rem);
     border-left: 2px solid var(--line);
 }
 
@@ -292,6 +292,13 @@
     .bar::before,
     .bar::after {
         height: 0.4rem;
+    }
+
+    .bar::before {
+        flex-basis: var(--lead, 0.2rem);
+    }
+
+    .bar::after {
         flex-basis: 0.2rem;
     }
 

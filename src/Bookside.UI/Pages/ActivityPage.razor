@@ -84,7 +84,7 @@ else
                 {
                     <a class="bar @bar.Read.Status.ToString().ToLowerInvariant() @(bar.ContinuesBefore ? "from-before" : null) @(bar.ContinuesAfter ? "to-after" : null)"
                        href="books/@bar.Read.BookId"
-                       style="grid-column: @bar.Column / span @bar.Span; grid-row: @(bar.Lane + 2)"
+                       style="grid-column: @bar.Column / span @bar.Span; grid-row: @(bar.Lane + 2); @TitleLead(bar)"
                        aria-label="@BarLabel(bar.Read)"
                        title="@BarLabel(bar.Read)">
                         <span class="bar-title" style="@TitleWidth(bar)">@bar.Read.Title</span>
@@ -233,11 +233,30 @@ else
     private static string Percent(double part, int whole) =>
         string.Create(CultureInfo.InvariantCulture, $"{part * 100 / whole:0.##}%");
 
-    // The title stops short of the bar's first mark.
-    private static string? TitleWidth(CalendarBar bar) =>
-        bar.Marks.Count == 0
-            ? null
-            : $"max-width: calc({Percent(bar.Marks[0].Day + 0.5, bar.Span)} - 1.5rem)";
+    // A mark on the bar's first day leaves no room before it, so the title
+    // goes after that mark: the line's lead runs on past it.
+    private static bool TitleAfterFirstMark(CalendarBar bar) =>
+        bar.Marks.Count > 0 && bar.Marks[0].Day == 0;
+
+    private static string? TitleLead(CalendarBar bar) =>
+        TitleAfterFirstMark(bar)
+            ? $"--lead: calc({Percent(0.5, bar.Span)} + 0.5rem)"
+            : null;
+
+    // The title stops short of the next mark.
+    private static string? TitleWidth(CalendarBar bar)
+    {
+        var next = TitleAfterFirstMark(bar) ? 1 : 0;
+
+        if (next >= bar.Marks.Count)
+        {
+            return null;
+        }
+
+        var start = next == 0 ? "0%" : Percent(0.5, bar.Span);
+        var end = Percent(bar.Marks[next].Day + 0.5, bar.Span);
+        return $"max-width: calc({end} - {start} - 1.5rem)";
+    }
 
     private static string MarkTitle(CalendarMark mark) =>
         string.Join(
