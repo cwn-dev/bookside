@@ -43,7 +43,7 @@ else
                 <span>@name</span>
             }
         </div>
-        @foreach (var week in _weeks)
+        @foreach (var (week, weekIndex) in _weeks.Select((w, i) => (w, i)))
         {
             @* repeat(0, …) is invalid CSS, so weeks with no bars skip it. *@
             <div class="week" style="grid-template-rows: auto @(week.Lanes > 0 ? $"repeat({week.Lanes}, var(--bar-height))" : null) 1fr">
@@ -69,14 +69,39 @@ else
                             </span>
                         }
                     </button>
+                    var items = day.Pills.Select(ActivityCalendar.Item).ToList();
+                    var capped = items.Count > MaxIcons + 1;
                     <div class="pills" style="grid-column: @(i + 1); grid-row: @(week.Lanes + 2)">
                         @* One icon per event; the text shows on hover. *@
-                        @foreach (var item in day.Pills.Select(ActivityCalendar.Item))
+                        @foreach (var item in capped ? items.Take(MaxIcons) : items)
                         {
-                            <a class="pill" href="@item.Href" title="@item.Label: @item.Text">
-                                <ActivityIcon Name="@item.Icon" />
-                                <span class="visually-hidden">@item.Label: @item.Text</span>
-                            </a>
+                            @Pill(item)
+                        }
+                        @if (capped)
+                        {
+                            <button type="button"
+                                    class="more-icons"
+                                    aria-expanded="@(_expanded == day.Date ? "true" : "false")"
+                                    aria-label="Show all @items.Count events"
+                                    @onclick="() => Toggle(day.Date)">
+                                ▾ +@(items.Count - MaxIcons)
+                            </button>
+                            @if (_expanded == day.Date)
+                            {
+                                @* Over the cells, so the weeks keep their height. *@
+                                <div class="pills-popover @(weekIndex >= _weeks.Count / 2 ? "up" : null)">
+                                    @foreach (var item in items)
+                                    {
+                                        @Pill(item)
+                                    }
+                                    <button type="button"
+                                            class="more-icons"
+                                            aria-label="Show fewer"
+                                            @onclick="() => _expanded = null">
+                                        ▴
+                                    </button>
+                                </div>
+                            }
                         }
                     </div>
                 }
@@ -152,6 +177,9 @@ else
 @code {
     private const int MaxPills = 3;
 
+    // About two rows of icons in a desktop cell; the rest open on demand.
+    private const int MaxIcons = 11;
+
     private static readonly (string Icon, string Label)[] LegendIcons =
     [
         ("added", "Book added"),
@@ -168,6 +196,7 @@ else
     private ActivityMonth? _month;
     private IReadOnlyList<CalendarWeek> _weeks = [];
     private DateOnly? _selected;
+    private DateOnly? _expanded;
     private IReadOnlyList<string> _errors = [];
 
     [Parameter]
@@ -212,6 +241,7 @@ else
         _month = result.Value;
 
         _weeks = ActivityCalendar.Build(_month);
+        _expanded = null;
         _selected = _month.Today.Year == year && _month.Today.Month == month ? _month.Today : null;
     }
 
@@ -229,6 +259,14 @@ else
             _ => $"{date}, {count} events",
         };
     }
+
+    private static RenderFragment Pill(CalendarItem item) =>
+        @<a class="pill" href="@item.Href" title="@item.Label: @item.Text">
+            <ActivityIcon Name="@item.Icon" />
+            <span class="visually-hidden">@item.Label: @item.Text</span>
+        </a>;
+
+    private void Toggle(DateOnly date) => _expanded = _expanded == date ? null : date;
 
     private static string Percent(double part, int whole) =>
         string.Create(CultureInfo.InvariantCulture, $"{part * 100 / whole:0.##}%");

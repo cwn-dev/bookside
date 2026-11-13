@@ -149,7 +149,9 @@
   the book's own comments/words on a read's days as beads on its line (`CalendarBar.Marks`; icon, or a count
   when several; hover lists them; the title stops before the first bead, or follows it when the bead is on the bar's first day (`--lead`); "Added" on a line has no bead), other
   events as one muted icon each under the lines (`CalendarDay.Pills`; text on hover, links like the day list;
-  goals stay coloured; no cap, they wrap),
+  goals stay coloured; a busy day shows 11 then "▾ +N", which opens the full list as a panel over the
+  cells (below, or above in the lower weeks so the rounded calendar edge doesn't clip it; ≤ 12rem, scrolls), so the
+  weeks keep their height; one day open at a time, "▴" closes it),
   event icons; ≤ 500px: those hidden, up to 3 event icons under the day number; a key under the
   grid (bar swatches + icons); the selected day (default today in the current month) lists its items below).
   `Components/ActivityIcon` (inline SVG stroke icons, colour per type, name from `CalendarItem.Icon`) marks

@@ -63,6 +63,31 @@ public sealed class ActivityPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task A_busy_day_shows_some_icons_and_opens_the_rest()
+    {
+        for (var i = 0; i < 14; i++)
+        {
+            await AddBookAsync($"Book {i}");
+        }
+
+        var page = Render<ActivityPage>();
+        page.WaitForAssertion(() => page.Find(".more-icons"));
+
+        Assert.Equal(11, page.FindAll(".pills > .pill").Count);
+        Assert.Equal("▾ +3", page.Find(".more-icons").TextContent.Trim());
+        Assert.Empty(page.FindAll(".pills-popover"));
+
+        page.Find(".more-icons").Click();
+
+        Assert.Equal(14, page.FindAll(".pills-popover .pill").Count);
+        Assert.Equal("true", page.Find(".pills > .more-icons").GetAttribute("aria-expanded"));
+
+        page.Find(".pills-popover .more-icons").Click();
+
+        Assert.Empty(page.FindAll(".pills-popover"));
+    }
+
+    [Fact]
     public void An_invalid_month_says_so()
     {
         var page = Render<ActivityPage>(p => p.Add(c => c.Year, 2024).Add(c => c.Month, 13));
