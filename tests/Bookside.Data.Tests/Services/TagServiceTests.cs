@@ -106,11 +106,13 @@ public sealed class TagServiceTests : ServiceTestBase
         var owned = await Library.ListBooksAsync(new BookQuery { Tag = "OWN" }, Ct);
         var ownedReading = await Library.ListBooksAsync(new BookQuery { Tag = "own", Filter = BookFilter.Reading }, Ct);
         var unknown = await Library.ListBooksAsync(new BookQuery { Tag = "Nope" }, Ct);
+        var untagged = await Library.ListBooksAsync(new BookQuery { Untagged = true }, Ct);
 
         Assert.Equal(["Dune", "Mort"], owned.Items.Select(b => b.Title));
         Assert.Equal(2, owned.TotalCount);
         Assert.Equal(["Own", "Signed"], owned.Items.Single(b => b.Title == "Mort").Tags);
         Assert.Equal(["Dune"], ownedReading.Items.Select(b => b.Title));
         Assert.Empty(unknown.Items);
+        Assert.Equal(["Emma"], untagged.Items.Select(b => b.Title));
     }
 }

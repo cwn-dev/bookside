@@ -25,7 +25,7 @@
         {
             <a role="tab" aria-selected="@(Filter == filter ? "true" : "false")"
                class="chip @(Filter == filter ? "selected" : null)"
-               href="@UrlFor(filter, Sort, Q, Tag)">@FilterLabel(filter)</a>
+               href="@UrlFor(filter, Sort, Q, Tag, Untagged)">@FilterLabel(filter)</a>
         }
     </div>
 
@@ -49,6 +49,10 @@
                title="@(selected ? "Show all tags" : null)"
                href="@UrlFor(Filter, Sort, Q, selected ? null : tag.Name)">@tag.Name</a>
         }
+        <a class="chip @(UntaggedSelected ? "selected" : null)"
+           aria-current="@(UntaggedSelected ? "true" : null)"
+           title="@(UntaggedSelected ? "Show all tags" : null)"
+           href="@UrlFor(Filter, Sort, Q, null, !UntaggedSelected)">Untagged</a>
         <a class="manage" href="tags">Manage tags</a>
     </nav>
 }
@@ -60,7 +64,7 @@
 else if (_books.Count == 0)
 {
     <div class="empty card">
-        @if (_totalCount == 0 && string.IsNullOrWhiteSpace(Q) && string.IsNullOrWhiteSpace(Tag) && Filter == BookFilter.All)
+        @if (_totalCount == 0 && string.IsNullOrWhiteSpace(Q) && string.IsNullOrWhiteSpace(Tag) && !Untagged && Filter == BookFilter.All)
         {
             <p>Your library is empty.</p>
             <a class="btn btn-primary" href="books/new">Add your first book</a>
@@ -147,6 +151,14 @@ else
     [SupplyParameterFromQuery(Name = "tag")]
     public string? Tag { get; set; }
 
+    /// <summary>
+    /// Only books with no tags; <see cref="Tag"/> wins when both are set.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "untagged")]
+    public bool Untagged { get; set; }
+
+    private bool UntaggedSelected => Untagged && string.IsNullOrWhiteSpace(Tag);
+
     private BookFilter Filter => Enum.TryParse<BookFilter>(FilterValue, ignoreCase: true, out var f) ? f : BookFilter.All;
 
     private BookSort Sort => Enum.TryParse<BookSort>(SortValue, ignoreCase: true, out var s) ? s : BookSort.Title;
@@ -226,6 +238,7 @@ else
                         Search = Q,
                         Filter = Filter,
                         Tag = Tag,
+                        Untagged = Untagged,
                         Sort = Sort,
                         Skip = books.Count,
                         Take = Math.Min(wanted - books.Count, Paging.MaxTake),
@@ -274,16 +287,21 @@ else
 
         var q = string.IsNullOrWhiteSpace(_searchText) ? null : _searchText.Trim();
         _lastQ = q;
-        Navigation.NavigateTo(UrlFor(Filter, Sort, q, Tag), replace: true);
+        Navigation.NavigateTo(UrlFor(Filter, Sort, q, Tag, Untagged), replace: true);
     }
 
     private void SortChanged(ChangeEventArgs e) =>
-        Navigation.NavigateTo(UrlFor(Filter, Enum.Parse<BookSort>((string)e.Value!), Q, Tag), replace: true);
+        Navigation.NavigateTo(UrlFor(Filter, Enum.Parse<BookSort>((string)e.Value!), Q, Tag, Untagged), replace: true);
 
     private string ListUrl() => Navigation.ToBaseRelativePath(Navigation.Uri);
 
     /// <summary>The list URL for these settings; defaults are left out to keep URLs short.</summary>
-    private string UrlFor(BookFilter filter, BookSort sort, string? q, string? tag) =>
+    private string UrlFor(
+        BookFilter filter,
+        BookSort sort,
+        string? q,
+        string? tag,
+        bool untagged = false) =>
         Navigation.GetUriWithQueryParameters(
             Navigation.ToAbsoluteUri("books").ToString(),
             new Dictionary<string, object?>
@@ -292,6 +310,7 @@ else
                 ["filter"] = filter == BookFilter.All ? null : filter.ToString().ToLowerInvariant(),
                 ["sort"] = sort == BookSort.Title ? null : sort.ToString().ToLowerInvariant(),
                 ["tag"] = string.IsNullOrWhiteSpace(tag) ? null : tag,
+                ["untagged"] = untagged && string.IsNullOrWhiteSpace(tag) ? "true" : null,
             });
 
     private bool IsSelected(TagDto tag) =>

@@ -1,12 +1,13 @@
 @page "/tags"
 @inject ITagService TagService
+@inject ILibraryService Library
 
-<PageTitle>Tags · Bookside</PageTitle>
+<PageTitle>Book Tags · Bookside</PageTitle>
 
 <p class="back"><a href="books">← Library</a></p>
 
 <div class="page-header">
-    <h1>Tags</h1>
+    <h1>Book Tags</h1>
 </div>
 
 <ErrorAlert Messages="_errors" />
@@ -46,8 +47,10 @@ else
                 }
                 else
                 {
-                    <span class="name">@tag.Name</span>
-                    <a class="count muted" href="@($"books?tag={Uri.EscapeDataString(tag.Name)}")">@BookCount(tag.BookCount)</a>
+                    <span class="label">
+                        <span class="name">@tag.Name</span>
+                        <a class="count muted" href="@($"books?tag={Uri.EscapeDataString(tag.Name)}")">@BookCount(tag.BookCount)</a>
+                    </span>
                     <div class="actions">
                         <button type="button" class="btn btn-sm" @onclick="() => StartRename(tag)">Rename</button>
                         <ConfirmButton Text="Delete" Small OnConfirm="() => DeleteAsync(tag.Id)"
@@ -56,11 +59,21 @@ else
                 }
             </li>
         }
+        @if (_untaggedCount > 0)
+        {
+            <li class="tag-row untagged">
+                <span class="label">
+                    <span class="name">Untagged</span>
+                    <a class="count muted" href="books?untagged=true">@BookCount(_untaggedCount)</a>
+                </span>
+            </li>
+        }
     </ul>
 }
 
 @code {
     private IReadOnlyList<TagDto>? _tags;
+    private int _untaggedCount;
     private IReadOnlyList<string> _errors = [];
     private Guid? _renamingId;
     private TagFormModel? _rename;
@@ -70,7 +83,12 @@ else
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
 
-    private async Task ReloadAsync() => _tags = await TagService.ListTagsAsync();
+    private async Task ReloadAsync()
+    {
+        _tags = await TagService.ListTagsAsync();
+        var untagged = await Library.ListBooksAsync(new BookQuery { Untagged = true, Take = 1 });
+        _untaggedCount = untagged.TotalCount;
+    }
 
     private void StartRename(TagDto tag)
     {

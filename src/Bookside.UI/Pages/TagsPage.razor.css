@@ -15,12 +15,26 @@
     border-bottom: 1px solid var(--border);
 }
 
+/* Name and the smaller count share one text line. */
+.label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.75rem;
+}
+
 .name {
     font-weight: 600;
     overflow-wrap: anywhere;
 }
 
+.untagged .name {
+    font-weight: 400;
+    font-style: italic;
+}
+
 .count {
+    margin: 0; /* the shared .count adds a bottom margin */
     font-size: 0.9rem;
 }
 

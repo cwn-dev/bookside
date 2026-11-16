@@ -10,18 +10,28 @@ public sealed class MainLayoutTests : ComponentTestBase
     public void Vocabulary_submenu_links_to_review_and_toggles_on_tap()
     {
         var layout = Render<MainLayout>();
-        var toggle = layout.Find(".nav-toggle");
+        const string Toggle = "[aria-label='More vocabulary pages']";
 
-        Assert.Equal("words/review", layout.Find(".submenu a").GetAttribute("href"));
-        Assert.Equal("false", toggle.GetAttribute("aria-expanded"));
+        Assert.Equal("words/review", layout.FindAll(".submenu a")[1].GetAttribute("href"));
+        Assert.Equal("false", layout.Find(Toggle).GetAttribute("aria-expanded"));
 
-        toggle.Click();
-        Assert.Equal("true", layout.Find(".nav-toggle").GetAttribute("aria-expanded"));
-        Assert.Contains("open", layout.Find(".submenu").ClassList);
+        layout.Find(Toggle).Click();
+        Assert.Equal("true", layout.Find(Toggle).GetAttribute("aria-expanded"));
+        Assert.Contains("open", layout.FindAll(".submenu")[1].ClassList);
 
         layout.Find(".nav-backdrop").Click();
-        Assert.Equal("false", layout.Find(".nav-toggle").GetAttribute("aria-expanded"));
+        Assert.Equal("false", layout.Find(Toggle).GetAttribute("aria-expanded"));
         Assert.Empty(layout.FindAll(".nav-backdrop"));
+    }
+
+    [Fact]
+    public void Library_submenu_links_to_book_tags()
+    {
+        var layout = Render<MainLayout>();
+
+        var link = layout.FindAll(".submenu a")[0];
+        Assert.Equal("tags", link.GetAttribute("href"));
+        Assert.Equal("Book Tags", link.TextContent);
     }
 
     [Fact]

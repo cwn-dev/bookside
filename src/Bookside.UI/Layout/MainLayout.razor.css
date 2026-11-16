@@ -80,8 +80,11 @@ nav ::deep .nav-link.active {
     background: var(--surface-muted);
 }
 
+/* A sub-page outside the parent's URL (tags) still highlights its parent. */
 .nav-group > ::deep .nav-link.active,
-.nav-group > ::deep .nav-link.active + .nav-toggle {
+.nav-group > ::deep .nav-link.active + .nav-toggle,
+.nav-group:has(.submenu .active) > ::deep .nav-link,
+.nav-group:has(.submenu .active) > .nav-toggle {
     color: var(--accent);
     background: var(--accent-soft);
 }
@@ -118,6 +121,7 @@ nav ::deep .nav-link.active {
     font-size: 0.9rem;
     font-weight: 400;
     color: var(--text);
+    white-space: nowrap;
 }
 
 .submenu ::deep .nav-link.active {

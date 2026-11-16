@@ -29,6 +29,23 @@ public sealed class TagsPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Untagged_books_get_their_own_row_linking_to_the_library()
+    {
+        var mort = await AddBookAsync("Mort");
+        await AddBookAsync("Dune");
+        await AddBookAsync("Emma");
+        Success(await Tags.SetBookTagsAsync(mort.Id, ["Own"], Ct));
+
+        var page = Render<TagsPage>();
+
+        page.WaitForAssertion(() => page.Find(".tag-row.untagged"));
+        var count = page.Find(".untagged a.count");
+        Assert.Equal("2 books", count.TextContent);
+        Assert.Equal("books?untagged=true", count.GetAttribute("href"));
+        Assert.Empty(page.Find(".untagged").QuerySelectorAll("button"));
+    }
+
+    [Fact]
     public async Task Rename_saves_or_shows_a_duplicate_name_conflict()
     {
         var mort = await AddBookAsync("Mort");

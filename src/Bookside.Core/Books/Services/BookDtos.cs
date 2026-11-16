@@ -103,6 +103,11 @@ public sealed record BookQuery
     /// </summary>
     public string? Tag { get; init; }
 
+    /// <summary>
+    /// Only books with no tags. Ignored when <see cref="Tag"/> is set.
+    /// </summary>
+    public bool Untagged { get; init; }
+
     public BookSort Sort { get; init; } = BookSort.Title;
 
     public int Skip { get; init; }

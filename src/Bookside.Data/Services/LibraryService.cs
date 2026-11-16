@@ -31,6 +31,10 @@ internal sealed class LibraryService(IDbContextFactory<BooksideDbContext> dbFact
             var tag = TermNormalizer.Normalize(query.Tag);
             books = books.Where(b => b.Tags.Any(t => t.Tag.NormalizedName == tag));
         }
+        else if (query.Untagged)
+        {
+            books = books.Where(b => !b.Tags.Any());
+        }
 
         books = query.Filter switch
         {

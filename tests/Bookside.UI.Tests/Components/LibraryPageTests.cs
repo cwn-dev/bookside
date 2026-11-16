@@ -62,6 +62,24 @@ public sealed class LibraryPageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task Untagged_chip_shows_only_books_without_tags()
+    {
+        var mort = await AddBookAsync("Mort");
+        await AddBookAsync("Dune");
+        Success(await Tags.SetBookTagsAsync(mort.Id, ["Own"], Ct));
+
+        Navigation.NavigateTo("books?untagged=true");
+        var page = Render<LibraryPage>();
+
+        page.WaitForAssertion(() => Assert.Equal(["Dune"], page.FindAll(".book-card .title").Select(t => t.TextContent)));
+        var selected = page.Find(".tag-filters a.chip.selected");
+        Assert.Equal("Untagged", selected.TextContent);
+        Assert.DoesNotContain("untagged", selected.GetAttribute("href"), StringComparison.Ordinal);
+        var own = page.FindAll(".tag-filters a.chip").Single(c => c.TextContent == "Own");
+        Assert.DoesNotContain("untagged", own.GetAttribute("href"), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task No_tags_hides_the_tag_row()
     {
         await AddBookAsync("Dune");

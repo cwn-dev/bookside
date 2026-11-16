@@ -1,4 +1,4 @@
-# Bookside: project state (end of session 36, 2026-11-13)
+# Bookside: project state (end of session 37, 2026-11-16)
 
 ## Built
 - .NET 10 (SDK 10.0.203 pinned in global.json), `Bookside.slnx`, central package management, warnings-as-errors,
@@ -221,6 +221,11 @@
   + "Manage tags"; cards show outlined `.tag` pills after the status badges (not links: the card is one `<a>`).
   `TagsPage` (`/tags`, no nav link): name, book count linking to the filtered library, inline rename, two-step delete
   ("Remove it from N books and delete it?").
+  Session 37: the page is "Book Tags", linked from a Library nav submenu (same `nav-group` pattern as Vocabulary →
+  Review; the parent is highlighted via `:has(.submenu .active)`, since `/tags` isn't under `/books`; submenu
+  rows don't wrap); name + count share a baseline in a `.label` (the shared `.count` margin is reset); an "Untagged" row (only when > 0; count via
+  `ListBooksAsync(Untagged, Take = 1).TotalCount`) links to `books?untagged=true`. `BookQuery.Untagged` (ignored
+  when `Tag` is set); the library's tag chip row ends with an "Untagged" chip.
 - Home page reading cards (session 11): "Add comment" opens an inline `CommentForm` (now has `AutoFocus`); saving
   closes it with "Comment added. View" (book link) until another panel opens. One panel per card still. With 2+
   books the list is two-up when the section is ≥ 690px wide (container query; session 33: was 640px, raised to
