@@ -86,7 +86,7 @@
   (`/challenge` = current year, `/challenge/{year}`): prev/next year links + a year `<select>` to jump (years with reads
   or a goal, the current year and the shown one; user's choice over a fixed range), progress card with edit/remove goal,
   books grouped by finish month (cover grid), "All years" list with mini bars. "Challenge" nav link.
-  `Celebration` component (CSS-only confetti burst + "Goal reached!" pill, ~2.6 s, then invisible; reduced
+  `Celebration` component (CSS-only take on canvas-confetti (user's pick over JS): 100 pieces in a 100° cone up from the card (sideways in vmax), decaying launch (outer span) + linear fall, fade and 3D flip (`::before`), falling 70vh over 4.6 s; pieces are `position: fixed` with no offsets (start at the card, paint over the header, no page scroll); "Goal reached!" pill 4 s; reduced
   motion = pill fade only): on the home card when "Finished" on a reading card takes the count to the goal,
   and on the challenge page's progress card whenever the shown year's goal is reached (every visit).
 - Finished popup (session 18): `FinishedPopup` component: when a read becomes Finished (home reading card's

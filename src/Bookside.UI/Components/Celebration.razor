@@ -12,9 +12,13 @@
 </div>
 
 @code {
-    private const int PieceCount = 28;
+    private const int PieceCount = 100;
 
-    private static readonly string[] Colors = ["#e0956a", "#8fd19c", "#f2c94c", "#6fa8dc", "#d97ba6"];
+    // canvas-confetti's default colours.
+    private static readonly string[] Colors =
+    [
+        "#26ccff", "#a25afd", "#ff5e7e", "#88ff5a", "#fcff42", "#ffa62d", "#ff36ff",
+    ];
 
     // Fixed pseudo-random spread, so every burst looks the same and renders
     // identically in tests.
@@ -22,15 +26,24 @@
     [
         .. Enumerable.Range(0, PieceCount).Select(i =>
         {
-            var angle = (i * 360.0 / PieceCount + i * 37 % 13) * Math.PI / 180;
-            var distance = 70 + i * 53 % 50;
+            // 0..1, from a cheap integer hash of the piece and a salt.
+            double R(int salt)
+            {
+                var h = unchecked((uint)(i * 374761393 + salt * 668265263));
+                h = unchecked((h ^ (h >> 13)) * 1274126177);
+                return (h ^ (h >> 16)) / (double)uint.MaxValue;
+            }
+
+            // Straight up, give or take 50° (a 100° cone); speed varies 1–3.3×.
+            var angle = (90 + (R(1) * 2 - 1) * 50) * Math.PI / 180;
+            var distance = 15 + R(2) * 35;
             return string.Create(
                 CultureInfo.InvariantCulture,
-                $"--dx: {Math.Cos(angle) * distance * 1.4:0}px; " +
-                $"--dy: {Math.Sin(angle) * distance - 30:0}px; " +
-                $"--rot: {360 + i * 97 % 360}deg; " +
-                $"--delay: {i % 4 * 40}ms; " +
-                $"background: {Colors[i % Colors.Length]};");
+                $"--x: {Math.Cos(angle) * distance:0.#}; " +
+                $"--y: {-Math.Sin(angle) * distance:0.#}vh; " +
+                $"--spin: {1.15 + R(3) * 0.6:0.00}s; " +
+                $"--axis: {R(4):0.00} 1 {R(5):0.00}; " +
+                $"--c: {Colors[i % Colors.Length]};");
         }),
     ];
 

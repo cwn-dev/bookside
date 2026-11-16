@@ -1,31 +1,41 @@
 .celebration {
     position: absolute;
     inset: 0;
-    z-index: 5;
     display: grid;
     place-items: center;
     pointer-events: none;
 }
 
-.burst {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+/* The burst is an empty point at the centre, under the cheer. */
+.celebration > * {
+    grid-area: 1 / 1;
 }
 
+/* Modelled on canvas-confetti: the piece itself launches with a quickly
+   decaying speed, while its ::before falls at a constant rate, fades out
+   evenly and flips like paper. Fixed with no offsets: a piece starts at the
+   burst point in the card, but paints over the sticky header (z-index 10)
+   and never adds page scroll. */
 .confetti {
-    position: absolute;
-    width: 8px;
-    height: 12px;
-    margin: -6px 0 0 -4px;
-    border-radius: 2px;
-    opacity: 0;
-    animation: confetti 1.5s cubic-bezier(0.2, 0.7, 0.4, 1) var(--delay) forwards;
+    position: fixed;
+    z-index: 11;
+    animation: confetti-launch 1s cubic-bezier(0.1, 0.6, 0.2, 1) both;
 }
 
-.confetti:nth-child(3n) {
-    width: 8px;
-    height: 8px;
+.confetti::before {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    border-radius: 1px;
+    background: var(--c);
+    animation:
+        confetti-fall 4.6s linear both,
+        confetti-flip var(--spin) linear 4;
+}
+
+.confetti:nth-child(3n)::before {
     border-radius: 50%;
 }
 
@@ -37,24 +47,39 @@
     font-weight: 700;
     box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
     opacity: 0;
-    animation: cheer 2.6s ease forwards;
+    animation: cheer 4s ease forwards;
 }
 
-/* Out fast, then drift down as the "gravity" part of the burst. */
-@keyframes confetti {
-    0% {
-        opacity: 1;
-        transform: translate(0, 0) rotate(0) scale(0.6);
+/* Sideways in vmax, so wide screens get a wider spread. */
+@keyframes confetti-launch {
+    from {
+        translate: 0 0;
     }
 
-    55% {
+    to {
+        translate: calc(var(--x) * 1vmax) var(--y);
+    }
+}
+
+@keyframes confetti-fall {
+    from {
         opacity: 1;
-        transform: translate(var(--dx), var(--dy)) rotate(calc(var(--rot) * 0.6)) scale(1);
+        translate: 0 0;
     }
 
-    100% {
+    to {
         opacity: 0;
-        transform: translate(var(--dx), calc(var(--dy) + 70px)) rotate(var(--rot)) scale(1);
+        translate: 0 70vh;
+    }
+}
+
+@keyframes confetti-flip {
+    from {
+        rotate: var(--axis) 0deg;
+    }
+
+    to {
+        rotate: var(--axis) 360deg;
     }
 }
 
@@ -64,13 +89,13 @@
         transform: scale(0.4);
     }
 
-    12% {
+    8% {
         opacity: 1;
         transform: scale(1.12);
     }
 
-    20%,
-    75% {
+    13%,
+    85% {
         opacity: 1;
         transform: scale(1);
     }
